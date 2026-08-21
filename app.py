@@ -17,6 +17,7 @@ from core.ml import predict_yield, rank_crops, validation_summary, validation_fo
 from core.resources import calculate_resources
 from core.water_norms import default_water_requirement, PUMPING_REFERENCE_KWH_PER_M3
 from core.economics import DEFAULT_EF_KZ_KGCO2_PER_KWH, DEFAULT_ELECTRICITY_TARIFF_KZT_KWH, DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3, DEFAULT_GREEN_SHARE_TARGET, DEFAULT_WATER_SAVING_TARGET, economic_climate_effect, payback_years
+from core.economic_feasibility import economic_feasibility
 from core.uncertainty import support_score
 from core.analysis_engine import build_analysis, build_recommendations
 from core.wapor import seasonal_aeti, consumptive_water_metrics, WaPORError
@@ -445,6 +446,9 @@ with st.form("farm_inputs", clear_on_submit=False):
     water_saving_target = float(DEFAULT_WATER_SAVING_TARGET)
     investment = 0.0
     seasons_per_year = 1.0
+    expected_yield_c_ha = 0.0
+    selling_price_kzt_t = 0.0
+    variable_cost_kzt_ha = 0.0
 
     if user_level == "farmer":
         st.markdown("#### " + {"kk":"Негізгі шаруашылық деректері","ru":"Основные данные хозяйства","en":"Essential farm data"}[lang])
@@ -496,6 +500,21 @@ with st.form("farm_inputs", clear_on_submit=False):
                 st.caption(t["tariff_note"])
 
         st.caption(t["api_offline"])
+
+    if crop is not None:
+        with st.expander({"kk":"Экономикалық контур (міндетті емес)","ru":"Экономический контур (необязательно)","en":"Economic contour (optional)"}[lang], expanded=False):
+            st.caption({
+                "kk":"Баға жасырын проксиден алынбайды. Нарықтық баға мен шығынды өз деректеріңізбен енгізіңіз; өнімділік енгізілмесе, қолжетімді ML бағасы пайдаланылады.",
+                "ru":"Цена не берется из скрытого рыночного proxy. Укажите свою подтвержденную цену и затраты; если урожайность не введена, при наличии будет использована ML-оценка.",
+                "en":"No hidden market-price proxy is used. Enter a verified price and costs; if yield is omitted, an available ML estimate is used."
+            }[lang])
+            ec1,ec2,ec3=st.columns(3)
+            with ec1:
+                expected_yield_c_ha=st.number_input({"kk":"Күтілетін өнімділік, ц/га","ru":"Ожидаемая урожайность, ц/га","en":"Expected yield, centners/ha"}[lang],min_value=0.0,value=0.0,step=1.0)
+            with ec2:
+                selling_price_kzt_t=st.number_input({"kk":"Сату бағасы, тг/т","ru":"Цена реализации, тг/т","en":"Selling price, KZT/t"}[lang],min_value=0.0,value=0.0,step=1000.0)
+            with ec3:
+                variable_cost_kzt_ha=st.number_input({"kk":"Басқа айнымалы шығындар, тг/га","ru":"Прочие переменные затраты, тг/га","en":"Other variable costs, KZT/ha"}[lang],min_value=0.0,value=0.0,step=10000.0)
 
     optimization_profile = "balanced"
     optimization_max_share = 0.40
@@ -596,6 +615,11 @@ if submitted:
             st.warning(t["nasa_error"])
 
     st.subheader(t["results"])
+    st.caption({
+        "kk":"QŪNAR аумақтың ресурстық және климаттық шектеулерін бір шешім кеңістігінде салыстырады. Көрсеткіштер салыстырмалы; дәлелдердің сенімділігі жеке көрсетіледі.",
+        "ru":"QŪNAR сопоставляет ресурсные и климатические ограничения территории в едином пространстве решений. Баллы имеют сравнительный смысл; сила доказательной базы показывается отдельно.",
+        "en":"QŪNAR compares territorial resource and climate constraints within one decision space. Scores are comparative; evidence strength is reported separately."
+    }[lang])
 
     polygon_area = calc_polygon_area
     area_geometry_mismatch = False
@@ -626,7 +650,7 @@ if submitted:
 
     if mode_key == "mode1" and crop not in CROPS:
         # Expanded farm assessment for crops without a calibrated yield ML model.
-        scenario = scenario_for_crop(used_district, crop)
+        scenario = scenario_for_crop(used_district, crop, climate, irrigation_type)
         obs_ev = observed_for_crop(used_district, crop)
         resource = calculate_resources(
             area_ha=area_ha,
@@ -643,8 +667,8 @@ if submitted:
             a,b,c,d=st.columns(4)
             a.metric({"kk":"QŪNAR бағасы","ru":"Оценка QŪNAR","en":"QŪNAR score"}[lang], f"{q:.1f}/100")
             b.metric({"kk":"Климат","ru":"Климат","en":"Climate"}[lang], f"{float(scenario['Climate_score_0_100']):.1f}/100")
-            c.metric({"kk":"Су тиімділігі","ru":"Водная эффективность","en":"Water efficiency"}[lang], f"{float(scenario['Resource_efficiency_0_100']):.1f}/100")
-            d.metric({"kk":"Дерек сенімділігі","ru":"Надежность данных","en":"Data reliability"}[lang], f"{float(scenario['Data_reliability_0_100']):.1f}/100")
+            c.metric({"kk":"Су жүктемесі","ru":"Водная нагрузка","en":"Water pressure"}[lang], f"{float(scenario['Resource_efficiency_0_100']):.1f}/100")
+            d.metric({"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang], f"{float(scenario['Data_reliability_0_100']):.1f}/100")
             st.caption({"kk":"Бұл дақыл үшін жеке ML өнімділік болжамының орнына аудандық QŪNAR есептік қабаты қолданылады.","ru":"Для этой культуры вместо индивидуального ML-прогноза урожайности используется районный расчетный слой QŪNAR.","en":"For this crop, the district QŪNAR decision layer is used instead of an individual ML yield forecast."}[lang])
         else:
             st.info({"kk":"Бұл дақыл бойынша толық аудандық QŪNAR сценарийі жоқ. Шаруашылықтың су, энергия және көміртек көрсеткіштері пайдаланушы енгізген деректер бойынша есептеледі.","ru":"Для этой культуры нет полного районного сценария QŪNAR. Водные, энергетические и углеродные показатели хозяйства рассчитываются по введенным пользователем данным.","en":"No full district QŪNAR scenario is available for this crop. Farm water, energy and carbon indicators are calculated from user inputs."}[lang])
@@ -907,7 +931,7 @@ if submitted:
         }[lang])
 
         method_name=crop_method(crop)
-        scenario=scenario_for_crop(used_district,crop)
+        scenario=scenario_for_crop(used_district,crop,climate,irrigation_type)
         ml_pred=None; ml_used=None; hist=None
         if crop in CROPS:
             with st.spinner(t["ml_loading"]):
@@ -928,8 +952,8 @@ if submitted:
                 a,b,c,d=st.columns(4)
                 a.metric({"kk":"QŪNAR бағасы","ru":"Оценка QŪNAR","en":"QŪNAR score"}[lang], f"{q:.1f}/100")
                 b.metric({"kk":"Климат","ru":"Климат","en":"Climate"}[lang], f"{climate_sc:.1f}/100")
-                c.metric({"kk":"Су тиімділігі","ru":"Водная эффективность","en":"Water efficiency"}[lang], f"{resource_sc:.1f}/100")
-                d.metric({"kk":"Дерек сенімділігі","ru":"Надежность данных","en":"Data reliability"}[lang], f"{reliability_sc:.1f}/100")
+                c.metric({"kk":"Су жүктемесі","ru":"Водная нагрузка","en":"Water pressure"}[lang], f"{resource_sc:.1f}/100")
+                d.metric({"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang], f"{reliability_sc:.1f}/100")
             st.info({"kk":f"Қорытынды: {extended_crop_label(crop,lang)} - {verdict}.","ru":f"Вывод: {extended_crop_label(crop,lang)} - {verdict}.","en":f"Conclusion: {extended_crop_label(crop,lang)} - {verdict}."}[lang])
 
             factors=[]
@@ -1017,7 +1041,7 @@ if submitted:
                 }[lang])
 
     elif mode_key == "mode3":
-        ranking = timed_call("QUNAR ranking", decision_table, used_district, lang).copy()
+        ranking = timed_call("QUNAR ranking", decision_table, used_district, lang, climate, irrigation_type).copy()
         ranking = ranking.rename(columns={
             'District_rank': {'kk':'Орын','ru':'Место','en':'Rank'}[lang],
             'display': {'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang],
@@ -1075,10 +1099,10 @@ if submitted:
         st.markdown("### " + {"kk":"Шаруашылық құрылымын оңтайландыру","ru":"Оптимизация структуры хозяйства","en":"Farm-structure optimization"}[lang])
         st.caption({
             "kk":"QŪNAR климаттық тұрақтылықты, су тиімділігін және дерек сенімділігін теңестіреді. Қолжетімді су енгізілсе, ол оңтайландырудың нақты шектеуі болады.",
-            "ru":"QŪNAR балансирует климатическую устойчивость, водную эффективность и надежность данных. Если указана доступная вода, она используется как реальное ограничение оптимизации.",
-            "en":"QŪNAR balances climate resilience, water efficiency and evidence reliability. If available water is entered, it becomes a real optimization constraint."
+            "ru":"QŪNAR распределяет площадь по ресурсно-климатической полезности. Уверенность в оценке показывается отдельно и не повышает привлекательность культуры. Если указана доступная вода, она становится жестким ограничением оптимизации.",
+            "en":"QŪNAR allocates land using resource-climate utility. Assessment confidence is reported separately and does not make a crop more attractive. Entered available water becomes a hard optimization constraint."
         }[lang])
-        alloc, opt = timed_call("Optimization", optimize_structure, used_district, area_ha, optimization_profile, optimization_max_share, optimization_n_crops, available_water)
+        alloc, opt = timed_call("Optimization", optimize_structure, used_district, area_ha, optimization_profile, optimization_max_share, optimization_n_crops, available_water, climate, irrigation_type)
         if alloc.empty:
             st.error({"kk":"Бұл аудан үшін оңтайландыру деректері табылмады.","ru":"Для этого района не найдены данные для оптимизации.","en":"No optimization data were found for this district."}[lang])
         else:
@@ -1090,8 +1114,8 @@ if submitted:
                 {"kk":"Аудан, га","ru":"Площадь, га","en":"Area, ha"}[lang],
                 {"kk":"QŪNAR бағасы","ru":"Оценка QŪNAR","en":"QŪNAR score"}[lang],
                 {"kk":"Климат","ru":"Климат","en":"Climate"}[lang],
-                {"kk":"Су тиімділігі","ru":"Водная эффективность","en":"Water efficiency"}[lang],
-                {"kk":"Дерек сенімділігі","ru":"Надежность данных","en":"Data reliability"}[lang],
+                {"kk":"Су жүктемесі","ru":"Водная нагрузка","en":"Water pressure"}[lang],
+                {"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang],
                 {"kk":"Су нормасы, м³/га","ru":"Норма воды, м³/га","en":"Water norm, m³/ha"}[lang],
                 {"kk":"Есептік су, м³","ru":"Расчетная вода, м³","en":"Modelled water, m³"}[lang],
             ]
@@ -1105,7 +1129,7 @@ if submitted:
             s1.metric({"kk":"Құрылымның QŪNAR бағасы","ru":"Оценка структуры QŪNAR","en":"Structure QŪNAR score"}[lang],f"{opt['weighted_qunar']:.1f}/100")
             s2.metric({"kk":"Климаттық тұрақтылық","ru":"Климатическая устойчивость","en":"Climate resilience"}[lang],f"{opt['weighted_climate']:.1f}/100")
             s3.metric({"kk":"Ресурс тиімділігі","ru":"Ресурсоэффективность","en":"Resource efficiency"}[lang],f"{opt['weighted_resource']:.1f}/100")
-            s4.metric({"kk":"Дерек сенімділігі","ru":"Надежность данных","en":"Data reliability"}[lang],f"{opt['weighted_reliability']:.1f}/100")
+            s4.metric({"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang],f"{opt['weighted_reliability']:.1f}/100")
             st.success({
                 "kk":f"Ұсынылған құрылым {area_ha:.1f} га аумақты {len(out)} дақыл арасында бөледі. Ең ірі үлес {out.iloc[0,1]:.1f}% деңгейінде.",
                 "ru":f"Предлагаемая структура распределяет {area_ha:.1f} га между {len(out)} культурами. Наибольшая доля составляет {out.iloc[0,1]:.1f}%.",
@@ -1132,10 +1156,37 @@ if submitted:
                 with st.expander({"kk":"Оңтайландыру әдістемесі","ru":"Методика оптимизации","en":"Optimization method"}[lang]):
                     st.write({
                         "kk":f"Алдымен климат, су тиімділігі және дерек сенімділігі бойынша Парето-доминантталмайтын нұсқалар анықталады. Одан кейін таңдалған басымдық салмақтары бойынша utility есептеліп, бір дақыл үлесі {optimization_max_share*100:.0f}% шегінен аспайтындай етіп аудан бөлінеді. Су жүктемесі ресми немесе нақты белгіленген fallback м³/га нормаларына негізделеді; нарықтық баға проксиі алынып тасталды.",
-                        "ru":f"Сначала определяются недоминируемые по Парето варианты по климату, водной эффективности и надежности данных. Затем рассчитывается utility по выбранным весам и площадь распределяется с ограничением доли одной культуры не выше {optimization_max_share*100:.0f}%. Водная нагрузка основана на официальных/явно маркированных fallback-нормах м³/га; рыночный ценовой proxy исключен.",
+                        "ru":f"Структура решается как задача линейного программирования: максимизируется ресурсно-климатическая полезность при равенстве суммарной площади, ограничении доли одной культуры не выше {optimization_max_share*100:.0f}% и, при заданном объеме воды, жестком водном ограничении. Уверенность в данных не входит в целевую функцию. Рыночный ценовой proxy исключен.",
                         "en":f"First, Pareto non-dominated options are identified across climate, water efficiency and evidence reliability. Utility is then computed with the selected weights and land is allocated with a single-crop cap of {optimization_max_share*100:.0f}%. Water pressure uses official/explicitly labelled fallback m³/ha norms; the market-price proxy is excluded."
                     }[lang])
 
+
+    # v0.8 economic contour: transparent scenario, never a hidden-price profit claim.
+    if crop is not None and selling_price_kzt_t > 0:
+        econ_yield = expected_yield_c_ha if expected_yield_c_ha > 0 else (pred if "pred" in locals() else None)
+        if econ_yield is not None:
+            econ08 = economic_feasibility(
+                yield_centners_ha=econ_yield,
+                selling_price_kzt_t=selling_price_kzt_t,
+                variable_cost_kzt_ha=variable_cost_kzt_ha,
+                water_m3_ha=(effective_water_used/area_ha if effective_water_used > 0 and area_ha > 0 else 0.0),
+                water_tariff_kzt_m3=water_tariff,
+                energy_kwh_ha=(energy/area_ha if energy > 0 and area_ha > 0 else 0.0),
+                electricity_tariff_kzt_kwh=electricity_tariff,
+            )
+            st.markdown("### " + {"kk":"Экономикалық орындылық","ru":"Экономическая целесообразность","en":"Economic feasibility"}[lang])
+            e1,e2,e3=st.columns(3)
+            e1.metric({"kk":"Жалпы түсім, тг/га","ru":"Валовая выручка, тг/га","en":"Gross revenue, KZT/ha"}[lang], f"{econ08['gross_revenue_kzt_ha']:,.0f}")
+            e2.metric({"kk":"Ресурстық шығын, тг/га","ru":"Стоимость воды и энергии, тг/га","en":"Water + energy cost, KZT/ha"}[lang], f"{econ08['resource_cost_kzt_ha']:,.0f}")
+            e3.metric({"kk":"Салым маржасы, тг/га","ru":"Маржинальный результат, тг/га","en":"Contribution margin, KZT/ha"}[lang], f"{econ08['contribution_margin_kzt_ha']:,.0f}")
+            st.caption({
+                "kk":"Бұл нәтиже таза пайда емес: ол енгізілген баға, айнымалы шығындар, су және энергия шығындары негізіндегі сценарийлік маржа.",
+                "ru":"Этот результат не равен чистой прибыли: это сценарная маржа на основе введенной цены, переменных затрат и учтенных расходов на воду и энергию.",
+                "en":"This is not net profit. It is a scenario contribution margin based on the entered price, variable costs, water and energy costs."
+            }[lang])
+            report_payload["summary"].append({"label":{"kk":"Маржиналды нәтиже, тг/га","ru":"Маржинальный результат, тг/га","en":"Contribution margin, KZT/ha"}[lang],"value":f"{econ08['contribution_margin_kzt_ha']:,.0f}"})
+        else:
+            st.info({"kk":"Экономикалық контур үшін күтілетін өнімділікті енгізіңіз.","ru":"Для экономического контура укажите ожидаемую урожайность.","en":"Enter expected yield to activate the economic contour."}[lang])
 
     # Build a lightweight export snapshot from results already calculated on screen.
     if mode_key == "mode1":
@@ -1174,13 +1225,13 @@ if submitted:
                 {"label":{"kk":"QŪNAR бағасы","ru":"Оценка QŪNAR","en":"QŪNAR score"}[lang],"value":f"{float(scenario['QUNAR_score_0_100']):.1f}/100"},
                 {"label":{"kk":"Климат","ru":"Климат","en":"Climate"}[lang],"value":f"{float(scenario['Climate_score_0_100']):.1f}/100"},
                 {"label":{"kk":"Ресурс тиімділігі","ru":"Ресурсоэффективность","en":"Resource efficiency"}[lang],"value":f"{float(scenario['Resource_efficiency_0_100']):.1f}/100"},
-                {"label":{"kk":"Дерек сенімділігі","ru":"Надежность данных","en":"Data reliability"}[lang],"value":f"{float(scenario['Data_reliability_0_100']):.1f}/100"},
+                {"label":{"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang],"value":f"{float(scenario['Data_reliability_0_100']):.1f}/100"},
             ]
             if "factors" in locals(): report_payload["recommendations"] = structured_recommendations(list(factors), [], lang)
             report_payload["chart"]={
                 "title":{"kk":"Дақылдың төрт өлшем бойынша бағасы","ru":"Оценка культуры по четырем измерениям","en":"Crop score across four dimensions"}[lang],
                 "section_title":{"kk":"Дақыл профилі","ru":"Профиль культуры","en":"Crop profile"}[lang],
-                "categories":[{"kk":"Жалпы баға","ru":"Общий балл","en":"Overall"}[lang],{"kk":"Климат","ru":"Климат","en":"Climate"}[lang],{"kk":"Ресурс","ru":"Ресурсы","en":"Resources"}[lang],{"kk":"Дерек","ru":"Надежность данных","en":"Reliability"}[lang]],
+                "categories":[{"kk":"Жалпы баға","ru":"Общий балл","en":"Overall"}[lang],{"kk":"Климат","ru":"Климат","en":"Climate"}[lang],{"kk":"Ресурс","ru":"Ресурсы","en":"Resources"}[lang],{"kk":"Дерек","ru":"Уверенность в оценке","en":"Reliability"}[lang]],
                 "values":[float(scenario['QUNAR_score_0_100']),float(scenario['Climate_score_0_100']),float(scenario['Resource_efficiency_0_100']),float(scenario['Data_reliability_0_100'])],
                 "value_label":"0-100","axis_label":"0-100"
             }
@@ -1210,7 +1261,7 @@ if submitted:
                 {"label":{"kk":"Құрылымның QŪNAR бағасы","ru":"Оценка структуры QŪNAR","en":"Structure QŪNAR score"}[lang],"value":f"{opt['weighted_qunar']:.1f}/100"},
                 {"label":{"kk":"Климаттық тұрақтылық","ru":"Климатическая устойчивость","en":"Climate resilience"}[lang],"value":f"{opt['weighted_climate']:.1f}/100"},
                 {"label":{"kk":"Ресурс тиімділігі","ru":"Ресурсоэффективность","en":"Resource efficiency"}[lang],"value":f"{opt['weighted_resource']:.1f}/100"},
-                {"label":{"kk":"Дерек сенімділігі","ru":"Надежность данных","en":"Data reliability"}[lang],"value":f"{opt['weighted_reliability']:.1f}/100"},
+                {"label":{"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang],"value":f"{opt['weighted_reliability']:.1f}/100"},
                 {"label":{"kk":"Есептік су қажеттілігі","ru":"Расчетная потребность в воде","en":"Modelled water demand"}[lang],"value":f"{opt['modelled_total_water_m3']:,.0f} м³"},
             ]
             first_crop=str(out.iloc[0,0]); first_share=float(out.iloc[0,1])
