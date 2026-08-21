@@ -44,3 +44,9 @@ Added in the current update:
 - reproducibility outputs: `LIVESTOCK_METHOD_v0_8_1.md`, `livestock_validation_v0_8_1.py`, `QA_LIVESTOCK_V0_8_1.json`, and `data/livestock_validation_by_species.csv`.
 
 - deployment hotfix: mode labels now have an app-level fallback, preventing a KeyError during mixed-version Streamlit/GitHub redeploys.
+
+Localization hotfix v0.8.1:
+- audited all user-facing Kazakh, Russian and English labels in `app.py` and `core/config.py`;
+- removed cross-language UI leakage such as `поголовье`, `benchmark`, `CAGR`, `LU`, `ML-болжам`, `utility`, `fallback` and `proxy` from Kazakh/Russian display text;
+- localized units, report/export labels, model-tier labels and safe fallback labels;
+- calculation logic, datasets, 0.60/0.40 weights and livestock forecasting were not changed.

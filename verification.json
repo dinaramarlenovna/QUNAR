@@ -1,26 +1,61 @@
 {
+  "version": "0.8.3-district-crop-2025",
   "best_model": "Random Forest",
-  "test_rows": 255,
-  "sauran_corn_prediction_centners_ha": 37.548385515872994,
+  "production_training_rows": 1362,
+  "production_training_period": "2004-2025",
+  "districts": 17,
+  "crops": 6,
+  "new_rows_2024": 68,
+  "new_rows_2025": 71,
+  "groupkfold_by_year": {
+    "MAE": 8.83990056310843,
+    "RMSE": 16.198142759537912,
+    "R2": 0.9262796531797115
+  },
+  "latest_forward_block": {
+    "MAE": 16.699238687098514,
+    "RMSE": 30.538229403349273,
+    "R2": 0.8078978453286044,
+    "train_start": 2004,
+    "train_end": 2020,
+    "test_start": 2021,
+    "test_end": 2025,
+    "train_N": 1036,
+    "test_N": 326,
+    "test_years": [
+      2021,
+      2022,
+      2023,
+      2024,
+      2025
+    ],
+    "baseline": {
+      "MAE": 16.87990797546012,
+      "RMSE": 32.11173397045007,
+      "R2": 0.787591425591082
+    }
+  },
+  "sauran_corn_prediction_centners_ha": 63.942907,
   "resource_test": {
     "water_total_m3": 100000.0,
     "water_reused_m3": 10000.0,
     "freshwater_m3": 90000.0,
     "water_m3_per_ha": 5000.0,
+    "freshwater_m3_per_ha": 4500.0,
+    "reference_pumping_energy_kwh": 70509.0,
     "energy_kwh": 5000.0,
     "energy_kwh_per_ha": 250.0,
     "operational_co2e_kg": 2500.0,
     "operational_co2e_kg_per_ha": 125.0
   },
   "reliability_test": {
-    "score": 75,
+    "score": 78,
     "level": "high",
-    "components": {
-      "field_geometry": true,
-      "live_climate": false,
-      "actual_water": true,
-      "actual_energy": true,
-      "emission_factor": true
-    }
+    "definition": "transparent support index; not a statistical confidence interval"
+  },
+  "integrity": {
+    "duplicate_district_crop_year_keys": 0,
+    "missing_required_ml_fields": 0,
+    "all_update_rows_included": true
   }
 }
