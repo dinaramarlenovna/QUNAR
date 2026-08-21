@@ -1,0 +1,15 @@
+Crop,RU,KK,Model tier,Evidence/status,Status
+Wheat,Пшеница,Бидай,ML,2004-2023 district-year panel,active
+Corn,Кукуруза,Жүгері,ML,2004-2023 district-year panel,active
+Rice,Рис,Күріш,ML,2004-2023 district-year panel,active
+Cotton,Хлопок,Мақта,ML,2004-2023 district-year panel,active
+Sunflower,Подсолнечник,Күнбағыс,ML,2004-2023 district-year panel,active
+Potato,Картофель,Картоп,ML,2004-2023 district-year panel,active
+Barley,Ячмень,Арпа,STAT,BNS crop-yield series available; district-year calibration pending,candidate
+Safflower,Сафлор,Мақсары,STAT,BNS crop-yield series available; district-year calibration pending,candidate
+Open-field vegetables,Овощи открытого грунта,Ашық топырақтағы көкөністер,STAT,BNS regional crop-yield series available; district-year calibration pending,candidate
+Melons,Бахчевые культуры,Бақша дақылдары,STAT,BNS regional crop-yield series available; district-year calibration pending,candidate
+Grapes,Виноград,Жүзім,STAT,BNS regional crop-yield series available; perennial-crop module required,candidate
+Pome and stone fruits,Семечковые и косточковые плоды,Шекілдеуікті және сүйекті жемістер,STAT,BNS regional crop-yield series available; perennial-crop module required,candidate
+Other fruits and berries,Прочие плоды и ягоды,Өзге жемістер мен жидектер,STAT,BNS regional crop-yield series available; perennial-crop module required,candidate
+Nuts,Орехи,Жаңғақтар,STAT,BNS regional crop-yield series available; perennial-crop module required,candidate

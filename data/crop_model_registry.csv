@@ -1,0 +1,19 @@
+Code,RU,KK,CLREM_product,Model_tier,Status,EN
+Wheat,Пшеница,Бидай,Пшеница,ML + QŪNAR,ML yield + QŪNAR decision layer,Wheat
+Corn,Кукуруза,Жүгері,Кукуруза (маис),ML + QŪNAR,ML yield + QŪNAR decision layer,Corn
+Rice,Рис,Күріш,,ML,ML yield; QŪNAR decision layer unavailable,Rice
+Cotton,Хлопок,Мақта,"Хлопок, очищенный или не очищенный от семян",ML + QŪNAR,ML yield + QŪNAR decision layer,Cotton
+Sunflower,Подсолнечник,Күнбағыс,Семена подсолнечника,ML + QŪNAR,ML yield + QŪNAR decision layer,Sunflower
+Potato,Картофель,Картоп,Картофель,ML + QŪNAR,ML yield + QŪNAR decision layer,Potato
+Barley,Ячмень,Арпа,Ячмень,QŪNAR,Yield ML excluded: supplied barley yield series duplicates wheat,Barley
+Cabbage,Капуста,Қырыққабат,Капуста,QŪNAR,District QŪNAR decision layer,Cabbage
+Melons,Бахчевые культуры,Бақша дақылдары,Культуры бахчевые,QŪNAR,District QŪNAR decision layer,Melons
+Cucumbers,Огурцы и корнишоны,Қияр және корнишон,Огурцы и корнишоны,QŪNAR,District QŪNAR decision layer,Cucumbers
+Tomatoes,Томаты,Қызанақ,Помидоры,QŪNAR,District QŪNAR decision layer,Tomatoes
+Carrots,Морковь и турнепс,Сәбіз және тарна,Морковь и турнепс,QŪNAR,District QŪNAR decision layer,Carrots and turnips
+Onion,Лук,Пияз,Лук,QŪNAR,District QŪNAR decision layer,Onion
+PomeStone,Семечковые и косточковые плоды,Шекілдеуікті және сүйекті жемістер,Плоды семечковые и косточковые,QŪNAR,District QŪNAR decision layer; perennial crop,Pome and stone fruits
+OtherOilseeds,Прочие масличные,Өзге майлы дақылдар,"Семена масличные прочие, не включенные в другие группировки",QŪNAR,District QŪNAR decision layer,Other oilseeds
+Forage,Кормовые культуры,Мал азықтық дақылдар,Культуры кормовые,QŪNAR,District QŪNAR decision layer,Forage crops
+FreshGrapes,Виноград свежий,Жаңа жүзім,Виноград свежий,Observed evidence,Observed 2023 cooperative evidence only; no all-district QŪNAR layer,Fresh grapes
+OtherFruits,Прочие ягоды и плоды,Өзге жидектер мен жемістер,Ягоды и плоды прочие,Observed evidence,Observed 2023 cooperative evidence only; no all-district QŪNAR layer,Other berries and fruits
