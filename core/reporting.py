@@ -42,8 +42,10 @@ def _unique_inputs(payloads):
 
 def _xlsx_formats(wb):
     return {
-        "brand": wb.add_format({"bold": True, "font_size": 24, "font_color": "#1F5135"}),
-        "subtitle": wb.add_format({"bold": True, "font_size": 11, "font_color": "#52665A"}),
+        "brand": wb.add_format({"bold": True, "font_size": 26, "font_color": "#1F5135", "align": "center", "valign": "vcenter"}),
+        "brand_line": wb.add_format({"font_size": 12, "font_color": "#4A514D", "align": "center", "valign": "vcenter"}),
+        "brand_initial": wb.add_format({"bold": True, "font_size": 13, "font_color": "#111111"}),
+        "subtitle": wb.add_format({"font_size": 10.5, "font_color": "#53675A", "align": "center", "valign": "vcenter"}),
         "section": wb.add_format({"bold": True, "font_size": 16, "font_color": "#20372A", "bottom": 2, "bottom_color": "#8BAD96"}),
         "header": wb.add_format({"bold": True, "bg_color": "#EAF3EC", "font_color": "#234F36", "border": 1, "border_color": "#D7E3DA", "text_wrap": True, "valign": "vcenter"}),
         "cell": wb.add_format({"valign": "top", "text_wrap": True, "border": 1, "border_color": "#E5EAE6"}),
@@ -67,18 +69,40 @@ def _write_payload_sheet(writer, sheet_name: str, payload: dict, include_inputs:
     ws.set_column("C:C", 58)
     ws.set_row(0, 34)
 
-    brand_acronym = _clean(payload.get("brand_acronym", ""))
-    brand_heading = "QŪNAR" + (f" - {brand_acronym}" if brand_acronym else "")
-    ws.merge_range("A1:C1", brand_heading, fm["brand"])
-    ws.merge_range("A2:C2", payload.get("mode_label", ""), fm["section"])
-    if payload.get("brand_translation") and _clean(payload.get("brand_translation")) != brand_acronym:
-        ws.merge_range("A3:C3", payload.get("brand_translation", ""), fm["subtitle"])
-        meta_row = 4
-    else:
-        meta_row = 3
-    ws.write(meta_row - 1, 0, payload.get("generated_label", "Generated"), fm["small"])
-    ws.write(meta_row - 1, 1, payload.get("generated_at", datetime.now().strftime("%Y-%m-%d %H:%M")), fm["small"])
-    row = 5
+    lang = (payload.get("lang") or "en").strip()
+    local_brand = _clean(payload.get("brand_acronym", ""))
+    english_expansion = "Quantified Utilization of Natural Agricultural Resources"
+
+    ws.set_row(0, 38)
+    ws.set_row(1, 24)
+    ws.merge_range("A1:C1", "QŪNAR", fm["brand"])
+    ws.merge_range("A2:C2", "", fm["brand_line"])
+    ws.write_rich_string(
+        "A2",
+        fm["brand_initial"], "Q",
+        "uantified ",
+        fm["brand_initial"], "U",
+        "tilization of ",
+        fm["brand_initial"], "N",
+        "atural ",
+        fm["brand_initial"], "A",
+        "gricultural ",
+        fm["brand_initial"], "R",
+        "esources",
+        fm["brand_line"],
+    )
+
+    row_cursor = 2
+    if lang != "en" and local_brand and local_brand != english_expansion:
+        ws.merge_range(row_cursor, 0, row_cursor, 2, local_brand, fm["subtitle"])
+        row_cursor += 1
+
+    ws.merge_range(row_cursor, 0, row_cursor, 2, payload.get("mode_label", ""), fm["section"])
+    row_cursor += 1
+    ws.write(row_cursor, 0, payload.get("generated_label", "Generated"), fm["small"])
+    ws.write(row_cursor, 1, payload.get("generated_at", datetime.now().strftime("%Y-%m-%d %H:%M")), fm["small"])
+
+    row = max(row_cursor + 2, 6)
     summary = payload.get("summary", []) or []
     if summary:
         ws.merge_range(row, 0, row, 2, payload.get("summary_title", "Key results"), fm["section"]); row += 2
@@ -190,12 +214,34 @@ def build_combined_excel_report(payloads: list[dict]) -> bytes:
         lang = (payloads[0].get("lang") if payloads else "en") or "en"
         combined_title = {"kk":"Біріктірілген аналитикалық есеп","ru":"Сводный аналитический отчет","en":"Integrated analytical report"}.get(lang,"Integrated analytical report")
         included_title = {"kk":"Қосылған бөлімдер","ru":"Включенные разделы","en":"Included sections"}.get(lang,"Included sections")
-        combined_acronym = _clean(payloads[0].get("brand_acronym", "")) if payloads else ""
-        combined_brand = "QŪNAR" + (f" - {combined_acronym}" if combined_acronym else "")
-        summary_ws.merge_range("A1:C1", combined_brand, fm["brand"])
-        summary_ws.merge_range("A2:C2", combined_title, fm["section"])
-        summary_ws.write("A3", included_title, fm["section"])
-        row = 5
+        combined_local_brand = _clean(payloads[0].get("brand_acronym", "")) if payloads else ""
+        english_expansion = "Quantified Utilization of Natural Agricultural Resources"
+        summary_ws.set_row(0, 38)
+        summary_ws.set_row(1, 24)
+        summary_ws.merge_range("A1:C1", "QŪNAR", fm["brand"])
+        summary_ws.merge_range("A2:C2", "", fm["brand_line"])
+        summary_ws.write_rich_string(
+            "A2",
+            fm["brand_initial"], "Q",
+            "uantified ",
+            fm["brand_initial"], "U",
+            "tilization of ",
+            fm["brand_initial"], "N",
+            "atural ",
+            fm["brand_initial"], "A",
+            "gricultural ",
+            fm["brand_initial"], "R",
+            "esources",
+            fm["brand_line"],
+        )
+        summary_row = 2
+        if lang != "en" and combined_local_brand and combined_local_brand != english_expansion:
+            summary_ws.merge_range(summary_row, 0, summary_row, 2, combined_local_brand, fm["subtitle"])
+            summary_row += 1
+        summary_ws.merge_range(summary_row, 0, summary_row, 2, combined_title, fm["section"])
+        summary_row += 2
+        summary_ws.write(summary_row, 0, included_title, fm["section"])
+        row = summary_row + 2
         for i, payload in enumerate(payloads, 1):
             summary_ws.write(row, 0, f"{i}. {payload.get('mode_label','')}", fm["key"])
             recs = payload.get("recommendations", []) or []
@@ -242,8 +288,10 @@ def _pdf_styles(regular, bold):
     from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
     styles = getSampleStyleSheet()
     return {
-        "title": ParagraphStyle("QunarTitle", parent=styles["Title"], fontName=bold, fontSize=25, leading=29, textColor=colors.HexColor("#1F5135"), alignment=TA_CENTER, spaceAfter=8),
-        "subtitle": ParagraphStyle("QunarSubtitle", parent=styles["BodyText"], fontName=bold, fontSize=10.5, leading=15, textColor=colors.HexColor("#53675A"), alignment=TA_CENTER, spaceAfter=15),
+        "title": ParagraphStyle("QunarTitle", parent=styles["Title"], fontName=bold, fontSize=29, leading=33, textColor=colors.HexColor("#1F5135"), alignment=TA_CENTER, spaceAfter=5),
+        "brand_expansion": ParagraphStyle("QunarBrandExpansion", parent=styles["BodyText"], fontName=regular, fontSize=12.2, leading=16, textColor=colors.HexColor("#4A514D"), alignment=TA_CENTER, spaceAfter=4),
+        "brand_local": ParagraphStyle("QunarBrandLocal", parent=styles["BodyText"], fontName=regular, fontSize=10.2, leading=14, textColor=colors.HexColor("#53675A"), alignment=TA_CENTER, spaceAfter=13),
+        "subtitle": ParagraphStyle("QunarSubtitle", parent=styles["BodyText"], fontName=regular, fontSize=10.5, leading=15, textColor=colors.HexColor("#53675A"), alignment=TA_CENTER, spaceAfter=15),
         "h2": ParagraphStyle("QunarH2", parent=styles["Heading2"], fontName=bold, fontSize=15, leading=19, textColor=colors.HexColor("#24342A"), spaceBefore=13, spaceAfter=8),
         "h3": ParagraphStyle("QunarH3", parent=styles["Heading3"], fontName=bold, fontSize=11.5, leading=15, textColor=colors.HexColor("#234F36"), spaceBefore=7, spaceAfter=4),
         "body": ParagraphStyle("QunarBody", parent=styles["BodyText"], fontName=regular, fontSize=10.3, leading=15, textColor=colors.HexColor("#202722"), spaceAfter=6),
@@ -285,12 +333,22 @@ def _append_payload_pdf(story, payload: dict, styles, include_inputs: bool = Tru
     from reportlab.platypus import Paragraph, Spacer, Table, TableStyle, Image, PageBreak
     body, h2, h3, key, small = styles["body"], styles["h2"], styles["h3"], styles["key"], styles["small"]
     if include_brand:
-        brand_acronym = str(payload.get("brand_acronym", "") or "").strip()
-        brand_heading = "QŪNAR" + (f" - {brand_acronym}" if brand_acronym else "")
-        story.append(Paragraph(html.escape(brand_heading), styles["title"]))
-        brand_translation = str(payload.get("brand_translation", "") or "").strip()
-        if brand_translation and brand_translation != brand_acronym:
-            story.append(Paragraph(html.escape(brand_translation), styles["subtitle"]))
+        lang = str(payload.get("lang", "en") or "en")
+        local_brand = str(payload.get("brand_acronym", "") or "").strip()
+        english_expansion = "Quantified Utilization of Natural Agricultural Resources"
+        expansion_markup = (
+            '<font color="#111111" size="13.4"><b>Q</b></font>uantified '
+            '<font color="#111111" size="13.4"><b>U</b></font>tilization of '
+            '<font color="#111111" size="13.4"><b>N</b></font>atural '
+            '<font color="#111111" size="13.4"><b>A</b></font>gricultural '
+            '<font color="#111111" size="13.4"><b>R</b></font>esources'
+        )
+        story.append(Paragraph("QŪNAR", styles["title"]))
+        story.append(Paragraph(expansion_markup, styles["brand_expansion"]))
+        if lang != "en" and local_brand and local_brand != english_expansion:
+            story.append(Paragraph(html.escape(local_brand), styles["brand_local"]))
+        else:
+            story.append(Spacer(1, 3*mm))
     story.append(Paragraph(html.escape(payload.get("mode_label", "")), h2))
     story.append(Paragraph(html.escape(f"{payload.get('generated_label','Generated')}: {payload.get('generated_at','')}"), small))
 
@@ -406,9 +464,24 @@ def build_combined_pdf_report(payloads: list[dict]) -> bytes:
     lang = (payloads[0].get("lang") if payloads else "en") or "en"
     combined_title = {"kk":"Біріктірілген аналитикалық есеп","ru":"Сводный аналитический отчет","en":"Integrated analytical report"}.get(lang,"Integrated analytical report")
     structure_title = {"kk":"Есеп құрылымы","ru":"Структура отчета","en":"Report structure"}.get(lang,"Report structure")
-    combined_acronym = str(payloads[0].get("brand_acronym", "") or "").strip() if payloads else ""
-    combined_brand = "QŪNAR" + (f" - {combined_acronym}" if combined_acronym else "")
-    story = [Paragraph(html.escape(combined_brand), styles["title"]), Paragraph(combined_title, styles["subtitle"])]
+    combined_local_brand = str(payloads[0].get("brand_acronym", "") or "").strip() if payloads else ""
+    english_expansion = "Quantified Utilization of Natural Agricultural Resources"
+    expansion_markup = (
+        '<font color="#111111" size="13.4"><b>Q</b></font>uantified '
+        '<font color="#111111" size="13.4"><b>U</b></font>tilization of '
+        '<font color="#111111" size="13.4"><b>N</b></font>atural '
+        '<font color="#111111" size="13.4"><b>A</b></font>gricultural '
+        '<font color="#111111" size="13.4"><b>R</b></font>esources'
+    )
+    story = [
+        Paragraph("QŪNAR", styles["title"]),
+        Paragraph(expansion_markup, styles["brand_expansion"]),
+    ]
+    if lang != "en" and combined_local_brand and combined_local_brand != english_expansion:
+        story.append(Paragraph(html.escape(combined_local_brand), styles["brand_local"]))
+    else:
+        story.append(Spacer(1, 3*mm))
+    story.append(Paragraph(combined_title, styles["subtitle"]))
     story.append(Paragraph(structure_title, styles["h2"]))
     for i, payload in enumerate(payloads, 1):
         story.append(Paragraph(f"{i}. {html.escape(payload.get('mode_label',''))}", styles["key"]))
