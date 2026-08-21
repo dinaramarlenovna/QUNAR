@@ -26,6 +26,12 @@ from core.admin_boundaries import detect_point, detect_polygon, boundary_geojson
 from core.optimizer import optimize_structure
 from core.clrem import check_crop_codes, label as extended_crop_label, method as crop_method, scenario_for_crop, observed_for_crop, observed_extra_for_district, decision_table
 from core.reporting import build_excel_report, build_pdf_report, build_combined_excel_report, build_combined_pdf_report
+from core.environment import environmental_diagnostics, diversification_metrics
+from core.livestock import (
+    SPECIES, SPECIES_LABELS, PRODUCT_TYPES, PRODUCT_LABELS, DEFAULT_PRODUCT,
+    livestock_resource_metrics, district_livestock_profile, district_species_history,
+    district_species_benchmark, regional_productivity_benchmarks,
+)
 
 st.set_page_config(page_title=APP_NAME, page_icon="🌱", layout="wide", initial_sidebar_state="expanded")
 
@@ -142,7 +148,7 @@ def render_report_workspace(lang: str):
         "xlsx": {"kk":"Толық Excel жүктеу","ru":"Скачать полный Excel","en":"Download full Excel"}[lang],
     }
     basket = _report_basket()
-    with st.expander(f"{labels['title']} ({len(basket)}/4)", expanded=False):
+    with st.expander(f"{labels['title']} ({len(basket)}/5)", expanded=False):
         if not basket:
             st.caption(labels["empty"])
             return
@@ -255,7 +261,7 @@ render_report_workspace(lang)
 st.info(t["session_warning"])
 st.caption(t["save_restore_note"])
 
-mode_keys = ["mode1", "mode2", "mode3", "mode4"]
+mode_keys = ["mode1", "mode2", "mode3", "mode4", "mode5"]
 mode_key = st.sidebar.radio(t["mode"], mode_keys, format_func=lambda k: t[k])
 district = st.sidebar.selectbox(t["district"], DISTRICT_ORDER, format_func=district_label)
 
@@ -406,13 +412,24 @@ map_district = official_match.get("district") if official_match else None
 map_district_share = official_match.get("share") if official_match else None
 used_district = map_district if (location_source == "map" and map_district) else district
 
+area_input_label = t["area"] if mode_key != "mode5" else {
+    "kk":"Жайылым / өндірістік жер алаңы, га",
+    "ru":"Площадь пастбища / производственной территории, га",
+    "en":"Pasture / production land area, ha",
+}[lang]
+
 with st.form("farm_inputs", clear_on_submit=False):
     c1, c2, c3 = st.columns(3)
     with c1:
-        area_ha = st.number_input(t["area"], min_value=0.1, value=10.0, step=0.5, help=t["declared_area_help"])
+        area_ha = st.number_input(area_input_label, min_value=0.1, value=10.0, step=0.5, help=t["declared_area_help"])
     with c2:
+        available_water_label = t["water"] if mode_key != "mode5" else {
+            "kk":"Жылдық қолжетімді су көлемі, м³",
+            "ru":"Доступный годовой объем воды, м³",
+            "en":"Available annual water volume, m³",
+        }[lang]
         available_water = st.number_input(
-            t["water"], min_value=0.0, value=0.0, step=1000.0, help=t["available_water_note"]
+            available_water_label, min_value=0.0, value=0.0, step=1000.0, help=t["available_water_note"]
         )
     with c3:
         st.caption(t["nasa_auto_note"])
@@ -427,6 +444,68 @@ with st.form("farm_inputs", clear_on_submit=False):
         crop = st.selectbox(t["crop"], check_crop_codes(), format_func=lambda c: extended_crop_label(c, lang))
     elif mode_key == "mode2":
         crop = st.selectbox(t["crop"], check_crop_codes(), format_func=lambda c: extended_crop_label(c, lang))
+
+    livestock_species = "Cattle"
+    livestock_heads = 0.0
+    livestock_fodder_t = 0.0
+    livestock_feed_source = "unknown"
+    livestock_production_amount = 0.0
+    livestock_production_kind = "meat_tonnes"
+    if mode_key == "mode5":
+        st.markdown("#### " + {"kk":"Мал шаруашылығының өндірістік профилі","ru":"Производственный профиль животноводства","en":"Livestock production profile"}[lang])
+        l1,l2,l3,l4 = st.columns(4)
+        with l1:
+            livestock_species = st.selectbox(
+                {"kk":"Мал түрі","ru":"Вид животных","en":"Livestock type"}[lang],
+                SPECIES,
+                format_func=lambda x: SPECIES_LABELS[lang][x],
+            )
+        with l2:
+            livestock_heads = st.number_input(
+                {"kk":"Поголовье, бас","ru":"Поголовье, голов","en":"Number of animals, head"}[lang],
+                min_value=0.0, value=0.0, step=10.0,
+                help={
+                    "kk":"0 қалдырылса, аудан бойынша соңғы қолжетімді ресми поголовье анықтамалық сценарий ретінде пайдаланылады.",
+                    "ru":"Если оставить 0, QŪNAR использует последнее доступное официальное поголовье района как справочный сценарий.",
+                    "en":"If left at 0, QŪNAR uses the latest available official district herd count as a reference scenario.",
+                }[lang],
+            )
+        with l3:
+            livestock_production_kind = st.selectbox(
+                {"kk":"Өнім түрі","ru":"Вид продукции","en":"Product type"}[lang],
+                PRODUCT_TYPES,
+                index=PRODUCT_TYPES.index(DEFAULT_PRODUCT.get(livestock_species, "meat_tonnes")),
+                format_func=lambda x: PRODUCT_LABELS[lang][x],
+            )
+        with l4:
+            livestock_production_amount = st.number_input(
+                {"kk":"Жылдық өнім көлемі","ru":"Годовой объем продукции","en":"Annual production volume"}[lang],
+                min_value=0.0, value=0.0, step=1.0,
+                help={
+                    "kk":"0 мәні нақты өнім көлемі белгісіз екенін білдіреді; аймақтық анықтамалық өнімділік бөлек көрсетіледі.",
+                    "ru":"0 означает, что фактический выпуск неизвестен; региональный ориентир производительности будет показан отдельно.",
+                    "en":"0 means observed production is unknown; a regional productivity reference is shown separately.",
+                }[lang],
+            )
+
+        livestock_feed_source = st.selectbox(
+            {"kk":"Жемшөп қоры туралы дерек","ru":"Данные о годовом запасе кормов","en":"Annual feed-supply data"}[lang],
+            ["unknown", "own"],
+            format_func=lambda x: {
+                "unknown":{"kk":"Білмеймін / анықтамалық қажеттілікті есептеу","ru":"Не знаю / рассчитать нормативную потребность","en":"Unknown / calculate reference requirement"}[lang],
+                "own":{"kk":"Өз дерегімді енгізу","ru":"Ввести свои данные","en":"Enter my data"}[lang],
+            }[x],
+        )
+        if livestock_feed_source == "own":
+            livestock_fodder_t = st.number_input(
+                {"kk":"Жылдық жемшөп қоры, т құрғақ зат","ru":"Годовой запас кормов, т сухого вещества","en":"Annual feed supply, t dry matter"}[lang],
+                min_value=0.0, value=0.0, step=1.0,
+            )
+        st.caption({
+            "kk":"Су мен жемшөптің анықтамалық қажеттілігі мал түріне және температураға байланысты коэффициенттермен автоматты есептеледі. Белгісіз нақты мәндер нөл ретінде түсіндірілмейді.",
+            "ru":"Справочная потребность в воде и кормах рассчитывается автоматически по виду животных и температуре. Неизвестные фактические значения не трактуются как нулевое потребление.",
+            "en":"Reference water and feed requirements are calculated automatically from species and temperature. Unknown observed values are not treated as zero use.",
+        }[lang])
 
     # Interface detail levels change both the amount of input and the amount of model detail shown.
     # Basic: essential operational inputs. Advanced: technologies, tariffs and scenarios.
@@ -449,8 +528,36 @@ with st.form("farm_inputs", clear_on_submit=False):
     expected_yield_c_ha = 0.0
     selling_price_kzt_t = 0.0
     variable_cost_kzt_ha = 0.0
+    # Optional environmental observations use None for "unknown".
+    # A measured zero remains a valid observation and is therefore distinct from missing data.
+    pesticide_kg_ha = None
+    salinized_share_pct = None
+    pasture_degraded_share_pct = None
 
-    if user_level == "farmer":
+    if mode_key == "mode5":
+        st.markdown("#### " + {"kk":"Мал шаруашылығы ресурстары","ru":"Ресурсы животноводства","en":"Livestock resources"}[lang])
+        lr1, lr2 = st.columns(2)
+        with lr1:
+            water_used = st.number_input(
+                {"kk":"Нақты жылдық су тұтынуы, м³","ru":"Фактическое годовое водопотребление, м³","en":"Observed annual water use, m³"}[lang],
+                min_value=0.0, value=0.0, step=100.0,
+            )
+        with lr2:
+            energy = st.number_input(
+                {"kk":"Нақты жылдық энергия тұтынуы, кВт·сағ","ru":"Фактическое годовое энергопотребление, кВт·ч","en":"Observed annual energy use, kWh"}[lang],
+                min_value=0.0, value=0.0, step=100.0,
+            )
+        if user_level == "researcher":
+            ef = st.number_input(t["ef"], min_value=0.0, value=float(DEFAULT_EF_KZ_KGCO2_PER_KWH), step=0.001)
+            st.caption(t["ef_source"])
+        else:
+            ef = float(DEFAULT_EF_KZ_KGCO2_PER_KWH)
+        st.caption({
+            "kk":"0 нақты нөл ретінде қабылданбайды: мұндай жағдайда QŪNAR фактілік тұтынуды белгісіз деп сақтап, су мен жемшөптің анықтамалық қажеттілігін бөлек есептейді.",
+            "ru":"Значение 0 здесь означает отсутствие фактических данных. QŪNAR сохраняет его как неизвестное наблюдение и отдельно рассчитывает справочную потребность в воде и кормах.",
+            "en":"A value of 0 means observed data are unavailable. QŪNAR keeps the observation unknown and calculates reference water and feed requirements separately.",
+        }[lang])
+    elif user_level == "farmer":
         st.markdown("#### " + {"kk":"Негізгі шаруашылық деректері","ru":"Основные данные хозяйства","en":"Essential farm data"}[lang])
         b1,b2,b3=st.columns(3)
         with b1:
@@ -501,6 +608,68 @@ with st.form("farm_inputs", clear_on_submit=False):
 
         st.caption(t["api_offline"])
 
+    if mode_key == "mode5":
+        with st.expander({"kk":"Жайылымның экологиялық диагностикасы (міндетті емес)","ru":"Экологическая диагностика пастбища (необязательно)","en":"Pasture environmental diagnostics (optional)"}[lang], expanded=False):
+            pasture_source = st.selectbox(
+                {"kk":"Жайылым деградациясы туралы дерек","ru":"Данные о деградации пастбища","en":"Pasture-degradation data"}[lang],
+                ["unknown", "own"],
+                format_func=lambda x: {
+                    "unknown":{"kk":"Білмеймін / дерек жоқ","ru":"Не знаю / данных нет","en":"Unknown / no data"}[lang],
+                    "own":{"kk":"Өз дерегімді енгізу","ru":"Ввести свои данные","en":"Enter my data"}[lang],
+                }[x],
+            )
+            if pasture_source == "own":
+                pasture_degraded_share_pct = st.number_input(
+                    {"kk":"Деградацияланған жайылым үлесі, %","ru":"Доля деградированного пастбища, %","en":"Degraded pasture share, %"}[lang],
+                    min_value=0.0, max_value=100.0, value=0.0, step=1.0,
+                )
+            else:
+                pasture_degraded_share_pct = None
+            st.caption({
+                "kk":"«Дерек жоқ» нөлдік деградацияны білдірмейді. 0% тек нақты өлшеу немесе бағалау бар кезде енгізіледі.",
+                "ru":"«Данных нет» не означает нулевую деградацию. Значение 0% используется только при наличии фактической оценки.",
+                "en":"No data does not mean zero degradation. Enter 0% only when an observed assessment supports it.",
+            }[lang])
+    elif mode_key in ("mode1","mode2","mode4"):
+        with st.expander({"kk":"Экологиялық диагностика (міндетті емес)","ru":"Экологическая диагностика (необязательно)","en":"Environmental diagnostics (optional)"}[lang], expanded=False):
+            ee1,ee2 = st.columns(2)
+            with ee1:
+                pesticide_source = st.selectbox(
+                    {"kk":"Пестицид жүктемесі туралы дерек","ru":"Данные о пестицидной нагрузке","en":"Pesticide-load data"}[lang],
+                    ["unknown", "own"],
+                    format_func=lambda x: {
+                        "unknown":{"kk":"Білмеймін / дерек жоқ","ru":"Не знаю / данных нет","en":"Unknown / no data"}[lang],
+                        "own":{"kk":"Өз дерегімді енгізу","ru":"Ввести свои данные","en":"Enter my data"}[lang],
+                    }[x],
+                )
+                if pesticide_source == "own":
+                    pesticide_kg_ha = st.number_input(
+                        {"kk":"Пестицид жүктемесі, кг/га","ru":"Пестицидная нагрузка, кг/га","en":"Pesticide load, kg/ha"}[lang],
+                        min_value=0.0, value=0.0, step=0.01,
+                    )
+                else:
+                    pesticide_kg_ha = None
+            with ee2:
+                salinity_source = st.selectbox(
+                    {"kk":"Тұздану туралы дерек","ru":"Данные о засолении","en":"Salinity data"}[lang],
+                    ["unknown", "own"],
+                    format_func=lambda x: {
+                        "unknown":{"kk":"Білмеймін / дерек жоқ","ru":"Не знаю / данных нет","en":"Unknown / no data"}[lang],
+                        "own":{"kk":"Өз дерегімді енгізу","ru":"Ввести свои данные","en":"Enter my data"}[lang],
+                    }[x],
+                )
+                if salinity_source == "own":
+                    salinized_share_pct = st.number_input(
+                        {"kk":"Тұзданған жер үлесі, %","ru":"Доля засоленной земли, %","en":"Salinized land share, %"}[lang],
+                        min_value=0.0, max_value=100.0, value=0.0, step=1.0,
+                    )
+                else:
+                    salinized_share_pct = None
+            st.caption({
+                "kk":"Белгісіз мәндер нөлге ауыстырылмайды және экологиялық қамту көрсеткішіне қосылмайды. Нөл тек нақты өлшенген нөл ретінде есептеледі.",
+                "ru":"Неизвестные значения не заменяются нулями и не входят в показатель полноты экологических данных. Ноль учитывается только как фактически подтвержденное значение.",
+                "en":"Unknown values are not replaced with zeros and are excluded from environmental data coverage. Zero is counted only when it is an observed value.",
+            }[lang])
     if crop is not None:
         with st.expander({"kk":"Экономикалық контур (міндетті емес)","ru":"Экономический контур (необязательно)","en":"Economic contour (optional)"}[lang], expanded=False):
             st.caption({
@@ -591,15 +760,35 @@ if submitted:
         "summary": [], "analysis": [], "recommendations": [], "table": None,
         "inputs": [
             [t["district"], district_label(used_district), {"kk":"Әкімшілік полигон/таңдау","ru":"Административный полигон/выбор","en":"Administrative polygon/selection"}[lang]],
-            [t["area"], f"{area_ha:.2f}", t["source_user"]],
+            [area_input_label, f"{area_ha:.2f}", t["source_user"]],
             [{"kk":"Есеп координатасы","ru":"Координаты расчета","en":"Calculation coordinates"}[lang], f"{calc_lat:.6f}, {calc_lon:.6f}", {"kk":"Карта/аудан","ru":"Карта/район","en":"Map/district"}[lang]],
-            [t["water"], f"{available_water:.2f}", t["source_user"]],
-            [t["water_used"], f"{effective_water_used:.2f}", t["source_user"] if water_input_source=="user" else (water_default_info.source_label if water_default_info else t["source_user"])],
-            [t["energy"], f"{energy:.2f}", t["source_user"]],
+            [available_water_label, f"{available_water:.2f}" if available_water > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], t["source_user"] if available_water > 0 else {"kk":"Енгізілмеген","ru":"Не введено","en":"Not entered"}[lang]],
+            [({"kk":"Нақты жылдық су тұтынуы, м³","ru":"Фактическое годовое водопотребление, м³","en":"Observed annual water use, m³"}[lang] if mode_key=="mode5" else t["water_used"]), f"{effective_water_used:.2f}" if effective_water_used > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], (t["source_user"] if water_input_source=="user" else (water_default_info.source_label if water_default_info else {"kk":"Енгізілмеген","ru":"Не введено","en":"Not entered"}[lang]))],
+            [t["energy"], f"{energy:.2f}" if energy > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], t["source_user"] if energy > 0 else {"kk":"Енгізілмеген","ru":"Не введено","en":"Not entered"}[lang]],
         ]
     }
     if crop is not None:
         report_payload["inputs"].append([t["crop"], extended_crop_label(crop, lang), t["source_user"]])
+    if mode_key == "mode5":
+        livestock_head_source_label = (
+            t["source_user"] if livestock_heads > 0
+            else {"kk":"Аудандық ресми анықтамалық сценарий","ru":"Районный официальный справочный сценарий","en":"Official district reference scenario"}[lang]
+        )
+        feed_source_label = (
+            t["source_user"] if livestock_feed_source == "own"
+            else {"kk":"Белгісіз; QŪNAR нормативтік қажеттілікті бөлек есептейді","ru":"Неизвестно; QŪNAR отдельно рассчитывает справочную потребность","en":"Unknown; QŪNAR calculates reference requirement separately"}[lang]
+        )
+        production_source_label = (
+            t["source_user"] if livestock_production_amount > 0
+            else {"kk":"Белгісіз","ru":"Неизвестно","en":"Unknown"}[lang]
+        )
+        report_payload["inputs"].extend([
+            [{"kk":"Мал түрі","ru":"Вид животных","en":"Livestock type"}[lang], SPECIES_LABELS[lang][livestock_species], t["source_user"]],
+            [{"kk":"Поголовье","ru":"Поголовье","en":"Animals"}[lang], f"{livestock_heads:.0f}" if livestock_heads > 0 else {"kk":"енгізілмеген","ru":"не введено","en":"not entered"}[lang], livestock_head_source_label],
+            [{"kk":"Жемшөп қоры","ru":"Запас кормов","en":"Feed reserve"}[lang], f"{livestock_fodder_t:.2f} т DM" if livestock_feed_source == "own" else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], feed_source_label],
+            [{"kk":"Өнім түрі","ru":"Вид продукции","en":"Product type"}[lang], PRODUCT_LABELS[lang][livestock_production_kind], t["source_user"]],
+            [{"kk":"Өнім көлемі","ru":"Объем продукции","en":"Production volume"}[lang], f"{livestock_production_amount:.2f}" if livestock_production_amount > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], production_source_label],
+        ])
     climate = district_climate(used_district) or {}
     baseline_climate = dict(climate)
     climate_source = t["fallback_source"]
@@ -615,11 +804,18 @@ if submitted:
             st.warning(t["nasa_error"])
 
     st.subheader(t["results"])
-    st.caption({
-        "kk":"QŪNAR аумақтың ресурстық және климаттық шектеулерін бір шешім кеңістігінде салыстырады. Көрсеткіштер салыстырмалы; дәлелдердің сенімділігі жеке көрсетіледі.",
-        "ru":"QŪNAR сопоставляет ресурсные и климатические ограничения территории в едином пространстве решений. Баллы имеют сравнительный смысл; сила доказательной базы показывается отдельно.",
-        "en":"QŪNAR compares territorial resource and climate constraints within one decision space. Scores are comparative; evidence strength is reported separately."
-    }[lang])
+    if mode_key == "mode5":
+        st.caption({
+            "kk":"Мал шаруашылығы модулі ауданның өндірістік құрылымын, климаттық экспозициясын және шаруашылық енгізген су, жемшөп, жайылым, энергия мен өнім деректерін біріктіреді.",
+            "ru":"Модуль животноводства объединяет наблюдаемую структуру района, климатическую экспозицию и введенные хозяйством данные по воде, кормам, пастбищу, энергии и продукции.",
+            "en":"The livestock module combines the observed district production structure, climate exposure and farm-entered water, feed, pasture, energy and production data."
+        }[lang])
+    else:
+        st.caption({
+            "kk":"QŪNAR аумақтың ресурстық және климаттық шектеулерін бір шешім кеңістігінде салыстырады. Көрсеткіштер салыстырмалы; дәлелдердің сенімділігі жеке көрсетіледі.",
+            "ru":"QŪNAR сопоставляет ресурсные и климатические ограничения территории в едином пространстве решений. Баллы имеют сравнительный смысл; сила доказательной базы показывается отдельно.",
+            "en":"QŪNAR compares territorial resource and climate constraints within one decision space. Scores are comparative; evidence strength is reported separately."
+        }[lang])
 
     polygon_area = calc_polygon_area
     area_geometry_mismatch = False
@@ -648,7 +844,330 @@ if submitted:
                         "ru":"Контур не удалось надежно сопоставить с административными полигонами. Используется район, выбранный в форме.",
                         "en":"The polygon could not be matched reliably to an administrative boundary. The selected district is used."}[lang])
 
-    if mode_key == "mode1" and crop not in CROPS:
+    if mode_key == "mode5":
+        livestock = livestock_resource_metrics(
+            district=used_district,
+            species=livestock_species,
+            heads=livestock_heads,
+            pasture_ha=area_ha,
+            fodder_t=livestock_fodder_t,
+            available_water_m3=available_water,
+            water_used_m3=effective_water_used,
+            energy_kwh=energy,
+            emission_factor_kgco2_kwh=ef,
+            production_amount=livestock_production_amount,
+            production_kind=livestock_production_kind,
+            pasture_degraded_share_pct=pasture_degraded_share_pct,
+            climate=climate,
+        )
+        lp = district_livestock_profile(used_district)
+        benchmark = livestock.get("district_benchmark", {}) or {}
+        forecast = livestock.get("forecast", {}) or {}
+        species_validation = forecast.get("species_validation", {}) or {}
+        regional_prod = livestock.get("regional_productivity", {}) or {}
+        trend = livestock.get("regional_product_trend", {}) or {}
+
+        st.markdown("### " + {
+            "kk":"QŪNAR Livestock - ресурстық-прогноздық контур",
+            "ru":"QŪNAR Livestock - ресурсно-прогнозный контур",
+            "en":"QŪNAR Livestock - resource and forecasting layer",
+        }[lang])
+        st.caption({
+            "kk":"Контур аудандық мал санының ресми динамикасын, NASA POWER вегетациялық климатын, түрлік су-жемшөп нормативтерін және шаруашылық енгізген деректерді бір есептік жүйеде біріктіреді.",
+            "ru":"Контур объединяет официальную районную динамику поголовья, климатический профиль NASA POWER, видоспецифические ориентиры воды и кормов и фактические данные хозяйства.",
+            "en":"The layer integrates official district herd dynamics, NASA POWER growing-season climate, species-specific water/feed references and farm observations.",
+        }[lang])
+
+        # 1. District structure and herd state.
+        st.markdown("#### " + {
+            "kk":"Аудандық құрылым және мал саны",
+            "ru":"Районная структура и поголовье",
+            "en":"District structure and herd status",
+        }[lang])
+        effective_heads = float(livestock.get("heads") or 0.0)
+        heads_source = livestock.get("heads_source")
+        r1,r2,r3,r4 = st.columns(4)
+        r1.metric(
+            {"kk":"Мал шаруашылығының аудан өніміндегі үлесі","ru":"Доля животноводства в выпуске района","en":"Livestock share of district output"}[lang],
+            f"{float(lp.get('livestock_share_pct',0)):.1f}%"
+        )
+        r2.metric(
+            {"kk":"Есепте қолданылған поголовье","ru":"Поголовье в расчете","en":"Herd used in calculation"}[lang],
+            f"{effective_heads:,.0f}"
+        )
+        r3.metric(
+            {"kk":"Соңғы ресми аудандық мән","ru":"Последнее официальное значение района","en":"Latest official district count"}[lang],
+            f"{float(benchmark.get('latest_district_heads',0)):,.0f}" if benchmark.get("latest_district_heads") is not None else "—",
+            help=(
+                f"{benchmark.get('latest_year','—')}"
+                if benchmark.get("latest_year") is not None else None
+            ),
+        )
+        r4.metric(
+            {"kk":"Мал бірлігі (LU)","ru":"Условные единицы скота (LU)","en":"Livestock units (LU)"}[lang],
+            f"{float(livestock.get('livestock_units')):,.1f}" if livestock.get("livestock_units") is not None else "—"
+        )
+
+        if heads_source == "district_reference":
+            st.info({
+                "kk":f"Шаруашылықтың жеке поголовьесі енгізілмеді. Есептік сценарийде {benchmark.get('latest_year','соңғы')} жылғы аудандық ресми мән қолданылды: {effective_heads:,.0f} бас. Бұл мән шаруашылықтың нақты поголовьесі ретінде белгіленбейді.",
+                "ru":f"Поголовье конкретного хозяйства не введено. В справочном сценарии использовано последнее официальное районное значение за {benchmark.get('latest_year','последний доступный')} год: {effective_heads:,.0f} голов. В отчете оно сохраняется с признаком district reference.",
+                "en":f"No farm-specific herd count was entered. The reference scenario uses the latest official district value for {benchmark.get('latest_year','the latest available year')}: {effective_heads:,.0f} head, explicitly flagged as a district reference.",
+            }[lang])
+        benchmark_category = benchmark.get("benchmark_species")
+        if benchmark_category and str(benchmark_category) != str(livestock_species):
+            st.caption({
+                "kk":f"Ресми тарихи benchmark санаты: {benchmark_category}. Таңдалған түр үшін су және жемшөп коэффициенттері жеке қолданылады.",
+                "ru":f"Официальная историческая категория benchmark: {benchmark_category}. Видоспецифические коэффициенты воды и кормов для выбранного вида применяются отдельно.",
+                "en":f"Official historical benchmark category: {benchmark_category}. Species-specific water and feed coefficients are applied separately for the selected type.",
+            }[lang])
+
+        if benchmark.get("district_percentile") is not None:
+            st.caption({
+                "kk":f"{SPECIES_LABELS[lang][livestock_species]} бойынша ауданның поголовьесі салыстырмалы аудандық үлестірімнің {benchmark['district_percentile']:.0f}-перцентилінде; тарихи қатар {benchmark.get('history_start_year','—')}-{benchmark.get('latest_year','—')}, бақылау саны: {benchmark.get('observations','—')}.",
+                "ru":f"По категории «{SPECIES_LABELS[lang][livestock_species]}» район находится примерно на {benchmark['district_percentile']:.0f}-м перцентиле распределения поголовья среди доступных территорий; исторический ряд {benchmark.get('history_start_year','—')}-{benchmark.get('latest_year','—')}, наблюдений: {benchmark.get('observations','—')}.",
+                "en":f"For {SPECIES_LABELS[lang][livestock_species]}, the district is near the {benchmark['district_percentile']:.0f}th percentile of available district herd counts; history {benchmark.get('history_start_year','—')}-{benchmark.get('latest_year','—')}, observations: {benchmark.get('observations','—')}.",
+            }[lang])
+
+        if livestock.get("lu_per_pasture_ha") is not None:
+            st.metric(
+                {"kk":"LU / жайылым га","ru":"LU на гектар пастбища","en":"LU per pasture ha"}[lang],
+                f"{livestock['lu_per_pasture_ha']:.3f} LU/га"
+            )
+
+        # 2. Historical dynamics and one-step ML forecast.
+        st.markdown("#### " + {
+            "kk":"Тарихи динамика және ML-болжам",
+            "ru":"Историческая динамика и ML-прогноз",
+            "en":"Historical dynamics and ML forecast",
+        }[lang])
+        f1,f2,f3,f4 = st.columns(4)
+        f1.metric(
+            {"kk":"Соңғы бақылау","ru":"Последнее наблюдение","en":"Latest observation"}[lang],
+            f"{float(benchmark.get('latest_district_heads',0)):,.0f}" if benchmark.get("latest_district_heads") is not None else "—",
+            help=str(benchmark.get("latest_year",""))
+        )
+        f2.metric(
+            {"kk":"Келесі жылға ML-болжам","ru":"ML-прогноз на следующий год","en":"Next-year ML forecast"}[lang],
+            f"{float(forecast.get('forecast_heads')):,.0f}" if forecast.get("available") and forecast.get("publish_forecast") else "—",
+            delta=(f"{float(forecast.get('forecast_change_pct')):+.1f}%" if forecast.get("publish_forecast") and forecast.get("forecast_change_pct") is not None else None)
+        )
+        f3.metric(
+            "R² category (log, rolling-origin)",
+            f"{float(species_validation.get('r2_log')):.3f}" if species_validation.get("r2_log") is not None and pd.notna(species_validation.get("r2_log")) else "—"
+        )
+        f4.metric(
+            {"kk":"Категорияның медианалық APE","ru":"Медианная APE категории","en":"Category median APE"}[lang],
+            f"{float(species_validation.get('median_ape_pct')):.1f}%" if species_validation.get("median_ape_pct") is not None and pd.notna(species_validation.get("median_ape_pct")) else "—"
+        )
+
+        hist = district_species_history(used_district, livestock_species)
+        if not hist.empty:
+            hplot = hist.rename(columns={"Heads":"Observed"}).set_index("Year")[["Observed"]]
+            hplot["Forecast"] = float("nan")
+            if forecast.get("available") and forecast.get("publish_forecast"):
+                fy = int(forecast["forecast_year"])
+                if fy not in hplot.index:
+                    hplot.loc[fy, "Observed"] = float("nan")
+                hplot.loc[fy, "Forecast"] = float(forecast["forecast_heads"])
+                # Retain the latest observed point in the forecast series so the one-step path is visible.
+                ly = int(forecast["previous_year"])
+                hplot.loc[ly, "Forecast"] = float(forecast["previous_heads"])
+                hplot = hplot.sort_index()
+            st.line_chart(hplot)
+        if forecast.get("available") and not forecast.get("publish_forecast"):
+            st.warning({
+                "kk":f"Бұл санат бойынша ML-болжам жарияланбайды: санаттық rolling-origin тексеру жеткіліксіз (R²={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR тарихи динамика мен ресурстық диагностикаға сүйенеді.",
+                "ru":f"Для этой категории численный ML-прогноз не публикуется: покатегорийная rolling-origin проверка недостаточно надежна (R²={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR сохраняет историческую динамику и ресурсную диагностику без выдачи слабого прогноза.",
+                "en":f"A numerical ML forecast is withheld for this category because category-level rolling-origin validation is not reliable enough (R²={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR retains history and resource diagnostics without publishing a weak forecast.",
+            }[lang])
+        if forecast.get("available"):
+            climate_flag = {
+                "kk":"аймақтық медианамен толықтырылған" if forecast.get("climate_imputed") else "аудандық",
+                "ru":"дополнен региональной медианой" if forecast.get("climate_imputed") else "районный",
+                "en":"regional-median imputed" if forecast.get("climate_imputed") else "district",
+            }[lang]
+            st.caption({
+                "kk":f"Random Forest белгілері: аудан, мал санаты, алдыңғы жылғы поголовье, жыл, сәуір-қыркүйек температурасы, жауын-шашын, тамыр аймағының ылғалы және күн радиациясы. Rolling-origin тексеруі: {', '.join(map(str, forecast.get('validation_years', [])))}; жалпы n={forecast.get('validation_n',0)}, жалпы R²(log)={forecast.get('r2_log', float('nan')):.3f}; таңдалған санат n={species_validation.get('n',0)}, R²(log)={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климаттық анықтама: {forecast.get('climate_reference_year','—')} жыл, {climate_flag}.",
+                "ru":f"Random Forest использует район, категорию животных, поголовье предыдущего года, год, температуру апреля-сентября, осадки, влажность корневой зоны и солнечную радиацию. Rolling-origin проверка охватывает {', '.join(map(str, forecast.get('validation_years', [])))} годы; общее n={forecast.get('validation_n',0)}, общее R²(log)={forecast.get('r2_log', float('nan')):.3f}; для выбранной категории n={species_validation.get('n',0)}, R²(log)={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климатическая опора прогноза: {forecast.get('climate_reference_year','—')} год, профиль {climate_flag}.",
+                "en":f"Random Forest uses district, livestock category, previous-year herd size, year, Apr-Sep temperature, precipitation, root-zone wetness and solar radiation. Rolling-origin validation covers {', '.join(map(str, forecast.get('validation_years', [])))}; overall n={forecast.get('validation_n',0)}, overall R²(log)={forecast.get('r2_log', float('nan')):.3f}; selected-category n={species_validation.get('n',0)}, R²(log)={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%. Forecast climate reference: {forecast.get('climate_reference_year','—')}, {climate_flag} profile.",
+            }[lang])
+
+        # 3. Biological/resource reference layer.
+        st.markdown("#### " + {
+            "kk":"Су және жемшөп ресурстық теңгерімі",
+            "ru":"Ресурсный баланс воды и кормов",
+            "en":"Water and feed resource balance",
+        }[lang])
+        b1,b2,b3,b4 = st.columns(4)
+        b1.metric(
+            {"kk":"Су қажеттілігі, л/бас/тәул.","ru":"Справочная потребность в воде, л/гол./сут.","en":"Reference water need, L/head/day"}[lang],
+            f"{float(livestock.get('reference_water_l_head_day')):,.1f}" if livestock.get("reference_water_l_head_day") is not None else "—"
+        )
+        b2.metric(
+            {"kk":"Жылдық су қажеттілігі","ru":"Справочная годовая потребность в воде","en":"Reference annual water requirement"}[lang],
+            f"{float(livestock.get('reference_water_m3_year')):,.0f} м³" if livestock.get("reference_water_m3_year") is not None else "—"
+        )
+        b3.metric(
+            {"kk":"Жемшөп құрғақ заты / бас / тәул.","ru":"Сухое вещество корма, кг/гол./сут.","en":"Feed dry matter, kg/head/day"}[lang],
+            f"{float(livestock.get('reference_feed_dm_kg_head_day')):,.2f}" if livestock.get("reference_feed_dm_kg_head_day") is not None else "—"
+        )
+        b4.metric(
+            {"kk":"Жылдық жемшөп қажеттілігі","ru":"Справочная годовая потребность в кормах","en":"Reference annual feed requirement"}[lang],
+            f"{float(livestock.get('reference_feed_dm_t_year')):,.1f} т DM" if livestock.get("reference_feed_dm_t_year") is not None else "—"
+        )
+        st.caption({
+            "kk":f"Су анықтамасы {float(livestock.get('reference_temperature_c',25)):.1f} °C климаттық температурада есептелді; түрлік коэффициент көзі: {livestock.get('reference_source','—')}. Бұл шамалар жоспарлау ориентирі ретінде сақталады.",
+            "ru":f"Водный ориентир рассчитан для климатической температуры {float(livestock.get('reference_temperature_c',25)):.1f} °C; источник видоспецифических коэффициентов: {livestock.get('reference_source','—')}. Эти значения используются как прозрачный расчетный ориентир.",
+            "en":f"The water reference is evaluated at {float(livestock.get('reference_temperature_c',25)):.1f} °C; species coefficient source: {livestock.get('reference_source','—')}. Values are retained as transparent planning references.",
+        }[lang])
+
+        if livestock.get("reference_water_coverage_pct") is not None:
+            cov = float(livestock["reference_water_coverage_pct"])
+            msg = {
+                "kk":f"Көрсетілген қолжетімді су анықтамалық жылдық қажеттіліктің {cov:.1f}% жабады.",
+                "ru":f"Указанный доступный объем воды покрывает {cov:.1f}% справочной годовой потребности.",
+                "en":f"Stated available water covers {cov:.1f}% of the annual reference requirement.",
+            }[lang]
+            (st.success if cov >= 100 else st.warning)(msg)
+
+        if livestock.get("feed_reference_coverage_pct") is not None:
+            cov = float(livestock["feed_reference_coverage_pct"])
+            msg = {
+                "kk":f"Енгізілген жемшөп қоры анықтамалық жылдық DM қажеттілігінің {cov:.1f}% жабады.",
+                "ru":f"Введенный запас кормов покрывает {cov:.1f}% справочной годовой потребности в сухом веществе.",
+                "en":f"Entered feed supply covers {cov:.1f}% of the annual reference dry-matter requirement.",
+            }[lang]
+            (st.success if cov >= 100 else st.warning)(msg)
+
+        if livestock.get("water_vs_reference_pct") is not None:
+            st.caption({
+                "kk":f"Енгізілген нақты су тұтынуы анықтамалық биологиялық су көлемінің {float(livestock['water_vs_reference_pct']):.1f}% құрайды. Айырмашылық өлшеу, технология, рацион, маусым және мал өнімділігімен бірге түсіндіріледі.",
+                "ru":f"Введенное фактическое водопотребление составляет {float(livestock['water_vs_reference_pct']):.1f}% справочного биологического объема. Разница интерпретируется вместе с технологией содержания, рационом, сезоном и продуктивностью.",
+                "en":f"Entered observed water use equals {float(livestock['water_vs_reference_pct']):.1f}% of the biological reference volume. The difference is interpreted with housing technology, diet, season and productivity.",
+            }[lang])
+
+        # 4. Production performance.
+        st.markdown("#### " + {
+            "kk":"Өнімділік және аймақтық benchmark",
+            "ru":"Продуктивность и региональный benchmark",
+            "en":"Productivity and regional benchmark",
+        }[lang])
+        p1,p2,p3,p4 = st.columns(4)
+        if livestock_production_kind == "thousand_eggs":
+            own_prod = livestock.get("eggs_per_head")
+            own_label = {"kk":"Жұмыртқа / бас","ru":"Яиц на голову","en":"Eggs per bird"}[lang]
+            own_fmt = f"{float(own_prod):,.1f}" if own_prod is not None else "—"
+        else:
+            own_prod = livestock.get("production_kg_per_head")
+            own_label = {"kk":"Өнім / бас","ru":"Продукция на голову","en":"Output per head"}[lang]
+            own_fmt = f"{float(own_prod):,.1f} кг" if own_prod is not None else "—"
+        p1.metric(own_label, own_fmt)
+
+        ref_kind = livestock.get("productivity_reference_kind")
+        ref_val = livestock.get("productivity_reference_value")
+        ratio = livestock.get("productivity_reference_ratio_pct")
+        p2.metric(
+            {"kk":"2023 аймақтық салыстыру","ru":"Региональный ориентир 2023","en":"2023 regional reference"}[lang],
+            f"{float(ref_val):,.1f}" if ref_val is not None else "—",
+            help=str(ref_kind or "")
+        )
+        p3.metric(
+            {"kk":"Ориентирге қатысты","ru":"К региональному ориентиру","en":"Relative to reference"}[lang],
+            f"{float(ratio):,.1f}%" if ratio is not None else "—"
+        )
+        p4.metric(
+            {"kk":"Аймақтық CAGR","ru":"Региональный CAGR","en":"Regional CAGR"}[lang],
+            f"{float(trend.get('cagr_pct')):+.2f}%/жыл" if trend.get("cagr_pct") is not None else "—",
+            help=(f"{trend.get('start_year','—')}-{trend.get('end_year','—')}" if trend else None)
+        )
+
+        if livestock_production_amount <= 0:
+            refs = []
+            if livestock_species == "Dairy cows" and regional_prod.get("milk_kg_per_cow") is not None:
+                refs.append({"kk":f"Сүт: {regional_prod['milk_kg_per_cow']:.0f} кг/сиыр","ru":f"Молоко: {regional_prod['milk_kg_per_cow']:.0f} кг/корову","en":f"Milk: {regional_prod['milk_kg_per_cow']:.0f} kg/cow"}[lang])
+            elif livestock_species == "Poultry layers" and regional_prod.get("eggs_per_bird") is not None:
+                refs.append({"kk":f"Жұмыртқа: {regional_prod['eggs_per_bird']:.1f} дана/құс","ru":f"Яйца: {regional_prod['eggs_per_bird']:.1f} шт./птицу","en":f"Eggs: {regional_prod['eggs_per_bird']:.1f}/bird"}[lang])
+            elif livestock_species in ("Sheep","Goats") and regional_prod.get("wool_kg_per_sheep_goat") is not None:
+                refs.append({"kk":f"Жүн: {regional_prod['wool_kg_per_sheep_goat']:.2f} кг/қой-ешкі","ru":f"Шерсть: {regional_prod['wool_kg_per_sheep_goat']:.2f} кг/овцу-козу","en":f"Wool: {regional_prod['wool_kg_per_sheep_goat']:.2f} kg/sheep-goat"}[lang])
+            if regional_prod.get("aggregate_meat_kg_per_lu") is not None and livestock_production_kind == "meat_tonnes":
+                refs.append({"kk":f"Еттің жүйелік ориентирі: {regional_prod['aggregate_meat_kg_per_lu']:.1f} кг/LU","ru":f"Системный ориентир мяса: {regional_prod['aggregate_meat_kg_per_lu']:.1f} кг/LU","en":f"System meat reference: {regional_prod['aggregate_meat_kg_per_lu']:.1f} kg/LU"}[lang])
+            if refs:
+                st.info({
+                    "kk":"Шаруашылықтың өнім көлемі енгізілмеді. 2023 жылғы аймақтық салыстыру үшін: " + "; ".join(refs),
+                    "ru":"Фактический выпуск хозяйства не введен. Для сопоставления показан региональный ориентир 2023 года: " + "; ".join(refs),
+                    "en":"Observed farm output was not entered. The 2023 regional comparison reference is: " + "; ".join(refs),
+                }[lang])
+
+        # 5. Climate and environmental exposure.
+        st.markdown("#### " + {
+            "kk":"Климат, энергия және жайылым жағдайы",
+            "ru":"Климат, энергия и состояние пастбища",
+            "en":"Climate, energy and pasture condition",
+        }[lang])
+        c1,c2,c3,c4 = st.columns(4)
+        c1.metric({"kk":"Температура, сәуір-қыркүйек","ru":"Температура, апрель-сентябрь","en":"Apr-Sep temperature"}[lang],
+                  f"{float(livestock.get('temperature_c')):.1f} °C" if livestock.get("temperature_c") is not None else "—")
+        c2.metric({"kk":"Жауын-шашын, сәуір-қыркүйек","ru":"Осадки, апрель-сентябрь","en":"Apr-Sep precipitation"}[lang],
+                  f"{float(livestock.get('precipitation_mm')):.0f} мм" if livestock.get("precipitation_mm") is not None else "—")
+        c3.metric({"kk":"Тамыр аймағының ылғалы","ru":"Влажность корневой зоны","en":"Root-zone wetness"}[lang],
+                  f"{float(livestock.get('root_zone_wetness')):.3f}" if livestock.get("root_zone_wetness") is not None else "—")
+        c4.metric({"kk":"Күн радиациясы","ru":"Солнечная радиация","en":"Solar radiation"}[lang],
+                  f"{float(livestock.get('solar_radiation_mj_m2_day')):.2f} MJ/m²/day" if livestock.get("solar_radiation_mj_m2_day") is not None else "—")
+
+        c5,c6,c7 = st.columns(3)
+        c5.metric({"kk":"Энергия / бас","ru":"Энергия на голову","en":"Energy per head"}[lang],
+                  f"{float(livestock.get('energy_kwh_per_head')):,.1f} кВт·сағ" if livestock.get("energy_kwh_per_head") is not None else "—")
+        c6.metric({"kk":"Электр энергиясынан CO₂","ru":"CO₂ от электроэнергии","en":"Electricity CO₂"}[lang],
+                  f"{float(livestock.get('operational_co2e_kg'))/1000:,.2f} т CO₂e" if livestock.get("operational_co2e_kg") is not None else "—")
+        c7.metric({"kk":"Енгізілген дерек толықтығы","ru":"Полнота фактических данных","en":"Observed-input completeness"}[lang],
+                  f"{float(livestock.get('input_completeness_pct',0)):.0f}%")
+
+        if livestock.get("degraded_pasture_ha") is not None:
+            st.warning({
+                "kk":f"Енгізілген бағалау бойынша деградацияланған жайылым: {float(livestock['degraded_pasture_ha']):,.1f} га ({float(livestock.get('pasture_degraded_share_pct',0)):.1f}%).",
+                "ru":f"По введенной оценке деградированное пастбище занимает {float(livestock['degraded_pasture_ha']):,.1f} га ({float(livestock.get('pasture_degraded_share_pct',0)):.1f}%).",
+                "en":f"Entered assessment indicates {float(livestock['degraded_pasture_ha']):,.1f} ha of degraded pasture ({float(livestock.get('pasture_degraded_share_pct',0)):.1f}%).",
+            }[lang])
+
+        # Report payload keeps reference values and observed inputs distinguishable.
+        report_payload["summary"] = [
+            {"label":{"kk":"Мал шаруашылығының үлесі","ru":"Доля животноводства","en":"Livestock share"}[lang],
+             "value":f"{float(lp.get('livestock_share_pct',0)):.1f}%"},
+            {"label":{"kk":"Поголовье","ru":"Поголовье","en":"Herd"}[lang],
+             "value":f"{effective_heads:,.0f} ({heads_source})"},
+            {"label":{"kk":"ML-болжам","ru":"ML-прогноз","en":"ML forecast"}[lang],
+             "value":f"{float(forecast.get('forecast_heads')):,.0f} ({forecast.get('forecast_year','—')})" if forecast.get("available") and forecast.get("publish_forecast") else {"kk":"жарияланбайды","ru":"не публикуется","en":"withheld"}[lang]},
+            {"label":{"kk":"LU","ru":"LU","en":"LU"}[lang],
+             "value":f"{float(livestock.get('livestock_units')):,.1f}" if livestock.get("livestock_units") is not None else "—"},
+        ]
+        report_payload["analysis"] = [{
+            "kk":f"{used_district} бойынша {SPECIES_LABELS[lang][livestock_species]} ресурстық профилі ресми аудандық динамика, климаттық экспозиция, түрлік су-жемшөп нормативтері және енгізілген шаруашылық деректері арқылы есептелді.",
+            "ru":f"Ресурсный профиль категории «{SPECIES_LABELS[lang][livestock_species]}» для {used_district} рассчитан по официальной районной динамике, климатической экспозиции, видоспецифическим ориентирам воды и кормов и введенным данным хозяйства.",
+            "en":f"The {SPECIES_LABELS[lang][livestock_species]} resource profile for {used_district} integrates official district dynamics, climate exposure, species-specific water/feed references and entered farm observations.",
+        }[lang]]
+        report_payload["recommendations"] = [{
+            "title":{"kk":"Ресурстық теңгерім","ru":"Ресурсный баланс","en":"Resource balance"}[lang],
+            "text":{
+                "kk":"Поголовье, су қоры, жемшөп DM, жайылым жүктемесі және өнімділік бір жылдық есептік көкжиекте салыстырылады.",
+                "ru":"Поголовье, водообеспеченность, кормовой сухой материал, пастбищная нагрузка и продуктивность сопоставляются в едином годовом расчетном горизонте.",
+                "en":"Herd size, water availability, feed dry matter, pasture pressure and productivity are compared within one annual accounting horizon.",
+            }[lang],
+            "evidence":{
+                "kk":"Аудандық статистикалық қатар, NASA POWER климаттық қабаты және FAO/Merck түрлік анықтамалары.",
+                "ru":"Районный статистический ряд, климатический слой NASA POWER и видоспецифические справочные коэффициенты FAO/Merck.",
+                "en":"District statistical history, NASA POWER climate layer and FAO/Merck species reference coefficients.",
+            }[lang],
+            "effect":{
+                "kk":"Өндірістік өсудің су, жемшөп және жайылым ресурстарымен үйлесімділігі сандық түрде көрінеді.",
+                "ru":"Совместимость производственного масштаба с водой, кормами и пастбищным ресурсом становится количественно наблюдаемой.",
+                "en":"Compatibility of production scale with water, feed and pasture resources becomes quantitatively visible.",
+            }[lang],
+            "evidence_label":{"kk":"Негіздеме","ru":"Основание","en":"Evidence"}[lang],
+            "effect_label":{"kk":"Әсер","ru":"Эффект","en":"Effect"}[lang],
+        }]
+
+    elif mode_key == "mode1" and crop not in CROPS:
         # Expanded farm assessment for crops without a calibrated yield ML model.
         scenario = scenario_for_crop(used_district, crop, climate, irrigation_type)
         obs_ev = observed_for_crop(used_district, crop)
@@ -1188,8 +1707,84 @@ if submitted:
         else:
             st.info({"kk":"Экономикалық контур үшін күтілетін өнімділікті енгізіңіз.","ru":"Для экономического контура укажите ожидаемую урожайность.","en":"Enter expected yield to activate the economic contour."}[lang])
 
+    if mode_key in ("mode1","mode2") and crop is not None:
+        env = environmental_diagnostics(
+            used_district, climate, area_ha, energy_kwh=energy,
+            emission_factor_kgco2_kwh=ef, pesticide_kg_ha=pesticide_kg_ha,
+            salinized_share_pct=salinized_share_pct,
+        )
+        st.markdown("### " + {"kk":"Экологиялық диагностика","ru":"Экологическая диагностика","en":"Environmental diagnostics"}[lang])
+        z1,z2,z3,z4 = st.columns(4)
+        z1.metric({"kk":"Жылу экспозициясының процентилі","ru":"Перцентиль тепловой экспозиции","en":"Heat-exposure percentile"}[lang], f"{env.get('heat_exposure_percentile',0):.0f}/100")
+        z2.metric({"kk":"Төмен жауын-шашын экспозициясы","ru":"Экспозиция к низким осадкам","en":"Low-precipitation exposure"}[lang], f"{env.get('low_precipitation_percentile',0):.0f}/100")
+        z3.metric({"kk":"Төмен топырақ ылғалы экспозициясы","ru":"Экспозиция к низкой влажности почвы","en":"Low-soil-moisture exposure"}[lang], f"{env.get('low_soil_moisture_percentile',0):.0f}/100")
+        z4.metric({"kk":"Экологиялық дерек қабаттары","ru":"Доступные экологические слои","en":"Environmental evidence layers"}[lang], f"{env.get('evidence_layers_available',0)}/{env.get('evidence_layers_max',7)}")
+        status_available = {"kk":"бар","ru":"есть","en":"available"}[lang]
+        status_unknown = {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang]
+        st.caption({
+            "kk":f"NASA климат қабаты: {status_available} · Энергия/CO₂: {status_available if env.get('energy_observed') else status_unknown} · Пестицидтер: {status_available if env.get('pesticide_observed') else status_unknown} · Тұздану: {status_available if env.get('salinity_observed') else status_unknown}",
+            "ru":f"Климат NASA: {status_available} · Энергия/CO₂: {status_available if env.get('energy_observed') else status_unknown} · Пестициды: {status_available if env.get('pesticide_observed') else status_unknown} · Засоление: {status_available if env.get('salinity_observed') else status_unknown}",
+            "en":f"NASA climate: {status_available} · Energy/CO₂: {status_available if env.get('energy_observed') else status_unknown} · Pesticides: {status_available if env.get('pesticide_observed') else status_unknown} · Salinity: {status_available if env.get('salinity_observed') else status_unknown}",
+        }[lang])
+        if env.get("operational_co2e_kg_ha") is not None:
+            st.write("• " + {"kk":f"Электр энергиясына байланысты операциялық шығарындылар: {env['operational_co2e_kg_ha']:.1f} кг CO₂e/га.","ru":f"Операционные выбросы, связанные с электроэнергией: {env['operational_co2e_kg_ha']:.1f} кг CO₂e/га.","en":f"Electricity-related operational emissions: {env['operational_co2e_kg_ha']:.1f} kg CO₂e/ha."}[lang])
+        if env.get("pesticide_kg_ha") is not None:
+            st.write("• " + {"kk":f"Енгізілген пестицид жүктемесі: {env['pesticide_kg_ha']:.2f} кг/га.","ru":f"Введенная пестицидная нагрузка: {env['pesticide_kg_ha']:.2f} кг/га.","en":f"Entered pesticide load: {env['pesticide_kg_ha']:.2f} kg/ha."}[lang])
+        if env.get("salinized_share_pct") is not None:
+            st.write("• " + {"kk":f"Тұзданған жер үлесі: {env['salinized_share_pct']:.1f}% ({env.get('salinized_area_ha',0):.1f} га).","ru":f"Доля засоленной земли: {env['salinized_share_pct']:.1f}% ({env.get('salinized_area_ha',0):.1f} га).","en":f"Salinized land share: {env['salinized_share_pct']:.1f}% ({env.get('salinized_area_ha',0):.1f} ha)."}[lang])
+        st.caption({"kk":"Бұл блок QŪNAR-да дәлелмен немесе нақты енгізумен қамтамасыз етілген климаттық, топырақ-ылғал, энергия-көміртек, пестицид және тұздану көрсеткіштерін бөлек көрсетеді. Экожүйенің толық жағдайы жеке бақылау жиынтығын қажет етеді.","ru":"Блок показывает экологически значимые показатели, обеспеченные климатическими данными или фактическим вводом: тепло, осадки, влажность корневой зоны, энергия/CO₂, пестициды и засоление. Комплексное состояние экосистемы требует отдельного набора наблюдений.","en":"This block reports environmentally relevant indicators supported by climate data or observed input: heat, precipitation, root-zone wetness, energy/CO₂, pesticides and salinity. Full ecosystem condition requires a separate observation set."}[lang])
+
+    if mode_key == "mode4" and "out" in locals():
+        div = diversification_metrics(pd.to_numeric(out["share"], errors="coerce").fillna(0).tolist())
+        st.markdown("### " + {"kk":"Егіс құрылымының әртараптануы","ru":"Диверсификация структуры посевов","en":"Cropping-structure diversification"}[lang])
+        d1,d2,d3 = st.columns(3)
+        d1.metric("HHI", f"{div['hhi']:.3f}")
+        d2.metric({"kk":"Тиімді дақылдар саны","ru":"Эффективное число культур","en":"Effective number of crops"}[lang], f"{div['effective_number_of_crops']:.2f}")
+        d3.metric({"kk":"Әртараптандыру","ru":"Диверсификация","en":"Diversification"}[lang], f"{div['diversification_0_100']:.1f}/100")
+        st.caption({"kk":"HHI егіс құрылымының концентрациясын сипаттайды; төмен мән бірнеше дақыл арасында біркелкі бөлінуді көрсетеді.","ru":"HHI характеризует концентрацию структуры посевов; более низкое значение соответствует более равномерному распределению площади между культурами.","en":"HHI describes cropping concentration; a lower value corresponds to a more even allocation across crops."}[lang])
+
     # Build a lightweight export snapshot from results already calculated on screen.
-    if mode_key == "mode1":
+    if mode_key == "mode5" and "livestock" in locals():
+        benchmark_export = livestock.get("district_benchmark", {}) or {}
+        forecast_export = livestock.get("forecast", {}) or {}
+        report_payload["table"] = [
+            {"Indicator":"Livestock share of district output, %","Value":livestock.get("livestock_share_pct")},
+            {"Indicator":"Herd used in calculation, head","Value":livestock.get("heads")},
+            {"Indicator":"Herd source","Value":livestock.get("heads_source")},
+            {"Indicator":"Latest official district herd, head","Value":benchmark_export.get("latest_district_heads")},
+            {"Indicator":"Latest official year","Value":benchmark_export.get("latest_year")},
+            {"Indicator":"District herd percentile, %","Value":benchmark_export.get("district_percentile")},
+            {"Indicator":"Livestock units, LU","Value":livestock.get("livestock_units")},
+            {"Indicator":"Livestock units per pasture ha","Value":livestock.get("lu_per_pasture_ha")},
+            {"Indicator":"Reference water, L/head/day","Value":livestock.get("reference_water_l_head_day")},
+            {"Indicator":"Reference annual water, m3","Value":livestock.get("reference_water_m3_year")},
+            {"Indicator":"Available-water coverage of reference, %","Value":livestock.get("reference_water_coverage_pct")},
+            {"Indicator":"Observed water, m3/head","Value":livestock.get("water_m3_per_head")},
+            {"Indicator":"Reference feed DM, kg/head/day","Value":livestock.get("reference_feed_dm_kg_head_day")},
+            {"Indicator":"Reference annual feed DM, t","Value":livestock.get("reference_feed_dm_t_year")},
+            {"Indicator":"Entered feed coverage of reference, %","Value":livestock.get("feed_reference_coverage_pct")},
+            {"Indicator":"Observed energy, kWh/head","Value":livestock.get("energy_kwh_per_head")},
+            {"Indicator":"Operational CO2e, kg","Value":livestock.get("operational_co2e_kg")},
+            {"Indicator":"Productivity relative to regional reference, %","Value":livestock.get("productivity_reference_ratio_pct")},
+            {"Indicator":"Forecast year","Value":forecast_export.get("forecast_year")},
+            {"Indicator":"ML forecast published","Value":forecast_export.get("publish_forecast")},
+            {"Indicator":"ML forecast tier","Value":forecast_export.get("forecast_tier")},
+            {"Indicator":"ML forecast herd, head","Value":forecast_export.get("forecast_heads") if forecast_export.get("publish_forecast") else None},
+            {"Indicator":"ML forecast change, %","Value":forecast_export.get("forecast_change_pct") if forecast_export.get("publish_forecast") else None},
+            {"Indicator":"ML validation R2 overall (log scale)","Value":forecast_export.get("r2_log")},
+            {"Indicator":"ML validation median APE overall, %","Value":forecast_export.get("median_ape_pct")},
+            {"Indicator":"ML validation n overall","Value":forecast_export.get("validation_n")},
+            {"Indicator":"ML validation R2 selected category (log scale)","Value":((forecast_export.get("species_validation") or {}).get("r2_log"))},
+            {"Indicator":"ML validation median APE selected category, %","Value":((forecast_export.get("species_validation") or {}).get("median_ape_pct"))},
+            {"Indicator":"ML validation n selected category","Value":((forecast_export.get("species_validation") or {}).get("n"))},
+            {"Indicator":"Apr-Sep temperature, C","Value":livestock.get("temperature_c")},
+            {"Indicator":"Apr-Sep precipitation, mm","Value":livestock.get("precipitation_mm")},
+            {"Indicator":"Apr-Sep root-zone wetness","Value":livestock.get("root_zone_wetness")},
+            {"Indicator":"Apr-Sep solar radiation, MJ/m2/day","Value":livestock.get("solar_radiation_mj_m2_day")},
+            {"Indicator":"Degraded pasture, ha","Value":livestock.get("degraded_pasture_ha")},
+            {"Indicator":"Observed-input completeness, %","Value":livestock.get("input_completeness_pct")},
+        ]
+    elif mode_key == "mode1":
         if "pred" in locals():
             report_payload["summary"].append({"label":t["baseline_label"], "value":f"{pred:.1f} ц/га" if lang != "en" else f"{pred:.1f} centners/ha"})
         elif "scenario" in locals() and scenario is not None:

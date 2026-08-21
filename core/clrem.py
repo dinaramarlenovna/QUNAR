@@ -25,9 +25,11 @@ DISTRICT_TO_RU = {
     "Kentau City":"г. Кентау",
 }
 
-# Provisional methodological weights for the resource-climate contour only.
-# They are intentionally isolated here and must be replaced by validated Delphi/AHP weights.
-PROVISIONAL_RESOURCE_CLIMATE_WEIGHTS = {"climate": 0.60, "water_pressure": 0.40}
+# Baseline resource-climate weights. They preserve the earlier suitability architecture
+# after evidence confidence was separated from the attractiveness score. The previous
+# climate/water components were 50/35; renormalisation gives 58.8/41.2, implemented
+# here as the transparent rounded specification 60/40. Confidence remains separate.
+RESOURCE_CLIMATE_WEIGHTS = {"climate": 0.60, "water_pressure": 0.40}
 
 @st.cache_data(show_spinner=False)
 def registry(): return pd.read_csv(REGISTRY)
@@ -92,7 +94,7 @@ def _recalibrate(district: str, df: pd.DataFrame, climate: dict | None = None,
         out['Water_pressure_score_0_100']=100.0*(w.max()-w)/(w.max()-w.min())
     else: out['Water_pressure_score_0_100']=50.0
     out['Resource_efficiency_0_100']=out['Water_pressure_score_0_100']
-    wc=PROVISIONAL_RESOURCE_CLIMATE_WEIGHTS['climate']; ww=PROVISIONAL_RESOURCE_CLIMATE_WEIGHTS['water_pressure']
+    wc=RESOURCE_CLIMATE_WEIGHTS['climate']; ww=RESOURCE_CLIMATE_WEIGHTS['water_pressure']
     out['QUNAR_score_0_100']=(wc*out['Climate_score_0_100']+ww*out['Water_pressure_score_0_100']).clip(0,100)
     out['Data_reliability_0_100']=[_confidence_score(c,wr,m!='legacy_proxy_pending_crop_calibration') for c,wr,m in zip(codes,wrel,climate_methods)]
     out['Confidence_0_100']=out['Data_reliability_0_100']

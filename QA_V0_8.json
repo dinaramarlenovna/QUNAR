@@ -1,5 +1,20 @@
 {
   "issues": [],
   "districts_tested": 17,
-  "all_pass": true
+  "all_pass": true,
+  "current_update": {
+    "resource_climate_weights": "0.60/0.40 retained and documented",
+    "environment_module": "syntax + standalone core QA passed",
+    "livestock_module": "926 district-year-species observations integrated; regional production/population histories 1996-2023; 9 user livestock types",
+    "diversification": "HHI/effective-number calculation QA passed",
+    "app_syntax": "passed",
+    "full_streamlit_runtime_test": "not executed in local container because Streamlit package is not installed; deployment requirements include streamlit>=1.40",
+    "unknown_vs_zero": "passed: optional pesticide, salinity and pasture-degradation inputs distinguish missing from observed zero",
+    "environmental_coverage": "automatic NASA climate layers + only explicitly observed optional layers",
+    "livestock_ml": "Random Forest with lagged herd size + district/species + Apr-Sep climate; rolling-origin validation 2021-2023",
+    "livestock_ml_overall": "R2(log)=0.9489; median APE=11.56%; validation n=318",
+    "livestock_category_guard": "category-level validation controls publication; pig numerical forecast withheld under current validation",
+    "livestock_matrix_qa": "17 territories x 9 livestock user types = 153 cases; passed",
+    "current_version": "0.8.1-livestock-core"
+  }
 }

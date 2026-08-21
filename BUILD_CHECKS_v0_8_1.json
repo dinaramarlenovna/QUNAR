@@ -1,0 +1,76 @@
+{
+  "version": "0.8.1-livestock-core",
+  "resource_climate_weights": {
+    "climate": 0.6,
+    "water_pressure": 0.4
+  },
+  "districts_tested": 17,
+  "crop_decision_rows_per_district": 15,
+  "livestock_user_types": 9,
+  "livestock_matrix_cases": 153,
+  "livestock_validation": {
+    "training_n": 529,
+    "validation_n": 318,
+    "validation_years": [
+      2021,
+      2022,
+      2023
+    ],
+    "overall_r2_log": 0.9489103443962296,
+    "overall_median_ape_pct": 11.556140065263506,
+    "by_species": {
+      "Camels": {
+        "n": 44,
+        "r2_log": 0.8927283558290342,
+        "mae_heads": 381.1662118653407,
+        "median_ape_pct": 21.560371561884537,
+        "mape_pct": 104.98034191690952
+      },
+      "Cattle": {
+        "n": 50,
+        "r2_log": 0.7394935644296444,
+        "mae_heads": 10497.044306546284,
+        "median_ape_pct": 10.838438195154861,
+        "mape_pct": 31.857576598665858
+      },
+      "Cows": {
+        "n": 50,
+        "r2_log": 0.6662183970097648,
+        "mae_heads": 5803.239404055748,
+        "median_ape_pct": 14.022806644043623,
+        "mape_pct": 32.36666452384721
+      },
+      "Horses": {
+        "n": 50,
+        "r2_log": 0.8628457826391778,
+        "mae_heads": 1887.6318105341606,
+        "median_ape_pct": 5.816766591086552,
+        "mape_pct": 19.555136167158697
+      },
+      "Pigs": {
+        "n": 24,
+        "r2_log": -0.07651502440471813,
+        "mae_heads": 304.46793532199604,
+        "median_ape_pct": 103.47648210108377,
+        "mape_pct": 414.86154101845955
+      },
+      "Poultry": {
+        "n": 50,
+        "r2_log": 0.8237241801577802,
+        "mae_heads": 30883.84737324045,
+        "median_ape_pct": 12.262103174534392,
+        "mape_pct": 40.334385210831286
+      },
+      "Sheep/goats": {
+        "n": 50,
+        "r2_log": 0.8830061910687265,
+        "mae_heads": 34269.98969852559,
+        "median_ape_pct": 8.309008339439536,
+        "mape_pct": 28.981822382555798
+      }
+    }
+  },
+  "pig_forecast_guard_expected": true,
+  "issues": [],
+  "all_pass": true
+}

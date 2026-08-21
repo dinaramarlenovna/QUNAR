@@ -1,0 +1,126 @@
+{
+  "version": "0.8.1-livestock-core",
+  "raw_district_year_species_observations": 926,
+  "districts_in_livestock_panel": 17,
+  "benchmark_species_in_panel": [
+    "Camels",
+    "Cattle",
+    "Cows",
+    "Horses",
+    "Pigs",
+    "Poultry",
+    "Sheep/goats"
+  ],
+  "regional_product_years": [
+    1996,
+    2023
+  ],
+  "regional_population_years": [
+    1996,
+    2023
+  ],
+  "training_n": 529,
+  "training_years": [
+    2019,
+    2023
+  ],
+  "validation_years": [
+    2021,
+    2022,
+    2023
+  ],
+  "validation_n": 318,
+  "validation_r2_log_overall": 0.9489103443962296,
+  "validation_median_ape_pct_overall": 11.556140065263406,
+  "validation_by_species": [
+    {
+      "benchmark_species": "Camels",
+      "n_validation": 44,
+      "r2_log": 0.8927283558290342,
+      "mae_heads": 381.16621186534013,
+      "median_ape_pct": 21.560371561884573,
+      "mape_pct": 104.9803419169093
+    },
+    {
+      "benchmark_species": "Cattle",
+      "n_validation": 50,
+      "r2_log": 0.7394935644296446,
+      "mae_heads": 10497.044306546264,
+      "median_ape_pct": 10.838438195155067,
+      "mape_pct": 31.85757659866584
+    },
+    {
+      "benchmark_species": "Cows",
+      "n_validation": 50,
+      "r2_log": 0.6662183970097639,
+      "mae_heads": 5803.23940405575,
+      "median_ape_pct": 14.02280664404354,
+      "mape_pct": 32.366664523847255
+    },
+    {
+      "benchmark_species": "Horses",
+      "n_validation": 50,
+      "r2_log": 0.8628457826391778,
+      "mae_heads": 1887.6318105341613,
+      "median_ape_pct": 5.816766591086552,
+      "mape_pct": 19.555136167158697
+    },
+    {
+      "benchmark_species": "Pigs",
+      "n_validation": 24,
+      "r2_log": -0.07651502440471813,
+      "mae_heads": 304.4679353219962,
+      "median_ape_pct": 103.47648210108389,
+      "mape_pct": 414.8615410184595
+    },
+    {
+      "benchmark_species": "Poultry",
+      "n_validation": 50,
+      "r2_log": 0.8237241801577802,
+      "mae_heads": 30883.847373240424,
+      "median_ape_pct": 12.262103174534392,
+      "mape_pct": 40.334385210831336
+    },
+    {
+      "benchmark_species": "Sheep/goats",
+      "n_validation": 50,
+      "r2_log": 0.8830061910687259,
+      "mae_heads": 34269.98969852567,
+      "median_ape_pct": 8.309008339439618,
+      "mape_pct": 28.981822382555944
+    }
+  ],
+  "forecast_guard": {
+    "rule": "publish only when category R2_log > 0 and median APE <= 50%; validated tier requires R2_log >= 0.50 and median APE <= 30%",
+    "pig_guard_expected_from_current_validation": true
+  },
+  "reference_checks": {
+    "100_cattle_at_25C": {
+      "reference_temperature_c": 25.0,
+      "reference_water_l_head_day": 73.2,
+      "reference_water_m3_year": 2671.8,
+      "reference_feed_dm_kg_head_day": 9.0,
+      "reference_feed_dm_t_year": 328.5,
+      "lu_factor": 0.5,
+      "livestock_units": 50.0,
+      "reference_source": "FAO",
+      "reference_condition": "Large-breed dry cow; water anchors from FAO Table 4.2",
+      "benchmark_species": "Cattle"
+    },
+    "100_poultry_broilers_at_25C": {
+      "reference_temperature_c": 25.0,
+      "reference_water_l_head_day": 0.331,
+      "reference_water_m3_year": 12.0815,
+      "reference_feed_dm_kg_head_day": null,
+      "reference_feed_dm_t_year": null,
+      "lu_factor": 0.01,
+      "livestock_units": 1.0,
+      "reference_source": "FAO",
+      "reference_condition": "Adult broiler water reference; FAO Table 4.2 values converted from 100 birds; no DM intake default imposed",
+      "benchmark_species": "Poultry"
+    }
+  },
+  "matrix_test_cases": 153,
+  "matrix_errors": [],
+  "pass": true
+}

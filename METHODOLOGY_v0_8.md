@@ -25,11 +25,11 @@ For expanded crops without a sufficient crop-specific historical panel, the lega
 
 The water component uses official/default crop water requirements. Lower normative water pressure receives a higher comparative score within the district crop set. The user-facing term is **water pressure / relative water burden**, not physical water-use efficiency.
 
-The provisional resource-climate score is:
+The baseline resource-climate score is:
 
 `QUNAR_resource_climate = 0.60 * Climate + 0.40 * WaterPressure`
 
-The 0.60/0.40 weights are **provisional engineering weights only**. They are isolated in code and must be replaced after Delphi/AHP elicitation. They are not claimed as survey-derived weights.
+The 0.60/0.40 specification preserves continuity with the preceding three-component architecture. In that architecture, climate and water carried weights of 0.50 and 0.35 while evidence reliability carried 0.15. Reliability is now reported separately because evidence strength describes confidence in a recommendation rather than intrinsic crop suitability. Renormalising the remaining climate/water components gives 0.588/0.412; v0.8 uses the transparent rounded baseline 0.60/0.40. The weights are documented as a baseline model specification and are not claimed as survey-derived or AHP-derived constants.
 
 ## 3. Assessment confidence
 
@@ -67,19 +67,26 @@ Assessment confidence is not part of the optimization objective.
 
 The optimizer is therefore a genuine constrained allocation problem, although its objective remains a resource-climate objective until a defensible crop-specific economic dataset is added.
 
-## 6. Delphi/AHP status
+## 6. Weight robustness and evidence status
 
-The 2026 stakeholder questionnaire supports the selection of major dimensions such as water, climate risk, irrigation and technology adoption. It is not an AHP pairwise-comparison survey and does not identify numerical QŪNAR weights.
+The 2026 stakeholder questionnaire supports the substantive selection of water, climate risk, irrigation and technology dimensions. It is used as an independent validation layer and does not generate numerical weights.
 
-The next formal weighting stage should therefore use:
+The 0.60/0.40 baseline is therefore interpreted through specification transparency and sensitivity analysis. Alternative weight profiles remain available in the optimizer to show how recommendations respond to stronger climate or resource-saving priorities. Evidence confidence remains outside the objective function.
 
-1. Delphi rounds to agree on criterion definitions and remove redundant criteria;
-2. AHP pairwise comparisons to derive weights;
-3. consistency-ratio testing;
-4. sensitivity analysis around the resulting weights.
+## 7. Environmental diagnostics
 
-Until that stage is complete, v0.8 displays and documents provisional weights rather than presenting them as empirically established constants.
+The environmental layer reports variables that have a defensible observation source or an explicit farm input. The current layer includes growing-season heat, precipitation, root-zone wetness, solar radiation, electricity-related operational CO2, pesticide load when entered, and salinized-land share when entered. Missing pesticide or salinity values are not replaced by invented district estimates. The interface explicitly distinguishes **unknown** from an observed value of **zero**. Unknown observations are excluded from environmental-data coverage; a zero value is counted only when the user confirms it as an observed farm value. The same rule is applied to optional pasture-degradation input in the livestock module.
 
-## 7. Interpretation boundary
+Optimized crop structures also receive concentration/diversification diagnostics using HHI and the effective number of crops. These indicators describe structural diversification and are not labelled as biodiversity measures.
+
+## 8. Livestock resource and forecasting module
+
+The livestock extension is documented in `LIVESTOCK_METHOD_v0_8_1.md`. The harmonised evidence base contains regional livestock production and population histories for 1996-2023 and 926 district-year-species observations for the current territorial system over 2015-2023. Administrative structural missingness is preserved.
+
+The livestock forecasting engine uses Random Forest with district, livestock category, previous-year herd size and the same growing-season climate variables used in the crop architecture: temperature, precipitation, root-zone wetness and solar radiation. Rolling-origin validation covers 2021-2023. The pooled log-scale R2 is approximately 0.949 with a median absolute percentage error of approximately 11.6%. Category-level validation is reported separately and controls whether a numerical forecast is published. The current pig series fails the category reliability guard and its numerical ML projection is suppressed.
+
+The resource layer applies species-specific water references, transparent feed dry-matter references where supported, FAO livestock-unit coefficients, pasture pressure, available-water coverage, observed energy/CO2, production per head, compatible regional productivity benchmarks and optional pasture degradation. Unknown farm observations remain unknown and are never silently converted to zero.
+
+## 9. Interpretation boundary
 
 QŪNAR scores are comparative decision coordinates within a specified district, crop set and information state. Their scientific content lies in the transparent composition of evidence, constraints and trade-offs, not in treating a score such as 74.2 as an independently observed physical quantity.
