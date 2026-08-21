@@ -1849,7 +1849,7 @@ if submitted:
         st.caption({"kk":"Бұл блок QŪNAR-да дәлелмен немесе нақты енгізумен қамтамасыз етілген климаттық, топырақ-ылғал, энергия-көміртек, пестицид және тұздану көрсеткіштерін бөлек көрсетеді. Экожүйенің толық жағдайы жеке бақылау жиынтығын қажет етеді.","ru":"Блок показывает экологически значимые показатели, обеспеченные климатическими данными или фактическим вводом: тепло, осадки, влажность корневой зоны, энергия/CO₂, пестициды и засоление. Комплексное состояние экосистемы требует отдельного набора наблюдений.","en":"This block reports environmentally relevant indicators supported by climate data or observed input: heat, precipitation, root-zone wetness, energy/CO₂, pesticides and salinity. Full ecosystem condition requires a separate observation set."}[lang])
 
     if mode_key == "mode4" and "out" in locals():
-        div = diversification_metrics(pd.to_numeric(out["share"], errors="coerce").fillna(0).tolist())
+        div = diversification_metrics(pd.to_numeric(alloc["share"], errors="coerce").fillna(0).tolist())
         st.markdown("### " + {"kk":"Егіс құрылымының әртараптануы","ru":"Диверсификация структуры посевов","en":"Cropping-structure diversification"}[lang])
         d1,d2,d3 = st.columns(3)
         d1.metric({"kk":"Герфиндал-Хиршман индексі","ru":"Индекс Герфиндаля-Хиршмана","en":"HHI"}[lang], f"{div['hhi']:.3f}")
