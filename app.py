@@ -185,13 +185,58 @@ h1 { font-size: 2.35rem !important; line-height: 1.16 !important; font-weight:76
 h2 { font-size: 1.95rem !important; line-height: 1.2 !important; font-weight:740 !important; }
 h3 { font-size: 1.62rem !important; line-height: 1.23 !important; font-weight:730 !important; margin-top:1.15rem !important; }
 h4 { font-size: 1.30rem !important; line-height: 1.3 !important; font-weight:700 !important; }
-p, li, label, .stMarkdown { font-size:18px; line-height: 1.68; }
-small, .stCaption, [data-testid="stCaptionContainer"] { font-size:15.5px !important; line-height:1.5 !important; }
+p, li, .stMarkdown { font-size:18px; line-height: 1.68; }
+
+/* Interactive controls are visually stronger than explanatory captions */
+div[data-testid="stWidgetLabel"] p,
+div[data-testid="stWidgetLabel"] label,
+div[data-testid="stWidgetLabel"] span {
+    font-size:19.5px !important;
+    line-height:1.42 !important;
+    font-weight:650 !important;
+    color:#202723 !important;
+}
+
+/* Radio/toggle/checkbox option text is itself clickable */
+.stRadio [role="radiogroup"] label p,
+.stCheckbox label p,
+[data-testid="stToggle"] label p {
+    font-size:18.5px !important;
+    line-height:1.42 !important;
+    font-weight:580 !important;
+    color:#28312c !important;
+}
+
+/* Sidebar hierarchy: controls stay prominent even though supporting text is compact */
+section[data-testid="stSidebar"] div[data-testid="stWidgetLabel"] p,
+section[data-testid="stSidebar"] .stRadio [role="radiogroup"] label p,
+section[data-testid="stSidebar"] [data-testid="stToggle"] label p {
+    font-size:18px !important;
+    line-height:1.42 !important;
+    color:#202723 !important;
+}
+
+/* Input/select values are primary data-entry elements */
+div[data-baseweb="input"] input,
+div[data-baseweb="select"],
+div[data-baseweb="select"] *,
+.stNumberInput input {
+    font-size:18px !important;
+    font-weight:540 !important;
+    color:#202723 !important;
+}
+
+/* Explanatory notes deliberately remain smaller and lighter */
+small, .stCaption, [data-testid="stCaptionContainer"] {
+    font-size:15px !important;
+    line-height:1.48 !important;
+    color:#737d77 !important;
+}
 div[data-testid="stMetric"] { background: white; border: 1px solid #dfe7e1; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
 div[data-testid="stMetricValue"] { font-size: 2rem !important; font-weight: 760 !important; letter-spacing:-.02em; }
 div[data-testid="stMetricLabel"] { font-size: 1.02rem !important; font-weight: 650 !important; }
-.stButton > button, .stDownloadButton > button, div[data-testid="stFormSubmitButton"] button { min-height: 50px; border-radius: 11px; font-size: 17px !important; font-weight: 700; }
-div[data-baseweb="input"] input, div[data-baseweb="select"] { min-height: 46px; font-size: 17px !important; }
+.stButton > button, .stDownloadButton > button, div[data-testid="stFormSubmitButton"] button { min-height: 50px; border-radius: 11px; font-size: 17.5px !important; font-weight: 700; }
+div[data-baseweb="input"] input, div[data-baseweb="select"] { min-height: 46px; }
 div[data-testid="stAlert"] { border-radius: 12px; }
 [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
 .qunar-hero { text-align:center; padding:3.35rem 1rem 1.10rem; margin:0 0 1.1rem; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; }
