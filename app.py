@@ -823,6 +823,7 @@ if submitted:
     report_payload = {
         "mode_key": mode_key,
         "lang": lang,
+        "brand_acronym": t.get("brand_acronym", ""),
         "brand_translation": t.get("brand_translation", ""),
         "mode_label": t.get(mode_key, mode_key),
         "generated_label": {"kk":"Есеп жасалған уақыт","ru":"Дата расчета","en":"Generated"}[lang],

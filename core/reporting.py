@@ -67,12 +67,17 @@ def _write_payload_sheet(writer, sheet_name: str, payload: dict, include_inputs:
     ws.set_column("C:C", 58)
     ws.set_row(0, 34)
 
-    ws.write("A1", "QŪNAR", fm["brand"])
-    ws.merge_range("B1:C1", payload.get("mode_label", ""), fm["section"])
-    ws.merge_range("A2:C2", payload.get("brand_translation", ""), fm["subtitle"])
-    ws.write("A3", payload.get("generated_label", "Generated"), fm["small"])
-    ws.write("B3", payload.get("generated_at", datetime.now().strftime("%Y-%m-%d %H:%M")), fm["small"])
-
+    brand_acronym = _clean(payload.get("brand_acronym", ""))
+    brand_heading = "QŪNAR" + (f" - {brand_acronym}" if brand_acronym else "")
+    ws.merge_range("A1:C1", brand_heading, fm["brand"])
+    ws.merge_range("A2:C2", payload.get("mode_label", ""), fm["section"])
+    if payload.get("brand_translation") and _clean(payload.get("brand_translation")) != brand_acronym:
+        ws.merge_range("A3:C3", payload.get("brand_translation", ""), fm["subtitle"])
+        meta_row = 4
+    else:
+        meta_row = 3
+    ws.write(meta_row - 1, 0, payload.get("generated_label", "Generated"), fm["small"])
+    ws.write(meta_row - 1, 1, payload.get("generated_at", datetime.now().strftime("%Y-%m-%d %H:%M")), fm["small"])
     row = 5
     summary = payload.get("summary", []) or []
     if summary:
@@ -185,8 +190,10 @@ def build_combined_excel_report(payloads: list[dict]) -> bytes:
         lang = (payloads[0].get("lang") if payloads else "en") or "en"
         combined_title = {"kk":"Біріктірілген аналитикалық есеп","ru":"Сводный аналитический отчет","en":"Integrated analytical report"}.get(lang,"Integrated analytical report")
         included_title = {"kk":"Қосылған бөлімдер","ru":"Включенные разделы","en":"Included sections"}.get(lang,"Included sections")
-        summary_ws.write("A1", "QŪNAR", fm["brand"])
-        summary_ws.merge_range("B1:C1", combined_title, fm["section"])
+        combined_acronym = _clean(payloads[0].get("brand_acronym", "")) if payloads else ""
+        combined_brand = "QŪNAR" + (f" - {combined_acronym}" if combined_acronym else "")
+        summary_ws.merge_range("A1:C1", combined_brand, fm["brand"])
+        summary_ws.merge_range("A2:C2", combined_title, fm["section"])
         summary_ws.write("A3", included_title, fm["section"])
         row = 5
         for i, payload in enumerate(payloads, 1):
@@ -278,8 +285,12 @@ def _append_payload_pdf(story, payload: dict, styles, include_inputs: bool = Tru
     from reportlab.platypus import Paragraph, Spacer, Table, TableStyle, Image, PageBreak
     body, h2, h3, key, small = styles["body"], styles["h2"], styles["h3"], styles["key"], styles["small"]
     if include_brand:
-        story.append(Paragraph("QŪNAR", styles["title"]))
-        story.append(Paragraph(html.escape(payload.get("brand_translation", "")), styles["subtitle"]))
+        brand_acronym = str(payload.get("brand_acronym", "") or "").strip()
+        brand_heading = "QŪNAR" + (f" - {brand_acronym}" if brand_acronym else "")
+        story.append(Paragraph(html.escape(brand_heading), styles["title"]))
+        brand_translation = str(payload.get("brand_translation", "") or "").strip()
+        if brand_translation and brand_translation != brand_acronym:
+            story.append(Paragraph(html.escape(brand_translation), styles["subtitle"]))
     story.append(Paragraph(html.escape(payload.get("mode_label", "")), h2))
     story.append(Paragraph(html.escape(f"{payload.get('generated_label','Generated')}: {payload.get('generated_at','')}"), small))
 
@@ -395,7 +406,9 @@ def build_combined_pdf_report(payloads: list[dict]) -> bytes:
     lang = (payloads[0].get("lang") if payloads else "en") or "en"
     combined_title = {"kk":"Біріктірілген аналитикалық есеп","ru":"Сводный аналитический отчет","en":"Integrated analytical report"}.get(lang,"Integrated analytical report")
     structure_title = {"kk":"Есеп құрылымы","ru":"Структура отчета","en":"Report structure"}.get(lang,"Report structure")
-    story = [Paragraph("QŪNAR", styles["title"]), Paragraph(combined_title, styles["subtitle"])]
+    combined_acronym = str(payloads[0].get("brand_acronym", "") or "").strip() if payloads else ""
+    combined_brand = "QŪNAR" + (f" - {combined_acronym}" if combined_acronym else "")
+    story = [Paragraph(html.escape(combined_brand), styles["title"]), Paragraph(combined_title, styles["subtitle"])]
     story.append(Paragraph(structure_title, styles["h2"]))
     for i, payload in enumerate(payloads, 1):
         story.append(Paragraph(f"{i}. {html.escape(payload.get('mode_label',''))}", styles["key"]))
