@@ -59,11 +59,10 @@ div[data-testid="stMetricLabel"] { font-size: 1.02rem !important; font-weight: 6
 div[data-baseweb="input"] input, div[data-baseweb="select"] { min-height: 46px; font-size: 17px !important; }
 div[data-testid="stAlert"] { border-radius: 12px; }
 [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
-.qunar-hero { text-align:center; padding:1.3rem 1.1rem 1.4rem; margin-bottom:1.1rem; background:white; border:1px solid #e1e8e2; border-radius:18px; box-shadow:0 4px 18px rgba(31,62,42,.055); }
-.qunar-brand { font-size:68px; line-height:1; font-weight:850; letter-spacing:3px; color:var(--qunar); }
-.qunar-acronym { margin-top:.7rem; font-size:18px; font-weight:430; color:#315e43; letter-spacing:.01em; }
-.qunar-acronym b { font-weight:850; color:#173d27; }
-.qunar-translation { margin-top:.38rem; font-size:17px; font-weight:650; color:#596a60; }
+.qunar-hero { text-align:center; padding:.45rem 1rem 1.05rem; margin-bottom:1.1rem; background:transparent; border:0; border-radius:0; box-shadow:none; }
+.qunar-brand { font-size:68px; line-height:1.02; font-weight:850; letter-spacing:2px; color:var(--qunar); }
+.qunar-acronym { margin-top:.72rem; font-size:29px; line-height:1.22; font-weight:400; color:#111111; letter-spacing:.005em; }
+.qunar-translation { margin-top:.48rem; font-size:22px; line-height:1.25; font-weight:500; color:#53655d; letter-spacing:.01em; }
 .qunar-key, .qunar-reco { background:var(--qunar-soft); border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
 .qunar-key strong, .qunar-reco strong { font-weight:800; }
 .qunar-insight { background:#fff; border:1px solid #e1e8e2; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
@@ -327,35 +326,18 @@ def district_label(code):
 def crop_label(code):
     return CROP_LABELS[lang].get(code, code)
 
-def format_brand_acronym(text: str, acronym: str = "QUNAR") -> str:
-    """Bold the letters that form QUNAR while keeping the rest of the expansion regular."""
-    safe_text = html.escape(str(text))
-    chars = list(safe_text)
-    search_from = 0
-
-    for letter in acronym:
-        pos = -1
-        for i in range(search_from, len(chars)):
-            if chars[i].upper() == letter:
-                pos = i
-                break
-        if pos == -1:
-            # If the configured expansion no longer contains all Q-U-N-A-R letters,
-            # show it safely without producing broken emphasis.
-            return safe_text
-        chars[pos] = f"<b>{chars[pos]}</b>"
-        search_from = pos + 1
-
-    return "".join(chars)
-
-brand_line_html = format_brand_acronym(t["brand_line"])
+_brand_translation = {
+    "kk": "Ауыл шаруашылығы табиғи ресурстарын сандық бағалау",
+    "ru": "Количественная оценка природных ресурсов сельского хозяйства",
+    "en": "",
+}[lang]
 
 st.markdown(
     f"""
     <div class="qunar-hero">
       <div class="qunar-brand">QŪNAR</div>
-      <div class="qunar-acronym">{brand_line_html}</div>
-      <div class="qunar-translation">{html.escape(str(t["brand_translation"]))}</div>
+      <div class="qunar-acronym">Quantified Utilization of Natural Agricultural Resources</div>
+      {f'<div class="qunar-translation">{_brand_translation}</div>' if _brand_translation else ''}
     </div>
     """,
     unsafe_allow_html=True,
