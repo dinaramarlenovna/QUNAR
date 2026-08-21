@@ -237,6 +237,77 @@ _MODE_LABEL_FALLBACK = {
 }
 for _key, _label in _MODE_LABEL_FALLBACK[lang].items():
     t.setdefault(_key, _label)
+
+UNITS = {
+    "kk": {
+        "ha":"га", "m3":"м³", "m3_ha":"м³/га", "kwh":"кВт·сағ", "kwh_ha":"кВт·сағ/га",
+        "kg":"кг", "kg_ha":"кг/га", "t":"т", "dry_t":"т құрғақ зат",
+        "centner_ha":"ц/га", "solar":"МДж/м²/тәул.", "co2_t":"т CO₂e", "co2_kg_ha":"кг CO₂e/га",
+        "livestock_unit":"шартты мал бірлігі", "livestock_unit_ha":"шартты мал бірлігі/га",
+        "mm":"мм", "growth_year":"%/жыл", "currency":"тг"
+    },
+    "ru": {
+        "ha":"га", "m3":"м³", "m3_ha":"м³/га", "kwh":"кВт·ч", "kwh_ha":"кВт·ч/га",
+        "kg":"кг", "kg_ha":"кг/га", "t":"т", "dry_t":"т сухого вещества",
+        "centner_ha":"ц/га", "solar":"МДж/м²/сут.", "co2_t":"т CO₂e", "co2_kg_ha":"кг CO₂e/га",
+        "livestock_unit":"условная единица скота", "livestock_unit_ha":"условная единица скота/га",
+        "mm":"мм", "growth_year":"%/год", "currency":"тг"
+    },
+    "en": {
+        "ha":"ha", "m3":"m³", "m3_ha":"m³/ha", "kwh":"kWh", "kwh_ha":"kWh/ha",
+        "kg":"kg", "kg_ha":"kg/ha", "t":"t", "dry_t":"t dry matter",
+        "centner_ha":"centners/ha", "solar":"MJ/m²/day", "co2_t":"t CO₂e", "co2_kg_ha":"kg CO₂e/ha",
+        "livestock_unit":"livestock unit (LU)", "livestock_unit_ha":"LU/ha",
+        "mm":"mm", "growth_year":"%/year", "currency":"KZT"
+    },
+}[lang]
+
+_BENCHMARK_CATEGORY_LABELS = {
+    "Cattle": {"kk":"Ірі қара мал", "ru":"Крупный рогатый скот", "en":"Cattle"},
+    "Cows": {"kk":"Сиырлар", "ru":"Коровы", "en":"Cows"},
+    "Sheep/goats": {"kk":"Қой мен ешкі", "ru":"Овцы и козы", "en":"Sheep and goats"},
+    "Pigs": {"kk":"Шошқа", "ru":"Свиньи", "en":"Pigs"},
+    "Horses": {"kk":"Жылқы", "ru":"Лошади", "en":"Horses"},
+    "Camels": {"kk":"Түйе", "ru":"Верблюды", "en":"Camels"},
+    "Poultry": {"kk":"Құс", "ru":"Птица", "en":"Poultry"},
+}
+
+def benchmark_category_label(code):
+    return _BENCHMARK_CATEGORY_LABELS.get(str(code), {}).get(lang, str(code))
+
+_MODEL_TIER_LABELS = {
+    "ML": {"kk":"Машиналық оқыту", "ru":"Машинное обучение", "en":"Machine learning"},
+    "ML + QŪNAR": {"kk":"Машиналық оқыту + QŪNAR", "ru":"Машинное обучение + QŪNAR", "en":"Machine learning + QŪNAR"},
+    "ML + CLREM": {"kk":"Машиналық оқыту + CLREM", "ru":"Машинное обучение + CLREM", "en":"Machine learning + CLREM"},
+    "QŪNAR": {"kk":"QŪNAR есептік модулі", "ru":"Расчетный модуль QŪNAR", "en":"QŪNAR decision module"},
+    "Observed evidence": {"kk":"Бақыланған деректер", "ru":"Наблюдаемые данные", "en":"Observed evidence"},
+}
+def model_tier_label(raw):
+    return _MODEL_TIER_LABELS.get(str(raw), {}).get(lang, str(raw))
+
+_RECOMMENDATION_TYPE_LABELS = {
+    "Priority": {"kk":"Басым", "ru":"Приоритетный", "en":"Priority"},
+    "Promising": {"kk":"Перспективалы", "ru":"Перспективный", "en":"Promising"},
+    "Moderate": {"kk":"Орташа басымдық", "ru":"Умеренный приоритет", "en":"Moderate"},
+    "Low priority": {"kk":"Төмен басымдық", "ru":"Низкий приоритет", "en":"Low priority"},
+}
+def recommendation_type_label(raw):
+    return _RECOMMENDATION_TYPE_LABELS.get(str(raw), {}).get(lang, str(raw))
+
+def water_source_label(info):
+    if info is None:
+        return {"kk":"Енгізілмеген", "ru":"Не введено", "en":"Not entered"}[lang]
+    if getattr(info, "source_tier", "") == "regional_fallback":
+        return {
+            "kk":"Өңірлік калибрлеу мәні",
+            "ru":"Региональное калибровочное значение",
+            "en":"Regional calibration value",
+        }[lang]
+    return {
+        "kk":"Қазақстан Республикасының ресми суару нормалары және есептік түзету",
+        "ru":"Официальные нормы орошения Республики Казахстан и расчетная корректировка",
+        "en":"Official irrigation norms of the Republic of Kazakhstan with model adjustment",
+    }[lang]
 user_level = st.sidebar.radio(
     t["user_level"],
     ["farmer", "specialist", "researcher"],
@@ -322,21 +393,21 @@ if gps_enabled:
 
 
 location_source = st.radio(
-    t.get("location_source", "Источник геоданных"),
+    t.get("location_source", {"kk":"Геодерек көзі","ru":"Источник геоданных","en":"Geodata source"}[lang]),
     ["district", "map"],
-    format_func=lambda x: t.get("location_district", "Считать по выбранному району") if x == "district" else t.get("location_map", "Считать по контуру на карте"),
+    format_func=lambda x: t.get("location_district", {"kk":"Таңдалған аудан бойынша есептеу","ru":"Считать по выбранному району","en":"Calculate by selected district"}[lang]) if x == "district" else t.get("location_map", {"kk":"Картадағы контур бойынша есептеу","ru":"Считать по контуру на карте","en":"Calculate by map polygon"}[lang]),
     horizontal=True,
 )
 st.caption(t.get("location_note", ""))
 
-if st.button(t.get("clear_map", "Очистить карту / сбросить контур")):
+if st.button(t.get("clear_map", {"kk":"Картаны тазалау / контурды өшіру","ru":"Очистить карту / сбросить контур","en":"Clear map / reset boundary"}[lang])):
     st.session_state.field_lat = default_lat
     st.session_state.field_lon = default_lon
     st.session_state.field_geojson = None
     st.session_state.polygon_area_ha = None
     st.session_state.field_locked = False
     st.session_state.detected_map_district = None
-    st.success(t.get("clear_map_done", "Контур карты очищен."))
+    st.success(t.get("clear_map_done", {"kk":"Карта контуры тазаланды.","ru":"Контур карты очищен.","en":"Map boundary cleared."}[lang]))
 
 use_map = st.toggle(t["map_toggle"], value=False, help=t["map_help"], disabled=(location_source == "district"))
 st.caption(t["polygon_help"])
@@ -471,10 +542,10 @@ with st.form("farm_inputs", clear_on_submit=False):
             )
         with l2:
             livestock_heads = st.number_input(
-                {"kk":"Поголовье, бас","ru":"Поголовье, голов","en":"Number of animals, head"}[lang],
+                {"kk":"Мал саны, бас","ru":"Поголовье, голов","en":"Number of animals, head"}[lang],
                 min_value=0.0, value=0.0, step=10.0,
                 help={
-                    "kk":"0 қалдырылса, аудан бойынша соңғы қолжетімді ресми поголовье анықтамалық сценарий ретінде пайдаланылады.",
+                    "kk":"0 қалдырылса, аудан бойынша соңғы қолжетімді ресми мал саны анықтамалық сценарий ретінде пайдаланылады.",
                     "ru":"Если оставить 0, QŪNAR использует последнее доступное официальное поголовье района как справочный сценарий.",
                     "en":"If left at 0, QŪNAR uses the latest available official district herd count as a reference scenario.",
                 }[lang],
@@ -501,7 +572,7 @@ with st.form("farm_inputs", clear_on_submit=False):
             {"kk":"Жемшөп қоры туралы дерек","ru":"Данные о годовом запасе кормов","en":"Annual feed-supply data"}[lang],
             ["unknown", "own"],
             format_func=lambda x: {
-                "unknown":{"kk":"Білмеймін / анықтамалық қажеттілікті есептеу","ru":"Не знаю / рассчитать нормативную потребность","en":"Unknown / calculate reference requirement"}[lang],
+                "unknown":{"kk":"Білмеймін / анықтамалық қажеттілікті есептеу","ru":"Не знаю / рассчитать справочную потребность","en":"Unknown / calculate reference requirement"}[lang],
                 "own":{"kk":"Өз дерегімді енгізу","ru":"Ввести свои данные","en":"Enter my data"}[lang],
             }[x],
         )
@@ -578,7 +649,7 @@ with st.form("farm_inputs", clear_on_submit=False):
                 t["irrigation_type"], ["unknown","furrow","sprinkler","drip","mixed"],
                 format_func=lambda x:{"unknown":t["irrigation_unknown"],"furrow":t["irrigation_furrow"],"sprinkler":t["irrigation_sprinkler"],"drip":t["irrigation_drip"],"mixed":t["irrigation_mixed"]}[x]
             )
-        st.caption({"kk":"Қалған техникалық параметрлер анықтамалық сценариймен есептеледі. Нақты тарифтер, датчиктер, сорғы және сценарийлер үшін «Кеңейтілген» деңгейді таңдаңыз.","ru":"Остальные технические параметры рассчитываются по справочному сценарию. Для точных тарифов, датчиков, насоса и сценариев выберите «Расширенный» уровень.","en":"Other technical parameters use the reference scenario. Choose Advanced for exact tariffs, sensors, pump and what-if settings."}[lang])
+        st.caption({"kk":"Қалған техникалық параметрлер анықтамалық сценариймен есептеледі. Нақты тарифтер, өлшеу сенсорлары, сорғы және сценарийлер үшін «Кеңейтілген» деңгейді таңдаңыз.","ru":"Остальные технические параметры рассчитываются по справочному сценарию. Для точных тарифов, датчиков, насоса и сценариев выберите «Расширенный» уровень.","en":"Other technical parameters use the reference scenario. Choose Advanced for exact tariffs, sensors, pump and what-if settings."}[lang])
     else:
         with st.expander(t["resource_inputs"], expanded=True):
             a,b=st.columns(2)
@@ -682,8 +753,8 @@ with st.form("farm_inputs", clear_on_submit=False):
     if crop is not None:
         with st.expander({"kk":"Экономикалық контур (міндетті емес)","ru":"Экономический контур (необязательно)","en":"Economic contour (optional)"}[lang], expanded=False):
             st.caption({
-                "kk":"Баға жасырын проксиден алынбайды. Нарықтық баға мен шығынды өз деректеріңізбен енгізіңіз; өнімділік енгізілмесе, қолжетімді ML бағасы пайдаланылады.",
-                "ru":"Цена не берется из скрытого рыночного proxy. Укажите свою подтвержденную цену и затраты; если урожайность не введена, при наличии будет использована ML-оценка.",
+                "kk":"Баға жасырын жанама көрсеткіштен алынбайды. Нарықтық баға мен шығынды өз деректеріңізбен енгізіңіз; өнімділік енгізілмесе, машиналық оқыту арқылы қолжетімді баға пайдаланылады.",
+                "ru":"Цена не берется из скрытого рыночного косвенного показателя. Укажите подтвержденную цену и затраты; если урожайность не введена, при наличии используется оценка машинного обучения.",
                 "en":"No hidden market-price proxy is used. Enter a verified price and costs; if yield is omitted, an available ML estimate is used."
             }[lang])
             ec1,ec2,ec3=st.columns(3)
@@ -741,9 +812,9 @@ if submitted:
         effective_water_used = float(water_default_info.m3_ha) * float(area_ha)
         water_input_source = "official_default"
         st.caption({
-            "kk":f"Су шығыны енгізілмегендіктен, есепте {water_default_info.m3_ha:,.0f} м³/га әдепкі мәні қолданылды. Оны өз дерегіңізбен ауыстыруға болады.",
-            "ru":f"Расход воды не введен, поэтому используется редактируемое значение по умолчанию {water_default_info.m3_ha:,.0f} м³/га. Источник: {water_default_info.source_label}.",
-            "en":f"No farm water use was entered, so the editable default {water_default_info.m3_ha:,.0f} m³/ha is used. Source: {water_default_info.source_label}."
+            "kk":f"Су шығыны енгізілмегендіктен, есепте {water_default_info.m3_ha:,.0f} м³/га әдепкі мәні қолданылды. Дереккөзі: {water_source_label(water_default_info)}. Оны өз дерегіңізбен ауыстыруға болады.",
+            "ru":f"Расход воды не введен, поэтому используется редактируемое значение по умолчанию {water_default_info.m3_ha:,.0f} м³/га. Источник: {water_source_label(water_default_info)}.",
+            "en":f"No farm water use was entered, so the editable default {water_default_info.m3_ha:,.0f} m³/ha is used. Source: {water_source_label(water_default_info)}."
         }[lang])
     else:
         effective_water_used = 0.0
@@ -763,8 +834,8 @@ if submitted:
         "recommendations_title": {"kk":"Негізгі ұсыныстар","ru":"Ключевые рекомендации","en":"Key recommendations"}[lang],
         "analysis_title": t.get("explanation", {"kk":"Нәтижені талдау","ru":"Анализ результата","en":"Result analysis"}[lang]),
         "inputs_title": {"kk":"Енгізілген деректер және дереккөздер","ru":"Входные данные и источники","en":"Inputs and sources"}[lang],
-        "parameter_label": t.get("audit_parameter", "Parameter"),
-        "source_label": t.get("audit_source", "Source"),
+        "parameter_label": t.get("audit_parameter", {"kk":"Көрсеткіш","ru":"Показатель","en":"Parameter"}[lang]),
+        "source_label": t.get("audit_source", {"kk":"Дереккөз / рөл","ru":"Источник / роль","en":"Source / role"}[lang]),
         "table_title": {"kk":"Толық нәтиже","ru":"Подробный результат","en":"Detailed result"}[lang],
         "summary": [], "analysis": [], "recommendations": [], "table": None,
         "inputs": [
@@ -772,7 +843,7 @@ if submitted:
             [area_input_label, f"{area_ha:.2f}", t["source_user"]],
             [{"kk":"Есеп координатасы","ru":"Координаты расчета","en":"Calculation coordinates"}[lang], f"{calc_lat:.6f}, {calc_lon:.6f}", {"kk":"Карта/аудан","ru":"Карта/район","en":"Map/district"}[lang]],
             [available_water_label, f"{available_water:.2f}" if available_water > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], t["source_user"] if available_water > 0 else {"kk":"Енгізілмеген","ru":"Не введено","en":"Not entered"}[lang]],
-            [({"kk":"Нақты жылдық су тұтынуы, м³","ru":"Фактическое годовое водопотребление, м³","en":"Observed annual water use, m³"}[lang] if mode_key=="mode5" else t["water_used"]), f"{effective_water_used:.2f}" if effective_water_used > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], (t["source_user"] if water_input_source=="user" else (water_default_info.source_label if water_default_info else {"kk":"Енгізілмеген","ru":"Не введено","en":"Not entered"}[lang]))],
+            [({"kk":"Нақты жылдық су тұтынуы, м³","ru":"Фактическое годовое водопотребление, м³","en":"Observed annual water use, m³"}[lang] if mode_key=="mode5" else t["water_used"]), f"{effective_water_used:.2f}" if effective_water_used > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], (t["source_user"] if water_input_source=="user" else water_source_label(water_default_info))],
             [t["energy"], f"{energy:.2f}" if energy > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], t["source_user"] if energy > 0 else {"kk":"Енгізілмеген","ru":"Не введено","en":"Not entered"}[lang]],
         ]
     }
@@ -785,7 +856,7 @@ if submitted:
         )
         feed_source_label = (
             t["source_user"] if livestock_feed_source == "own"
-            else {"kk":"Белгісіз; QŪNAR нормативтік қажеттілікті бөлек есептейді","ru":"Неизвестно; QŪNAR отдельно рассчитывает справочную потребность","en":"Unknown; QŪNAR calculates reference requirement separately"}[lang]
+            else {"kk":"Белгісіз; QŪNAR анықтамалық қажеттілікті бөлек есептейді","ru":"Неизвестно; QŪNAR отдельно рассчитывает справочную потребность","en":"Unknown; QŪNAR calculates reference requirement separately"}[lang]
         )
         production_source_label = (
             t["source_user"] if livestock_production_amount > 0
@@ -793,8 +864,8 @@ if submitted:
         )
         report_payload["inputs"].extend([
             [{"kk":"Мал түрі","ru":"Вид животных","en":"Livestock type"}[lang], SPECIES_LABELS[lang][livestock_species], t["source_user"]],
-            [{"kk":"Поголовье","ru":"Поголовье","en":"Animals"}[lang], f"{livestock_heads:.0f}" if livestock_heads > 0 else {"kk":"енгізілмеген","ru":"не введено","en":"not entered"}[lang], livestock_head_source_label],
-            [{"kk":"Жемшөп қоры","ru":"Запас кормов","en":"Feed reserve"}[lang], f"{livestock_fodder_t:.2f} т DM" if livestock_feed_source == "own" else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], feed_source_label],
+            [{"kk":"Мал саны","ru":"Поголовье","en":"Animals"}[lang], f"{livestock_heads:.0f}" if livestock_heads > 0 else {"kk":"енгізілмеген","ru":"не введено","en":"not entered"}[lang], livestock_head_source_label],
+            [{"kk":"Жемшөп қоры","ru":"Запас кормов","en":"Feed reserve"}[lang], f"{livestock_fodder_t:.2f} {UNITS['dry_t']}" if livestock_feed_source == "own" else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], feed_source_label],
             [{"kk":"Өнім түрі","ru":"Вид продукции","en":"Product type"}[lang], PRODUCT_LABELS[lang][livestock_production_kind], t["source_user"]],
             [{"kk":"Өнім көлемі","ru":"Объем продукции","en":"Production volume"}[lang], f"{livestock_production_amount:.2f}" if livestock_production_amount > 0 else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], production_source_label],
         ])
@@ -877,13 +948,13 @@ if submitted:
         trend = livestock.get("regional_product_trend", {}) or {}
 
         st.markdown("### " + {
-            "kk":"QŪNAR Livestock - ресурстық-прогноздық контур",
-            "ru":"QŪNAR Livestock - ресурсно-прогнозный контур",
-            "en":"QŪNAR Livestock - resource and forecasting layer",
+            "kk":"QŪNAR мал шаруашылығы - ресурстық-болжамдық модуль",
+            "ru":"QŪNAR животноводство - ресурсно-прогнозный модуль",
+            "en":"QŪNAR Livestock - resource and forecasting module",
         }[lang])
         st.caption({
-            "kk":"Контур аудандық мал санының ресми динамикасын, NASA POWER вегетациялық климатын, түрлік су-жемшөп нормативтерін және шаруашылық енгізген деректерді бір есептік жүйеде біріктіреді.",
-            "ru":"Контур объединяет официальную районную динамику поголовья, климатический профиль NASA POWER, видоспецифические ориентиры воды и кормов и фактические данные хозяйства.",
+            "kk":"Модуль аудандық мал санының ресми динамикасын, NASA POWER бойынша вегетациялық кезең климатын, мал түріне арналған су мен жемшөптің анықтамалық мөлшерлерін және шаруашылық енгізген деректерді бір есептік жүйеде біріктіреді.",
+            "ru":"Модуль объединяет официальную районную динамику поголовья, климатический профиль NASA POWER, справочные потребности в воде и кормах по видам животных и фактические данные хозяйства.",
             "en":"The layer integrates official district herd dynamics, NASA POWER growing-season climate, species-specific water/feed references and farm observations.",
         }[lang])
 
@@ -901,7 +972,7 @@ if submitted:
             f"{float(lp.get('livestock_share_pct',0)):.1f}%"
         )
         r2.metric(
-            {"kk":"Есепте қолданылған поголовье","ru":"Поголовье в расчете","en":"Herd used in calculation"}[lang],
+            {"kk":"Есепте қолданылған мал саны","ru":"Поголовье в расчете","en":"Herd used in calculation"}[lang],
             f"{effective_heads:,.0f}"
         )
         r3.metric(
@@ -913,41 +984,41 @@ if submitted:
             ),
         )
         r4.metric(
-            {"kk":"Мал бірлігі (LU)","ru":"Условные единицы скота (LU)","en":"Livestock units (LU)"}[lang],
+            {"kk":"Шартты мал бірлігі","ru":"Условные единицы скота","en":"Livestock units (LU)"}[lang],
             f"{float(livestock.get('livestock_units')):,.1f}" if livestock.get("livestock_units") is not None else "—"
         )
 
         if heads_source == "district_reference":
             st.info({
-                "kk":f"Шаруашылықтың жеке поголовьесі енгізілмеді. Есептік сценарийде {benchmark.get('latest_year','соңғы')} жылғы аудандық ресми мән қолданылды: {effective_heads:,.0f} бас. Бұл мән шаруашылықтың нақты поголовьесі ретінде белгіленбейді.",
-                "ru":f"Поголовье конкретного хозяйства не введено. В справочном сценарии использовано последнее официальное районное значение за {benchmark.get('latest_year','последний доступный')} год: {effective_heads:,.0f} голов. В отчете оно сохраняется с признаком district reference.",
+                "kk":f"Шаруашылықтың нақты мал саны енгізілмеді. Есептік сценарийде {benchmark.get('latest_year','соңғы қолжетімді')} жылғы аудандық ресми мән қолданылды: {effective_heads:,.0f} бас. Бұл мән шаруашылықтың нақты мал саны ретінде белгіленбейді.",
+                "ru":f"Поголовье конкретного хозяйства не введено. В справочном сценарии использовано последнее официальное районное значение за {benchmark.get('latest_year','последний доступный')} год: {effective_heads:,.0f} голов. В отчете оно отмечается как районное справочное значение.",
                 "en":f"No farm-specific herd count was entered. The reference scenario uses the latest official district value for {benchmark.get('latest_year','the latest available year')}: {effective_heads:,.0f} head, explicitly flagged as a district reference.",
             }[lang])
         benchmark_category = benchmark.get("benchmark_species")
         if benchmark_category and str(benchmark_category) != str(livestock_species):
             st.caption({
-                "kk":f"Ресми тарихи benchmark санаты: {benchmark_category}. Таңдалған түр үшін су және жемшөп коэффициенттері жеке қолданылады.",
-                "ru":f"Официальная историческая категория benchmark: {benchmark_category}. Видоспецифические коэффициенты воды и кормов для выбранного вида применяются отдельно.",
-                "en":f"Official historical benchmark category: {benchmark_category}. Species-specific water and feed coefficients are applied separately for the selected type.",
+                "kk":f"Ресми тарихи салыстыру санаты: {benchmark_category_label(benchmark_category)}. Таңдалған мал түрі үшін су мен жемшөп коэффициенттері жеке қолданылады.",
+                "ru":f"Официальная историческая категория для сравнения: {benchmark_category_label(benchmark_category)}. Коэффициенты воды и кормов для выбранного вида применяются отдельно.",
+                "en":f"Official historical benchmark category: {benchmark_category_label(benchmark_category)}. Species-specific water and feed coefficients are applied separately for the selected type.",
             }[lang])
 
         if benchmark.get("district_percentile") is not None:
             st.caption({
-                "kk":f"{SPECIES_LABELS[lang][livestock_species]} бойынша ауданның поголовьесі салыстырмалы аудандық үлестірімнің {benchmark['district_percentile']:.0f}-перцентилінде; тарихи қатар {benchmark.get('history_start_year','—')}-{benchmark.get('latest_year','—')}, бақылау саны: {benchmark.get('observations','—')}.",
+                "kk":f"{SPECIES_LABELS[lang][livestock_species]} бойынша ауданның мал саны қолжетімді аумақтар арасындағы салыстырмалы бөліністің {benchmark['district_percentile']:.0f}-пайыздық деңгейінде; тарихи қатар {benchmark.get('history_start_year','—')}-{benchmark.get('latest_year','—')}, бақылау саны: {benchmark.get('observations','—')}.",
                 "ru":f"По категории «{SPECIES_LABELS[lang][livestock_species]}» район находится примерно на {benchmark['district_percentile']:.0f}-м перцентиле распределения поголовья среди доступных территорий; исторический ряд {benchmark.get('history_start_year','—')}-{benchmark.get('latest_year','—')}, наблюдений: {benchmark.get('observations','—')}.",
                 "en":f"For {SPECIES_LABELS[lang][livestock_species]}, the district is near the {benchmark['district_percentile']:.0f}th percentile of available district herd counts; history {benchmark.get('history_start_year','—')}-{benchmark.get('latest_year','—')}, observations: {benchmark.get('observations','—')}.",
             }[lang])
 
         if livestock.get("lu_per_pasture_ha") is not None:
             st.metric(
-                {"kk":"LU / жайылым га","ru":"LU на гектар пастбища","en":"LU per pasture ha"}[lang],
-                f"{livestock['lu_per_pasture_ha']:.3f} LU/га"
+                {"kk":"Шартты мал бірлігі / жайылым га","ru":"Условных единиц скота на гектар пастбища","en":"LU per pasture ha"}[lang],
+                f"{livestock['lu_per_pasture_ha']:.3f} {UNITS['livestock_unit_ha']}"
             )
 
         # 2. Historical dynamics and one-step ML forecast.
         st.markdown("#### " + {
-            "kk":"Тарихи динамика және ML-болжам",
-            "ru":"Историческая динамика и ML-прогноз",
+            "kk":"Тарихи динамика және машиналық оқыту болжамы",
+            "ru":"Историческая динамика и прогноз машинного обучения",
             "en":"Historical dynamics and ML forecast",
         }[lang])
         f1,f2,f3,f4 = st.columns(4)
@@ -957,37 +1028,39 @@ if submitted:
             help=str(benchmark.get("latest_year",""))
         )
         f2.metric(
-            {"kk":"Келесі жылға ML-болжам","ru":"ML-прогноз на следующий год","en":"Next-year ML forecast"}[lang],
+            {"kk":"Келесі жылға машиналық оқыту болжамы","ru":"Прогноз машинного обучения на следующий год","en":"Next-year machine-learning forecast"}[lang],
             f"{float(forecast.get('forecast_heads')):,.0f}" if forecast.get("available") and forecast.get("publish_forecast") else "—",
             delta=(f"{float(forecast.get('forecast_change_pct')):+.1f}%" if forecast.get("publish_forecast") and forecast.get("forecast_change_pct") is not None else None)
         )
         f3.metric(
-            "R² category (log, rolling-origin)",
+            {"kk":"Санат бойынша R² (логарифмдік шкала)","ru":"R² по категории (логарифмическая шкала)","en":"Category R² (log scale)"}[lang],
             f"{float(species_validation.get('r2_log')):.3f}" if species_validation.get("r2_log") is not None and pd.notna(species_validation.get("r2_log")) else "—"
         )
         f4.metric(
-            {"kk":"Категорияның медианалық APE","ru":"Медианная APE категории","en":"Category median APE"}[lang],
+            {"kk":"Медианалық абсолюттік пайыздық қате","ru":"Медианная абсолютная процентная ошибка","en":"Median absolute percentage error"}[lang],
             f"{float(species_validation.get('median_ape_pct')):.1f}%" if species_validation.get("median_ape_pct") is not None and pd.notna(species_validation.get("median_ape_pct")) else "—"
         )
 
         hist = district_species_history(used_district, livestock_species)
         if not hist.empty:
-            hplot = hist.rename(columns={"Heads":"Observed"}).set_index("Year")[["Observed"]]
-            hplot["Forecast"] = float("nan")
+            observed_col = {"kk":"Нақты мән","ru":"Фактическое значение","en":"Observed"}[lang]
+            forecast_col = {"kk":"Болжам","ru":"Прогноз","en":"Forecast"}[lang]
+            hplot = hist.rename(columns={"Heads": observed_col}).set_index("Year")[[observed_col]]
+            hplot[forecast_col] = float("nan")
             if forecast.get("available") and forecast.get("publish_forecast"):
                 fy = int(forecast["forecast_year"])
                 if fy not in hplot.index:
-                    hplot.loc[fy, "Observed"] = float("nan")
-                hplot.loc[fy, "Forecast"] = float(forecast["forecast_heads"])
+                    hplot.loc[fy, observed_col] = float("nan")
+                hplot.loc[fy, forecast_col] = float(forecast["forecast_heads"])
                 # Retain the latest observed point in the forecast series so the one-step path is visible.
                 ly = int(forecast["previous_year"])
-                hplot.loc[ly, "Forecast"] = float(forecast["previous_heads"])
+                hplot.loc[ly, forecast_col] = float(forecast["previous_heads"])
                 hplot = hplot.sort_index()
             st.line_chart(hplot)
         if forecast.get("available") and not forecast.get("publish_forecast"):
             st.warning({
-                "kk":f"Бұл санат бойынша ML-болжам жарияланбайды: санаттық rolling-origin тексеру жеткіліксіз (R²={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR тарихи динамика мен ресурстық диагностикаға сүйенеді.",
-                "ru":f"Для этой категории численный ML-прогноз не публикуется: покатегорийная rolling-origin проверка недостаточно надежна (R²={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR сохраняет историческую динамику и ресурсную диагностику без выдачи слабого прогноза.",
+                "kk":f"Бұл санат бойынша машиналық оқыту болжамы жарияланбайды: уақыт бойынша кезеңдік тексерудің сапасы жеткіліксіз (R²={species_validation.get('r2_log', float('nan')):.3f}, медианалық абсолюттік пайыздық қате={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR тарихи динамика мен ресурстық диагностикаға сүйенеді.",
+                "ru":f"Для этой категории численный прогноз машинного обучения не публикуется: последовательная проверка по времени недостаточно надежна (R²={species_validation.get('r2_log', float('nan')):.3f}, медианная абсолютная процентная ошибка={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR сохраняет историческую динамику и ресурсную диагностику без выдачи слабого прогноза.",
                 "en":f"A numerical ML forecast is withheld for this category because category-level rolling-origin validation is not reliable enough (R²={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR retains history and resource diagnostics without publishing a weak forecast.",
             }[lang])
         if forecast.get("available"):
@@ -997,8 +1070,8 @@ if submitted:
                 "en":"regional-median imputed" if forecast.get("climate_imputed") else "district",
             }[lang]
             st.caption({
-                "kk":f"Random Forest белгілері: аудан, мал санаты, алдыңғы жылғы поголовье, жыл, сәуір-қыркүйек температурасы, жауын-шашын, тамыр аймағының ылғалы және күн радиациясы. Rolling-origin тексеруі: {', '.join(map(str, forecast.get('validation_years', [])))}; жалпы n={forecast.get('validation_n',0)}, жалпы R²(log)={forecast.get('r2_log', float('nan')):.3f}; таңдалған санат n={species_validation.get('n',0)}, R²(log)={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климаттық анықтама: {forecast.get('climate_reference_year','—')} жыл, {climate_flag}.",
-                "ru":f"Random Forest использует район, категорию животных, поголовье предыдущего года, год, температуру апреля-сентября, осадки, влажность корневой зоны и солнечную радиацию. Rolling-origin проверка охватывает {', '.join(map(str, forecast.get('validation_years', [])))} годы; общее n={forecast.get('validation_n',0)}, общее R²(log)={forecast.get('r2_log', float('nan')):.3f}; для выбранной категории n={species_validation.get('n',0)}, R²(log)={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климатическая опора прогноза: {forecast.get('climate_reference_year','—')} год, профиль {climate_flag}.",
+                "kk":f"Кездейсоқ орман алгоритмінің белгілері: аудан, мал санаты, алдыңғы жылғы мал саны, жыл, сәуір-қыркүйек температурасы, жауын-шашын, тамыр аймағының ылғалы және күн радиациясы. Уақыт бойынша кезеңдік тексеру жылдары: {', '.join(map(str, forecast.get('validation_years', [])))}; жалпы бақылау саны={forecast.get('validation_n',0)}, жалпы R²={forecast.get('r2_log', float('nan')):.3f}; таңдалған санаттағы бақылау саны={species_validation.get('n',0)}, R²={species_validation.get('r2_log', float('nan')):.3f}, медианалық абсолюттік пайыздық қате={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климаттық анықтама: {forecast.get('climate_reference_year','—')} жыл, {climate_flag}.",
+                "ru":f"Алгоритм случайного леса использует район, категорию животных, поголовье предыдущего года, год, температуру апреля-сентября, осадки, влажность корневой зоны и солнечную радиацию. Последовательная проверка по времени охватывает {', '.join(map(str, forecast.get('validation_years', [])))} годы; общее число наблюдений={forecast.get('validation_n',0)}, общий R²={forecast.get('r2_log', float('nan')):.3f}; для выбранной категории число наблюдений={species_validation.get('n',0)}, R²={species_validation.get('r2_log', float('nan')):.3f}, медианная абсолютная процентная ошибка={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климатическая опора прогноза: {forecast.get('climate_reference_year','—')} год, профиль {climate_flag}.",
                 "en":f"Random Forest uses district, livestock category, previous-year herd size, year, Apr-Sep temperature, precipitation, root-zone wetness and solar radiation. Rolling-origin validation covers {', '.join(map(str, forecast.get('validation_years', [])))}; overall n={forecast.get('validation_n',0)}, overall R²(log)={forecast.get('r2_log', float('nan')):.3f}; selected-category n={species_validation.get('n',0)}, R²(log)={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%. Forecast climate reference: {forecast.get('climate_reference_year','—')}, {climate_flag} profile.",
             }[lang])
 
@@ -1015,7 +1088,7 @@ if submitted:
         )
         b2.metric(
             {"kk":"Жылдық су қажеттілігі","ru":"Справочная годовая потребность в воде","en":"Reference annual water requirement"}[lang],
-            f"{float(livestock.get('reference_water_m3_year')):,.0f} м³" if livestock.get("reference_water_m3_year") is not None else "—"
+            f"{float(livestock.get('reference_water_m3_year')):,.0f} {UNITS['m3']}" if livestock.get("reference_water_m3_year") is not None else "—"
         )
         b3.metric(
             {"kk":"Жемшөп құрғақ заты / бас / тәул.","ru":"Сухое вещество корма, кг/гол./сут.","en":"Feed dry matter, kg/head/day"}[lang],
@@ -1023,10 +1096,10 @@ if submitted:
         )
         b4.metric(
             {"kk":"Жылдық жемшөп қажеттілігі","ru":"Справочная годовая потребность в кормах","en":"Reference annual feed requirement"}[lang],
-            f"{float(livestock.get('reference_feed_dm_t_year')):,.1f} т DM" if livestock.get("reference_feed_dm_t_year") is not None else "—"
+            f"{float(livestock.get('reference_feed_dm_t_year')):,.1f} {UNITS['dry_t']}" if livestock.get("reference_feed_dm_t_year") is not None else "—"
         )
         st.caption({
-            "kk":f"Су анықтамасы {float(livestock.get('reference_temperature_c',25)):.1f} °C климаттық температурада есептелді; түрлік коэффициент көзі: {livestock.get('reference_source','—')}. Бұл шамалар жоспарлау ориентирі ретінде сақталады.",
+            "kk":f"Судың анықтамалық қажеттілігі {float(livestock.get('reference_temperature_c',25)):.1f} °C температура үшін есептелді; мал түрі коэффициенттерінің дереккөзі: {livestock.get('reference_source','—')}. Бұл шамалар жоспарлауға арналған анықтамалық мәндер ретінде қолданылады.",
             "ru":f"Водный ориентир рассчитан для климатической температуры {float(livestock.get('reference_temperature_c',25)):.1f} °C; источник видоспецифических коэффициентов: {livestock.get('reference_source','—')}. Эти значения используются как прозрачный расчетный ориентир.",
             "en":f"The water reference is evaluated at {float(livestock.get('reference_temperature_c',25)):.1f} °C; species coefficient source: {livestock.get('reference_source','—')}. Values are retained as transparent planning references.",
         }[lang])
@@ -1043,7 +1116,7 @@ if submitted:
         if livestock.get("feed_reference_coverage_pct") is not None:
             cov = float(livestock["feed_reference_coverage_pct"])
             msg = {
-                "kk":f"Енгізілген жемшөп қоры анықтамалық жылдық DM қажеттілігінің {cov:.1f}% жабады.",
+                "kk":f"Енгізілген жемшөп қоры құрғақ зат бойынша анықтамалық жылдық қажеттіліктің {cov:.1f}% жабады.",
                 "ru":f"Введенный запас кормов покрывает {cov:.1f}% справочной годовой потребности в сухом веществе.",
                 "en":f"Entered feed supply covers {cov:.1f}% of the annual reference dry-matter requirement.",
             }[lang]
@@ -1058,8 +1131,8 @@ if submitted:
 
         # 4. Production performance.
         st.markdown("#### " + {
-            "kk":"Өнімділік және аймақтық benchmark",
-            "ru":"Продуктивность и региональный benchmark",
+            "kk":"Өнімділік және өңірлік салыстырмалы көрсеткіш",
+            "ru":"Продуктивность и региональное сравнение",
             "en":"Productivity and regional benchmark",
         }[lang])
         p1,p2,p3,p4 = st.columns(4)
@@ -1070,24 +1143,24 @@ if submitted:
         else:
             own_prod = livestock.get("production_kg_per_head")
             own_label = {"kk":"Өнім / бас","ru":"Продукция на голову","en":"Output per head"}[lang]
-            own_fmt = f"{float(own_prod):,.1f} кг" if own_prod is not None else "—"
+            own_fmt = f"{float(own_prod):,.1f} {UNITS['kg']}" if own_prod is not None else "—"
         p1.metric(own_label, own_fmt)
 
         ref_kind = livestock.get("productivity_reference_kind")
         ref_val = livestock.get("productivity_reference_value")
         ratio = livestock.get("productivity_reference_ratio_pct")
         p2.metric(
-            {"kk":"2023 аймақтық салыстыру","ru":"Региональный ориентир 2023","en":"2023 regional reference"}[lang],
+            {"kk":"2023 жылғы өңірлік салыстыру","ru":"Региональное сравнение за 2023 год","en":"2023 regional reference"}[lang],
             f"{float(ref_val):,.1f}" if ref_val is not None else "—",
             help=str(ref_kind or "")
         )
         p3.metric(
-            {"kk":"Ориентирге қатысты","ru":"К региональному ориентиру","en":"Relative to reference"}[lang],
+            {"kk":"Өңірлік мәнге қатысты","ru":"Относительно регионального значения","en":"Relative to reference"}[lang],
             f"{float(ratio):,.1f}%" if ratio is not None else "—"
         )
         p4.metric(
-            {"kk":"Аймақтық CAGR","ru":"Региональный CAGR","en":"Regional CAGR"}[lang],
-            f"{float(trend.get('cagr_pct')):+.2f}%/жыл" if trend.get("cagr_pct") is not None else "—",
+            {"kk":"Орташа жылдық өсу қарқыны","ru":"Среднегодовой темп роста","en":"Regional CAGR"}[lang],
+            f"{float(trend.get('cagr_pct')):+.2f}{UNITS['growth_year']}" if trend.get("cagr_pct") is not None else "—",
             help=(f"{trend.get('start_year','—')}-{trend.get('end_year','—')}" if trend else None)
         )
 
@@ -1100,7 +1173,7 @@ if submitted:
             elif livestock_species in ("Sheep","Goats") and regional_prod.get("wool_kg_per_sheep_goat") is not None:
                 refs.append({"kk":f"Жүн: {regional_prod['wool_kg_per_sheep_goat']:.2f} кг/қой-ешкі","ru":f"Шерсть: {regional_prod['wool_kg_per_sheep_goat']:.2f} кг/овцу-козу","en":f"Wool: {regional_prod['wool_kg_per_sheep_goat']:.2f} kg/sheep-goat"}[lang])
             if regional_prod.get("aggregate_meat_kg_per_lu") is not None and livestock_production_kind == "meat_tonnes":
-                refs.append({"kk":f"Еттің жүйелік ориентирі: {regional_prod['aggregate_meat_kg_per_lu']:.1f} кг/LU","ru":f"Системный ориентир мяса: {regional_prod['aggregate_meat_kg_per_lu']:.1f} кг/LU","en":f"System meat reference: {regional_prod['aggregate_meat_kg_per_lu']:.1f} kg/LU"}[lang])
+                refs.append({"kk":f"Ет бойынша жүйелік салыстырмалы мән: {regional_prod['aggregate_meat_kg_per_lu']:.1f} кг/шартты мал бірлігі","ru":f"Системное сравнительное значение по мясу: {regional_prod['aggregate_meat_kg_per_lu']:.1f} кг/условную единицу скота","en":f"System meat reference: {regional_prod['aggregate_meat_kg_per_lu']:.1f} kg/LU"}[lang])
             if refs:
                 st.info({
                     "kk":"Шаруашылықтың өнім көлемі енгізілмеді. 2023 жылғы аймақтық салыстыру үшін: " + "; ".join(refs),
@@ -1118,17 +1191,17 @@ if submitted:
         c1.metric({"kk":"Температура, сәуір-қыркүйек","ru":"Температура, апрель-сентябрь","en":"Apr-Sep temperature"}[lang],
                   f"{float(livestock.get('temperature_c')):.1f} °C" if livestock.get("temperature_c") is not None else "—")
         c2.metric({"kk":"Жауын-шашын, сәуір-қыркүйек","ru":"Осадки, апрель-сентябрь","en":"Apr-Sep precipitation"}[lang],
-                  f"{float(livestock.get('precipitation_mm')):.0f} мм" if livestock.get("precipitation_mm") is not None else "—")
+                  f"{float(livestock.get('precipitation_mm')):.0f} {UNITS['mm']}" if livestock.get("precipitation_mm") is not None else "—")
         c3.metric({"kk":"Тамыр аймағының ылғалы","ru":"Влажность корневой зоны","en":"Root-zone wetness"}[lang],
                   f"{float(livestock.get('root_zone_wetness')):.3f}" if livestock.get("root_zone_wetness") is not None else "—")
         c4.metric({"kk":"Күн радиациясы","ru":"Солнечная радиация","en":"Solar radiation"}[lang],
-                  f"{float(livestock.get('solar_radiation_mj_m2_day')):.2f} MJ/m²/day" if livestock.get("solar_radiation_mj_m2_day") is not None else "—")
+                  f"{float(livestock.get('solar_radiation_mj_m2_day')):.2f} {UNITS['solar']}" if livestock.get("solar_radiation_mj_m2_day") is not None else "—")
 
         c5,c6,c7 = st.columns(3)
         c5.metric({"kk":"Энергия / бас","ru":"Энергия на голову","en":"Energy per head"}[lang],
-                  f"{float(livestock.get('energy_kwh_per_head')):,.1f} кВт·сағ" if livestock.get("energy_kwh_per_head") is not None else "—")
+                  f"{float(livestock.get('energy_kwh_per_head')):,.1f} {UNITS['kwh']}" if livestock.get("energy_kwh_per_head") is not None else "—")
         c6.metric({"kk":"Электр энергиясынан CO₂","ru":"CO₂ от электроэнергии","en":"Electricity CO₂"}[lang],
-                  f"{float(livestock.get('operational_co2e_kg'))/1000:,.2f} т CO₂e" if livestock.get("operational_co2e_kg") is not None else "—")
+                  f"{float(livestock.get('operational_co2e_kg'))/1000:,.2f} {UNITS['co2_t']}" if livestock.get("operational_co2e_kg") is not None else "—")
         c7.metric({"kk":"Енгізілген дерек толықтығы","ru":"Полнота фактических данных","en":"Observed-input completeness"}[lang],
                   f"{float(livestock.get('input_completeness_pct',0)):.0f}%")
 
@@ -1143,23 +1216,23 @@ if submitted:
         report_payload["summary"] = [
             {"label":{"kk":"Мал шаруашылығының үлесі","ru":"Доля животноводства","en":"Livestock share"}[lang],
              "value":f"{float(lp.get('livestock_share_pct',0)):.1f}%"},
-            {"label":{"kk":"Поголовье","ru":"Поголовье","en":"Herd"}[lang],
-             "value":f"{effective_heads:,.0f} ({heads_source})"},
-            {"label":{"kk":"ML-болжам","ru":"ML-прогноз","en":"ML forecast"}[lang],
+            {"label":{"kk":"Мал саны","ru":"Поголовье","en":"Herd"}[lang],
+             "value":f"{effective_heads:,.0f} ({ {'user': {'kk':'пайдаланушы дерегі','ru':'данные пользователя','en':'user data'}, 'district_reference': {'kk':'аудандық анықтамалық мән','ru':'районное справочное значение','en':'district reference'}, 'unknown': {'kk':'белгісіз','ru':'неизвестно','en':'unknown'} }.get(heads_source, {'kk':str(heads_source),'ru':str(heads_source),'en':str(heads_source)})[lang] })"},
+            {"label":{"kk":"Машиналық оқыту болжамы","ru":"Прогноз машинного обучения","en":"Machine-learning forecast"}[lang],
              "value":f"{float(forecast.get('forecast_heads')):,.0f} ({forecast.get('forecast_year','—')})" if forecast.get("available") and forecast.get("publish_forecast") else {"kk":"жарияланбайды","ru":"не публикуется","en":"withheld"}[lang]},
-            {"label":{"kk":"LU","ru":"LU","en":"LU"}[lang],
+            {"label":{"kk":"Шартты мал бірлігі","ru":"Условные единицы скота","en":"Livestock units (LU)"}[lang],
              "value":f"{float(livestock.get('livestock_units')):,.1f}" if livestock.get("livestock_units") is not None else "—"},
         ]
         report_payload["analysis"] = [{
-            "kk":f"{used_district} бойынша {SPECIES_LABELS[lang][livestock_species]} ресурстық профилі ресми аудандық динамика, климаттық экспозиция, түрлік су-жемшөп нормативтері және енгізілген шаруашылық деректері арқылы есептелді.",
-            "ru":f"Ресурсный профиль категории «{SPECIES_LABELS[lang][livestock_species]}» для {used_district} рассчитан по официальной районной динамике, климатической экспозиции, видоспецифическим ориентирам воды и кормов и введенным данным хозяйства.",
+            "kk":f"{district_label(used_district)} аумағындағы «{SPECIES_LABELS[lang][livestock_species]}» ресурстық профилі ресми аудандық динамика, климаттық әсер, мал түріне арналған су мен жемшөптің анықтамалық мөлшерлері және шаруашылық енгізген деректер негізінде есептелді.",
+            "ru":f"Ресурсный профиль категории «{SPECIES_LABELS[lang][livestock_species]}» для территории «{district_label(used_district)}» рассчитан по официальной районной динамике, климатическим условиям, справочным потребностям в воде и кормах по виду животных и введенным данным хозяйства.",
             "en":f"The {SPECIES_LABELS[lang][livestock_species]} resource profile for {used_district} integrates official district dynamics, climate exposure, species-specific water/feed references and entered farm observations.",
         }[lang]]
         report_payload["recommendations"] = [{
             "title":{"kk":"Ресурстық теңгерім","ru":"Ресурсный баланс","en":"Resource balance"}[lang],
             "text":{
-                "kk":"Поголовье, су қоры, жемшөп DM, жайылым жүктемесі және өнімділік бір жылдық есептік көкжиекте салыстырылады.",
-                "ru":"Поголовье, водообеспеченность, кормовой сухой материал, пастбищная нагрузка и продуктивность сопоставляются в едином годовом расчетном горизонте.",
+                "kk":"Мал саны, су қоры, жемшөптің құрғақ заты, жайылым жүктемесі және өнімділік бір жылдық есептік кезеңде салыстырылады.",
+                "ru":"Поголовье, водообеспеченность, сухое вещество кормов, пастбищная нагрузка и продуктивность сопоставляются в едином годовом расчетном горизонте.",
                 "en":"Herd size, water availability, feed dry matter, pasture pressure and productivity are compared within one annual accounting horizon.",
             }[lang],
             "evidence":{
@@ -1197,30 +1270,30 @@ if submitted:
             b.metric({"kk":"Климат","ru":"Климат","en":"Climate"}[lang], f"{float(scenario['Climate_score_0_100']):.1f}/100")
             c.metric({"kk":"Су жүктемесі","ru":"Водная нагрузка","en":"Water pressure"}[lang], f"{float(scenario['Resource_efficiency_0_100']):.1f}/100")
             d.metric({"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang], f"{float(scenario['Data_reliability_0_100']):.1f}/100")
-            st.caption({"kk":"Бұл дақыл үшін жеке ML өнімділік болжамының орнына аудандық QŪNAR есептік қабаты қолданылады.","ru":"Для этой культуры вместо индивидуального ML-прогноза урожайности используется районный расчетный слой QŪNAR.","en":"For this crop, the district QŪNAR decision layer is used instead of an individual ML yield forecast."}[lang])
+            st.caption({"kk":"Бұл дақыл үшін жеке машиналық оқыту болжамы қолжетімсіз болғанда аудандық QŪNAR есептік қабаты қолданылады.","ru":"Для этой культуры при отсутствии индивидуального прогноза машинного обучения используется районный расчетный слой QŪNAR.","en":"For this crop, the district QŪNAR decision layer is used instead of an individual ML yield forecast."}[lang])
         else:
             st.info({"kk":"Бұл дақыл бойынша толық аудандық QŪNAR сценарийі жоқ. Шаруашылықтың су, энергия және көміртек көрсеткіштері пайдаланушы енгізген деректер бойынша есептеледі.","ru":"Для этой культуры нет полного районного сценария QŪNAR. Водные, энергетические и углеродные показатели хозяйства рассчитываются по введенным пользователем данным.","en":"No full district QŪNAR scenario is available for this crop. Farm water, energy and carbon indicators are calculated from user inputs."}[lang])
         if "farm_water_m3_per_ha" in resource:
-            c1,c2=st.columns(2); c1.metric(t["water_use"], f"{resource['farm_water_m3_per_ha']:,.0f} м³/га"); c2.metric(t["freshwater"], f"{resource['farm_freshwater_m3']:,.0f} м³")
+            c1,c2=st.columns(2); c1.metric(t["water_use"], f"{resource['farm_water_m3_per_ha']:,.0f} {UNITS['m3_ha']}"); c2.metric(t["freshwater"], f"{resource['farm_freshwater_m3']:,.0f} {UNITS['m3']}")
         if "energy_kwh_per_ha" in resource:
-            st.metric(t["energy_use"], f"{resource['energy_kwh_per_ha']:,.0f} кВт·ч/га")
+            st.metric(t["energy_use"], f"{resource['energy_kwh_per_ha']:,.0f} {UNITS['kwh_ha']}")
         elif "reference_pumping_energy_kwh_per_ha" in resource:
             st.caption({"kk":f"Егер осы су көлемі сорғымен берілсе, анықтамалық энергия сценарийі ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} кВт·сағ/га (0,70509 кВт·сағ/м³). Бұл нақты тұтыну емес.","ru":f"Если весь этот объем подается насосом, справочный энергетический сценарий ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} кВт·ч/га (0,70509 кВт·ч/м³). Это не фактическое энергопотребление хозяйства.","en":f"If the full water volume is pumped, the reference energy scenario is ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} kWh/ha (0.70509 kWh/m³). This is not observed farm energy use."}[lang])
-        if "operational_co2e_kg_per_ha" in resource: st.metric(t["co2"], f"{resource['operational_co2e_kg_per_ha']:,.1f} кг CO₂e/га")
+        if "operational_co2e_kg_per_ha" in resource: st.metric(t["co2"], f"{resource['operational_co2e_kg_per_ha']:,.1f} {UNITS['co2_kg_ha']}")
         econ = economic_climate_effect(energy_kwh=energy, freshwater_m3=resource.get("farm_freshwater_m3"), electricity_tariff=electricity_tariff, water_tariff=water_tariff, emission_factor=ef, current_solar_share=current_solar, target_solar_share=target_solar, water_saving_target=water_saving_target)
         if user_level != "farmer":
             st.markdown("### " + t["climate_cost_title"])
             e1,e2,e3,e4=st.columns(4)
-            e1.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} тг")
-            e2.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} тг")
-            e3.metric(t["co2_reduction"], f"{econ['co2_reduction_kg']/1000:,.2f} т CO₂")
-            e4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} тг")
+            e1.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}")
+            e2.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}")
+            e3.metric(t["co2_reduction"], f"{econ['co2_reduction_kg']/1000:,.2f} {UNITS['t']} CO₂")
+            e4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}")
         st.markdown("### " + {"kk":"Практикалық қорытынды","ru":"Практический вывод","en":"Practical conclusion"}[lang])
         if scenario is not None:
             st.write({"kk":f"{extended_crop_label(crop,lang)} бойынша негізгі шектеулер климат, нормативтік су жүктемесі және дерек сенімділігі бірге қарастырылып бағаланды.","ru":f"Для культуры «{extended_crop_label(crop,lang)}» ограничения оцениваются совместно по климату, нормативной водной нагрузке и надежности исходных данных.","en":f"For {extended_crop_label(crop,lang)}, constraints are assessed jointly through climate, normative water demand and evidence reliability."}[lang])
         if user_level == "researcher":
             with st.expander(t["model_inputs"]):
-                st.write({"kk":f"Есеп координатасы: {calc_lat:.6f}, {calc_lon:.6f}; қолданылған аудан: {district_label(used_district)}; әдіс: {crop_method(crop)}.","ru":f"Координаты расчета: {calc_lat:.6f}, {calc_lon:.6f}; использованный район: {district_label(used_district)}; метод: {crop_method(crop)}.","en":f"Calculation coordinates: {calc_lat:.6f}, {calc_lon:.6f}; district used: {district_label(used_district)}; method: {crop_method(crop)}."}[lang])
+                st.write({"kk":f"Есеп координатасы: {calc_lat:.6f}, {calc_lon:.6f}; қолданылған аудан: {district_label(used_district)}; әдіс: {model_tier_label(crop_method(crop))}.","ru":f"Координаты расчета: {calc_lat:.6f}, {calc_lon:.6f}; использованный район: {district_label(used_district)}; метод: {model_tier_label(crop_method(crop))}.","en":f"Calculation coordinates: {calc_lat:.6f}, {calc_lon:.6f}; district used: {district_label(used_district)}; method: {model_tier_label(crop_method(crop))}."}[lang])
 
     elif mode_key == "mode1":
         with st.spinner(t["ml_loading"]):
@@ -1288,12 +1361,12 @@ if submitted:
 
         if user_level == "farmer":
             x,z=st.columns(2)
-            x.metric(t["baseline_label"], f"{pred:.1f} ц/га" if lang != "en" else f"{pred:.1f} centners/ha")
+            x.metric(t["baseline_label"], f"{pred:.1f} {UNITS['centner_ha']}")
             z.metric(t["climate"], climate_source)
             st.caption(t["scope_note"])
         else:
             x,y,z=st.columns(3)
-            x.metric(t["baseline_label"], f"{pred:.1f} ц/га" if lang != "en" else f"{pred:.1f} centners/ha")
+            x.metric(t["baseline_label"], f"{pred:.1f} {UNITS['centner_ha']}")
             y.metric(t["support_label"], f"{t[reliability['level']]} ({reliability['score']}/100)")
             z.metric(t["climate"], climate_source)
             st.caption(t["scope_note"] + " " + t["support_note"])
@@ -1303,7 +1376,7 @@ if submitted:
         if "farm_water_m3_per_ha" in resource:
             x1, x2 = st.columns(2)
             x1.metric(t["water_use"], f"{resource['farm_water_m3_per_ha']:,.0f} м³/га" if lang != "en" else f"{resource['farm_water_m3_per_ha']:,.0f} m³/ha")
-            x2.metric(t["freshwater"], f"{resource['farm_freshwater_m3']:,.0f} м³" if lang != "en" else f"{resource['farm_freshwater_m3']:,.0f} m³")
+            x2.metric(t["freshwater"], f"{resource['farm_freshwater_m3']:,.0f} м³" if lang != "en" else f"{resource['farm_freshwater_m3']:,.0f} {UNITS['m3']}")
 
         if "energy_kwh_per_ha" in resource:
             st.metric(t["energy_use"], f"{resource['energy_kwh_per_ha']:,.0f} кВт·ч/га" if lang != "en" else f"{resource['energy_kwh_per_ha']:,.0f} kWh/ha")
@@ -1326,13 +1399,13 @@ if submitted:
             ec1, ec2, ec3, ec4 = st.columns(4)
             ec1.metric(t["grid_energy"], f"{econ['current_grid_energy_kwh']:,.0f} кВт·ч" if lang != "en" else f"{econ['current_grid_energy_kwh']:,.0f} kWh")
             ec2.metric(t["co2_calc"], f"{econ['current_co2_kg']/1000:,.2f} т CO₂" if lang != "en" else f"{econ['current_co2_kg']/1000:,.2f} t CO₂")
-            ec3.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} тг" if lang != "en" else f"{econ['current_energy_cost_kzt']:,.0f} KZT")
-            ec4.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} тг" if lang != "en" else f"{econ['current_water_cost_kzt']:,.0f} KZT")
+            ec3.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['current_energy_cost_kzt']:,.0f} KZT")
+            ec4.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['current_water_cost_kzt']:,.0f} KZT")
             wc1, wc2, wc3, wc4 = st.columns(4)
             wc1.metric(t["green_saving"], f"{econ['energy_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['energy_saving_kzt']:,.0f} KZT")
             wc2.metric(t["water_saving"], f"{econ['water_saving_m3']:,.0f} м³ / {econ['water_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['water_saving_m3']:,.0f} m³ / {econ['water_saving_kzt']:,.0f} KZT")
             wc3.metric(t["co2_reduction"], f"{econ['co2_reduction_kg']/1000:,.2f} т CO₂" if lang != "en" else f"{econ['co2_reduction_kg']/1000:,.2f} t CO₂")
-            wc4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['total_saving_kzt']:,.0f} KZT")
+            wc4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}")
             pb = payback_years(investment, econ["total_saving_kzt"], seasons_per_year)
             if pb is not None:
                 st.caption(f"{t['payback']}: {pb:.1f} " + ("жыл" if lang == "kk" else "лет" if lang == "ru" else "years"))
@@ -1368,9 +1441,9 @@ if submitted:
         if mode_key == "mode1" and user_level == "farmer":
             st.markdown("### " + {"kk":"Ақша және климат әсері","ru":"Деньги и климатический эффект","en":"Money and climate effect"}[lang])
             c1,c2,c3=st.columns(3)
-            c1.metric({"kk":"Электр шығыны","ru":"Расходы на электроэнергию","en":"Electricity cost"}[lang],f"{econ['current_energy_cost_kzt']:,.0f} тг" if lang!="en" else f"{econ['current_energy_cost_kzt']:,.0f} KZT")
-            c2.metric({"kk":"Су шығыны","ru":"Стоимость воды","en":"Water cost"}[lang],f"{econ['current_water_cost_kzt']:,.0f} тг" if lang!="en" else f"{econ['current_water_cost_kzt']:,.0f} KZT")
-            c3.metric({"kk":"Сценарийлік үнем","ru":"Потенциальная экономия","en":"Potential saving"}[lang],f"{econ['total_saving_kzt']:,.0f} тг" if lang!="en" else f"{econ['total_saving_kzt']:,.0f} KZT")
+            c1.metric({"kk":"Электр шығыны","ru":"Расходы на электроэнергию","en":"Electricity cost"}[lang],f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['current_energy_cost_kzt']:,.0f} KZT")
+            c2.metric({"kk":"Су шығыны","ru":"Стоимость воды","en":"Water cost"}[lang],f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['current_water_cost_kzt']:,.0f} KZT")
+            c3.metric({"kk":"Сценарийлік үнем","ru":"Потенциальная экономия","en":"Potential saving"}[lang],f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}")
 
         analysis = build_analysis(
             lang=lang,
@@ -1417,7 +1490,7 @@ if submitted:
                 rows = [
                     [t.get("district_selected", t["district"]), district_label(district), t["source_user"]],
                     [t.get("district_used", t["district"]), district_label(used_district), {"kk":"Әкімшілік полигон/пайдаланушы таңдауы","ru":"Административный полигон/выбор пользователя","en":"Administrative polygon/user selection"}[lang]],
-                    [t.get("district_detected", "Предварительный район по карте"), district_label(detected_label) if detected_label else "—", {"kk":"Түркістан облысының әкімшілік полигондары","ru":"Административные полигоны Туркестанской области","en":"Turkestan administrative polygons"}[lang]],
+                    [t.get("district_detected", {"kk":"Карта бойынша алдын ала анықталған аудан","ru":"Предварительный район по карте","en":"Provisional district from map"}[lang]), district_label(detected_label) if detected_label else "—", {"kk":"Түркістан облысының әкімшілік полигондары","ru":"Административные полигоны Туркестанской области","en":"Turkestan administrative polygons"}[lang]],
                     [t["crop"], crop_label(crop), t["source_user"]],
                     [t["area"], f"{area_ha:.2f}", t["source_user"]],
                     [{"kk":"Есеп координатасы (ендік, бойлық)","ru":"Координаты расчета (широта, долгота)","en":"Calculation coordinates (lat, lon)"}[lang], f"{calc_lat:.6f}, {calc_lon:.6f}", {"kk":"Карта контуры" if location_source == "map" else "Аудан координатасы","ru":"Контур карты" if location_source == "map" else "Координата района","en":"Map polygon" if location_source == "map" else "District coordinate"}[lang]],
@@ -1429,24 +1502,28 @@ if submitted:
                 ]
                 if ctx:
                     rows += [
-                        [{"kk":"Тарихи өнімділік медианасы, ц/га","ru":"Историческая медиана урожайности, ц/га","en":"Historical yield median, c/ha"}[lang], f"{ctx['historical_yield_median']:.2f}", f"{int(ctx['first_year'])}-{int(ctx['last_year'])}; n={int(ctx['n_years'])} years"],
+                        [{"kk":"Тарихи өнімділік медианасы, ц/га","ru":"Историческая медиана урожайности, ц/га","en":"Historical yield median, c/ha"}[lang], f"{ctx['historical_yield_median']:.2f}", {
+                            "kk":f"{int(ctx['first_year'])}-{int(ctx['last_year'])}; бақылау саны={int(ctx['n_years'])}",
+                            "ru":f"{int(ctx['first_year'])}-{int(ctx['last_year'])}; наблюдений={int(ctx['n_years'])}",
+                            "en":f"{int(ctx['first_year'])}-{int(ctx['last_year'])}; observations={int(ctx['n_years'])}",
+                        }[lang]],
                         [{"kk":"Тарихи өнімділік Q25-Q75, ц/га","ru":"Историческая урожайность Q25-Q75, ц/га","en":"Historical yield Q25-Q75, c/ha"}[lang], f"{ctx['historical_yield_q25']:.2f}-{ctx['historical_yield_q75']:.2f}", t["source_history"]],
                     ]
                 rows.extend([
-                    [{"kk":"Эмиссия коэффициенті, кг CO₂/кВт·сағ","ru":"Коэффициент эмиссии, кг CO₂/кВт·ч","en":"Emission factor, kg CO₂/kWh"}[lang], f"{ef:.4f}", "IEA Emissions Factors 2025 / editable scenario"],
-                    [{"kk":"Электр тарифі, тг/кВт·сағ","ru":"Тариф электроэнергии, тг/кВт·ч","en":"Electricity tariff, KZT/kWh"}[lang], f"{electricity_tariff:.4f}", "Editable reference scenario; replace with farm/provider tariff"],
-                    [{"kk":"Су тарифі, тг/м³","ru":"Тариф воды, тг/м³","en":"Water tariff, KZT/m³"}[lang], f"{water_tariff:.4f}", "Editable reference scenario; service type matters"],
+                    [{"kk":"Эмиссия коэффициенті, кг CO₂/кВт·сағ","ru":"Коэффициент эмиссии, кг CO₂/кВт·ч","en":"Emission factor, kg CO₂/kWh"}[lang], f"{ef:.4f}", {"kk":"Халықаралық энергетикалық агенттік (IEA), 2025 / өзгертілетін есептік сценарий","ru":"Международное энергетическое агентство (IEA), 2025 / редактируемый расчетный сценарий","en":"IEA Emissions Factors 2025 / editable scenario"}[lang]],
+                    [{"kk":"Электр тарифі, тг/кВт·сағ","ru":"Тариф электроэнергии, тг/кВт·ч","en":"Electricity tariff, KZT/kWh"}[lang], f"{electricity_tariff:.4f}", {"kk":"Өзгертілетін анықтамалық сценарий; шаруашылықтың немесе жеткізушінің тарифімен ауыстырылады","ru":"Редактируемый справочный сценарий; заменяется тарифом хозяйства или поставщика","en":"Editable reference scenario; replace with farm/provider tariff"}[lang]],
+                    [{"kk":"Су тарифі, тг/м³","ru":"Тариф воды, тг/м³","en":"Water tariff, KZT/m³"}[lang], f"{water_tariff:.4f}", {"kk":"Өзгертілетін анықтамалық сценарий; қызмет түріне байланысты нақты тариф енгізіледі","ru":"Редактируемый справочный сценарий; фактический тариф зависит от вида услуги","en":"Editable reference scenario; service type matters"}[lang]],
                     [{"kk":"Қазіргі жасыл энергия үлесі, %","ru":"Текущая доля зеленой энергии, %","en":"Current green energy share, %"}[lang], f"{current_solar:.1f}", t["source_user"]],
-                    [{"kk":"Сценарий: жасыл энергия үлесі, %","ru":"Сценарий: доля зеленой энергии, %","en":"Scenario: green-energy share, %"}[lang], f"{target_solar:.1f}", "Scenario assumption"],
-                    [{"kk":"Сценарий: су үнемі, %","ru":"Сценарий: снижение свежей воды, %","en":"Scenario: freshwater saving, %"}[lang], f"{water_saving_target:.1f}", "Scenario assumption"],
+                    [{"kk":"Сценарий: жасыл энергия үлесі, %","ru":"Сценарий: доля зеленой энергии, %","en":"Scenario: green-energy share, %"}[lang], f"{target_solar:.1f}", {"kk":"Сценарийлік алғышарт","ru":"Сценарное допущение","en":"Scenario assumption"}[lang]],
+                    [{"kk":"Сценарий: су үнемі, %","ru":"Сценарий: снижение свежей воды, %","en":"Scenario: freshwater saving, %"}[lang], f"{water_saving_target:.1f}", {"kk":"Сценарийлік алғышарт","ru":"Сценарное допущение","en":"Scenario assumption"}[lang]],
                 ])
                 st.dataframe(pd.DataFrame(rows, columns=[t["audit_parameter"],t["audit_value"],t["audit_source"]]), use_container_width=True, hide_index=True)
                 val = validation_for_crop(crop)
                 if user_level == "researcher" and val.get("mae") is not None:
                     if lang == "ru":
-                        st.caption(f"Валидация ML по годам: MAE={val['mae']:.2f} ц/га; RMSE={val.get('rmse', float('nan')):.2f} ц/га; R²={val['r2']:.3f}; 5 блоков по годам; N={val['n']}.")
+                        st.caption(f"Проверка качества машинного обучения по годам: средняя абсолютная ошибка (MAE)={val['mae']:.2f} ц/га; корень из средней квадратичной ошибки (RMSE)={val.get('rmse', float('nan')):.2f} ц/га; R²={val['r2']:.3f}; 5 временных блоков; число наблюдений={val['n']}.")
                     elif lang == "kk":
-                        st.caption(f"ML-ді жылдар бойынша валидациялау: MAE={val['mae']:.2f} ц/га; RMSE={val.get('rmse', float('nan')):.2f} ц/га; R²={val['r2']:.3f}; жылдар бойынша 5 блок; N={val['n']}.")
+                        st.caption(f"Машиналық оқыту сапасын жылдар бойынша тексеру: орташа абсолюттік қате (MAE)={val['mae']:.2f} ц/га; орташа квадраттық қатенің түбірі (RMSE)={val.get('rmse', float('nan')):.2f} ц/га; R²={val['r2']:.3f}; 5 уақыттық блок; бақылау саны={val['n']}.")
                     else:
                         st.caption(f"ML validation by year: MAE={val['mae']:.2f} centners/ha; RMSE={val.get('rmse', float('nan')):.2f} centners/ha; R²={val['r2']:.3f}; 5 year-groups; N={val['n']}.")
 
@@ -1458,7 +1535,7 @@ if submitted:
             "en":"This mode does not repeat the farm report. It asks how suitable the selected crop is for this location and which factors constrain it."
         }[lang])
 
-        method_name=crop_method(crop)
+        method_name=model_tier_label(crop_method(crop))
         scenario=scenario_for_crop(used_district,crop,climate,irrigation_type)
         ml_pred=None; ml_used=None; hist=None
         if crop in CROPS:
@@ -1520,8 +1597,8 @@ if submitted:
                     }[lang])
                 else:
                     st.info({
-                        "kk":"Бұл дақыл үшін аудандық көпкритерийлі профиль жоқ. Сондықтан бағалау ML өнімділік қатары мен климаттық деректерге негізделеді.",
-                        "ru":"Для этой культуры пока нет районного многокритериального профиля. Поэтому оценка основана на ML-ряду урожайности и климатических данных.",
+                        "kk":"Бұл дақыл үшін аудандық көпкритерийлі профиль жоқ. Сондықтан бағалау машиналық оқыту арқылы алынған өнімділік қатары мен климаттық деректерге негізделеді.",
+                        "ru":"Для этой культуры пока нет районного многокритериального профиля. Поэтому оценка основана на ряду урожайности, полученном машинным обучением, и климатических данных.",
                         "en":"No district multi-criteria profile is available for this crop yet. The assessment therefore uses the ML yield series and climate evidence."
                     }[lang])
             elif not observed_for_crop(used_district,crop).empty:
@@ -1539,20 +1616,20 @@ if submitted:
 
         if ml_pred is not None:
             if user_level == "researcher":
-                st.markdown("#### " + {"kk":"ML өнімділік дәлелі","ru":"ML-свидетельство по урожайности","en":"ML yield evidence"}[lang])
+                st.markdown("#### " + {"kk":"Машиналық оқыту бойынша өнімділік бағасы","ru":"Оценка урожайности машинным обучением","en":"ML yield evidence"}[lang])
             else:
                 st.markdown("#### " + {"kk":"Күтілетін өнімділік","ru":"Ожидаемая урожайность","en":"Expected yield"}[lang])
             med=hist.get('historical_yield_median') if hist else None
             if med:
                 delta=(ml_pred-float(med))/float(med)*100
                 if user_level == "researcher":
-                    st.write({"kk":f"Аудан-дақыл ML-базисі: {ml_pred:.1f} ц/га; тарихи медианаға қатысты {delta:+.1f}%.","ru":f"Районно-культурный ML-базис: {ml_pred:.1f} ц/га; относительно исторической медианы {delta:+.1f}%.","en":f"District-crop ML baseline: {ml_pred:.1f} c/ha; {delta:+.1f}% versus historical median."}[lang])
+                    st.write({"kk":f"Аудан-дақыл бойынша машиналық оқыту базалық болжамы: {ml_pred:.1f} ц/га; тарихи медианаға қатысты {delta:+.1f}%.","ru":f"Базовый прогноз машинного обучения по району и культуре: {ml_pred:.1f} ц/га; относительно исторической медианы {delta:+.1f}%.","en":f"District-crop ML baseline: {ml_pred:.1f} c/ha; {delta:+.1f}% versus historical median."}[lang])
                 else:
                     st.write({"kk":f"Күтілетін деңгей: {ml_pred:.1f} ц/га, тарихи аудандық медианадан {delta:+.1f}%.","ru":f"Ожидаемый уровень: {ml_pred:.1f} ц/га, отклонение от исторической районной медианы {delta:+.1f}%.","en":f"Expected level: {ml_pred:.1f} c/ha, {delta:+.1f}% versus the historical district median."}[lang])
             else:
-                st.write({"kk":f"Аудан-дақыл ML-базисі: {ml_pred:.1f} ц/га.","ru":f"Районно-культурный ML-базис: {ml_pred:.1f} ц/га.","en":f"District-crop ML baseline: {ml_pred:.1f} c/ha."}[lang])
+                st.write({"kk":f"Аудан-дақыл бойынша машиналық оқыту базалық болжамы: {ml_pred:.1f} ц/га.","ru":f"Базовый прогноз машинного обучения по району и культуре: {ml_pred:.1f} ц/га.","en":f"District-crop ML baseline: {ml_pred:.1f} c/ha."}[lang])
         elif crop == 'Barley':
-            st.warning({"kk":"Арпа үшін ML өнімділік моделі әдейі қосылмады: берілген бастапқы панельде арпа өнімділігі бидай қатарын қайталайды және дереккөзді қайта тексеру қажет.","ru":"ML-модель урожайности для ячменя намеренно не включена: в предоставленной исходной панели ряд урожайности ячменя дублирует пшеницу и требует проверки источника.","en":"Barley yield ML is intentionally disabled: the supplied source panel duplicates the wheat yield series and needs source verification."}[lang])
+            st.warning({"kk":"Арпа үшін машиналық оқыту арқылы өнімділікті болжау әдейі қосылмады: берілген бастапқы панельде арпа өнімділігі бидай қатарын қайталайды және дереккөзді қайта тексеру қажет.","ru":"Модель машинного обучения для прогнозирования урожайности ячменя намеренно не включена: в предоставленной исходной панели ряд урожайности ячменя дублирует пшеницу и требует проверки источника.","en":"Barley yield ML is intentionally disabled: the supplied source panel duplicates the wheat yield series and needs source verification."}[lang])
 
         obs_ev=observed_for_crop(used_district,crop)
         if not obs_ev.empty:
@@ -1575,54 +1652,63 @@ if submitted:
             'display': {'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang],
             'QUNAR_score_0_100': {'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang],
             'Climate_score_0_100': {'kk':'Климат','ru':'Климат','en':'Climate'}[lang],
-            'Resource_efficiency_0_100': {'kk':'Су тиімділігі','ru':'Водная эффективность','en':'Water efficiency'}[lang],
-            'Data_reliability_0_100': {'kk':'Дерек сенімділігі','ru':'Надежность данных','en':'Data reliability'}[lang],
+            'Water_pressure_score_0_100': {'kk':'Су жүктемесі','ru':'Водная нагрузка','en':'Water pressure'}[lang],
+            'Confidence_0_100': {'kk':'Бағалау сенімділігі','ru':'Уверенность в оценке','en':'Assessment confidence'}[lang],
             'official_water_default_m3_ha': {'kk':'Әдепкі су нормасы, м³/га','ru':'Норма воды по умолчанию, м³/га','en':'Default water norm, m³/ha'}[lang],
             'water_default_source': {'kk':'Су нормасының дереккөзі','ru':'Источник нормы воды','en':'Water-norm source'}[lang],
         })
         keep=list(ranking.columns[:7])
         # Human-readable precision: decision-support values are scenarios/proxies, not accounting outputs.
-        score_cols=[{'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang], {'kk':'Климат','ru':'Климат','en':'Climate'}[lang], {'kk':'Су тиімділігі','ru':'Водная эффективность','en':'Water efficiency'}[lang], {'kk':'Дерек сенімділігі','ru':'Надежность данных','en':'Data reliability'}[lang]]
+        score_cols=[{'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang], {'kk':'Климат','ru':'Климат','en':'Climate'}[lang], {'kk':'Су жүктемесі','ru':'Водная нагрузка','en':'Water pressure'}[lang], {'kk':'Бағалау сенімділігі','ru':'Уверенность в оценке','en':'Assessment confidence'}[lang]]
         for col in score_cols:
             ranking[col]=pd.to_numeric(ranking[col],errors='coerce').round(1)
         wcol={'kk':'Әдепкі су нормасы, м³/га','ru':'Норма воды по умолчанию, м³/га','en':'Default water norm, m³/ha'}[lang]
         ranking[wcol]=pd.to_numeric(ranking[wcol],errors='coerce').round(0).astype('Int64')
         st.markdown("### " + {'kk':'QŪNAR көпкритерийлі рейтингі','ru':'Многокритериальный рейтинг QŪNAR','en':'QŪNAR multi-criteria ranking'}[lang])
         if user_level == "farmer":
-            basic_cols=[{'kk':'Орын','ru':'Место','en':'Rank'}[lang],{'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang],{'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang],{'kk':'Климат','ru':'Климат','en':'Climate'}[lang],{'kk':'Су тиімділігі','ru':'Водная эффективность','en':'Water efficiency'}[lang]]
+            basic_cols=[{'kk':'Орын','ru':'Место','en':'Rank'}[lang],{'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang],{'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang],{'kk':'Климат','ru':'Климат','en':'Climate'}[lang],{'kk':'Су жүктемесі','ru':'Водная нагрузка','en':'Water pressure'}[lang]]
             st.dataframe(ranking[basic_cols],use_container_width=True,hide_index=True)
         else:
             st.dataframe(ranking[keep], use_container_width=True, hide_index=True, column_config={wcol: st.column_config.NumberColumn(format="%d")})
         st.caption({
-            'kk':'Рейтинг нарықтық баға проксиін пайдаланбайды. QŪNAR бағасы климатты, аудан-дақыл бойынша ресми/әдепкі су нормасын және дерек сенімділігін біріктіреді.',
-            'ru':'Рейтинг больше не использует рыночный ценовой proxy. Балл QŪNAR объединяет климат, официальный/расчетный норматив воды для пары район-культура и надежность исходных данных.',
+            'kk':'Рейтинг нарықтық бағаның жанама көрсеткішін пайдаланбайды. QŪNAR бағасы климатты, аудан-дақыл бойынша ресми немесе әдепкі су нормасын және дерек сенімділігін біріктіреді.',
+            'ru':'Рейтинг больше не использует косвенный рыночный показатель цены. Балл QŪNAR объединяет климат, официальный или расчетный норматив воды для пары район-культура и надежность исходных данных.',
             'en':'The ranking no longer uses the market-price proxy. QŪNAR combines climate, the official/default district-crop water norm and input-data reliability.'
         }[lang])
         top=ranking.iloc[0]
+        crop_col={'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang]
+        score_col={'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang]
         top_msg={
-            'kk':f"<strong>Негізгі ұсыныс:</strong> {top[{'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang]]} - <strong>{float(top[{'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang]]):.1f}/100</strong>.",
-            'ru':f"<strong>Ключевая рекомендация:</strong> {top[{'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang]]} - <strong>{float(top[{'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang]]):.1f}/100</strong>.",
-            'en':f"<strong>Key recommendation:</strong> {top[{'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang]]} - <strong>{float(top[{'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang]]):.1f}/100</strong>."
+            'kk':f"<strong>Негізгі ұсыныс:</strong> {top[crop_col]} - <strong>{float(top[score_col]):.1f}/100</strong>.",
+            'ru':f"<strong>Ключевая рекомендация:</strong> {top[crop_col]} - <strong>{float(top[score_col]):.1f}/100</strong>.",
+            'en':f"<strong>Key recommendation:</strong> {top[crop_col]} - <strong>{float(top[score_col]):.1f}/100</strong>."
         }[lang]
         st.markdown(f'<div class="qunar-key">{top_msg}</div>', unsafe_allow_html=True)
 
         if user_level == "researcher":
-            with st.expander({'kk':'ML өнімділік дәлелі - 6 калибрленген далалық дақыл','ru':'ML-свидетельство - 6 откалиброванных полевых культур','en':'ML yield evidence - 6 calibrated field crops'}[lang]):
+            with st.expander({'kk':'Машиналық оқыту бойынша өнімділік бағасы - 6 калибрленген егістік дақыл','ru':'Оценка урожайности машинным обучением - 6 откалиброванных полевых культур','en':'ML yield evidence - 6 calibrated field crops'}[lang]):
                 with st.spinner(t['ml_loading']):
                     mlrank=timed_call("ML crop ranking", rank_crops, used_district, area_ha, climate, CROPS).copy()
                 mlrank['Crop']=mlrank['Crop'].map(CROP_LABELS[lang])
                 mlrank=mlrank.rename(columns={'Crop':t['ranking_crop'],'Predicted yield, centners/ha':t['ranking_yield']})
                 st.dataframe(mlrank,use_container_width=True,hide_index=True)
-                st.caption({'kk':'Бұл кесте тек ML өнімділік дәлелі. Әртүрлі дақылдардың ц/га мәндерін тікелей «ең жақсы дақыл» деп салыстыруға болмайды.', 'ru':'Это только ML-свидетельство по урожайности. Значения ц/га разных культур нельзя напрямую трактовать как рейтинг «лучшей культуры».','en':'This is ML yield evidence only. Yield values across different crops must not be interpreted directly as a best-crop ranking.'}[lang])
+                st.caption({'kk':'Бұл кесте машиналық оқыту арқылы алынған өнімділік бағаларын ғана көрсетеді. Әртүрлі дақылдардың ц/га мәндерін тікелей «ең жақсы дақыл» рейтингі ретінде түсіндіруге болмайды.', 'ru':'Таблица показывает только оценки урожайности, полученные машинным обучением. Значения ц/га разных культур нельзя напрямую трактовать как рейтинг «лучшей культуры».','en':'This is ML yield evidence only. Yield values across different crops must not be interpreted directly as a best-crop ranking.'}[lang])
 
         extra=observed_extra_for_district(used_district)
         if user_level != "farmer" and not extra.empty:
             with st.expander({'kk':'Қосымша байқалған 2023 дәлелдері','ru':'Дополнительные наблюдаемые данные 2023','en':'Additional observed 2023 evidence'}[lang]):
                 show=extra[['product','volume_t','value_thousand_kzt','recommendation_type']].copy()
+                show['recommendation_type'] = show['recommendation_type'].map(recommendation_type_label)
+                show=show.rename(columns={
+                    'product': {'kk':'Өнім','ru':'Продукт','en':'Product'}[lang],
+                    'volume_t': {'kk':'Көлемі, т','ru':'Объем, т','en':'Volume, t'}[lang],
+                    'value_thousand_kzt': {'kk':'Құны, мың тг','ru':'Стоимость, тыс. тг','en':'Value, thousand KZT'}[lang],
+                    'recommendation_type': {'kk':'Бағалау санаты','ru':'Категория оценки','en':'Assessment category'}[lang],
+                })
                 st.dataframe(show,use_container_width=True,hide_index=True)
 
         if user_level == "researcher":
-            st.warning({'kk':'Арпа ML өнімділік рейтингіне әдейі кірмейді: берілген аудан-жыл өнімділік қатары бидайды толық қайталайды. Арпа QŪNAR шешім рейтингінде климат, су нормасы және дерек сенімділігі арқылы бағаланады; ML қолданылмайды.', 'ru':'Ячмень намеренно не включен в ML-рейтинг урожайности: предоставленный районно-годовой ряд урожайности полностью дублирует пшеницу. В QŪNAR-рейтинге ячмень пока оценивается по климату, водному нормативу и надежности данных; ML для него не используется.','en':'Barley is intentionally excluded from yield ML because its supplied district-year yield series duplicates wheat. It remains in the QŪNAR decision ranking based on climate, water-norm and evidence-reliability layers; yield ML is not used.'}[lang])
+            st.warning({'kk':'Арпа машиналық оқыту арқылы өнімділік рейтингіне әдейі кірмейді: берілген аудан-жыл өнімділік қатары бидайды толық қайталайды. Арпа QŪNAR шешім рейтингінде климат, су нормасы және дерек сенімділігі арқылы бағаланады; машиналық оқыту қолданылмайды.', 'ru':'Ячмень намеренно не включен в рейтинг урожайности, полученный машинным обучением: предоставленный районно-годовой ряд урожайности полностью дублирует пшеницу. В рейтинге QŪNAR ячмень пока оценивается по климату, водному нормативу и надежности данных; машинное обучение для него не используется.','en':'Barley is intentionally excluded from yield ML because its supplied district-year yield series duplicates wheat. It remains in the QŪNAR decision ranking based on climate, water-norm and evidence-reliability layers; yield ML is not used.'}[lang])
     else:
         st.markdown("### " + {"kk":"Шаруашылық құрылымын оңтайландыру","ru":"Оптимизация структуры хозяйства","en":"Farm-structure optimization"}[lang])
         st.caption({
@@ -1683,8 +1769,8 @@ if submitted:
             if user_level == "researcher":
                 with st.expander({"kk":"Оңтайландыру әдістемесі","ru":"Методика оптимизации","en":"Optimization method"}[lang]):
                     st.write({
-                        "kk":f"Алдымен климат, су тиімділігі және дерек сенімділігі бойынша Парето-доминантталмайтын нұсқалар анықталады. Одан кейін таңдалған басымдық салмақтары бойынша utility есептеліп, бір дақыл үлесі {optimization_max_share*100:.0f}% шегінен аспайтындай етіп аудан бөлінеді. Су жүктемесі ресми немесе нақты белгіленген fallback м³/га нормаларына негізделеді; нарықтық баға проксиі алынып тасталды.",
-                        "ru":f"Структура решается как задача линейного программирования: максимизируется ресурсно-климатическая полезность при равенстве суммарной площади, ограничении доли одной культуры не выше {optimization_max_share*100:.0f}% и, при заданном объеме воды, жестком водном ограничении. Уверенность в данных не входит в целевую функцию. Рыночный ценовой proxy исключен.",
+                        "kk":f"Алдымен климат пен су жүктемесі бойынша Парето басымдығына түспейтін нұсқалар анықталады. Одан кейін таңдалған басымдық салмақтары бойынша жиынтық пайдалылық есептеліп, бір дақыл үлесі {optimization_max_share*100:.0f}% шегінен аспайтындай етіп аудан бөлінеді. Су жүктемесі ресми немесе дерек болмаған жағдайда ашық белгіленген есептік м³/га нормаларына негізделеді; нарықтық бағаның жанама көрсеткіші қолданылмайды.",
+                        "ru":f"Структура решается как задача линейного программирования: максимизируется ресурсно-климатическая полезность при равенстве суммарной площади, ограничении доли одной культуры не выше {optimization_max_share*100:.0f}% и, при заданном объеме воды, жестком водном ограничении. Уверенность в данных не входит в целевую функцию. Косвенный рыночный показатель цены исключен.",
                         "en":f"First, Pareto non-dominated options are identified across climate, water efficiency and evidence reliability. Utility is then computed with the selected weights and land is allocated with a single-crop cap of {optimization_max_share*100:.0f}%. Water pressure uses official/explicitly labelled fallback m³/ha norms; the market-price proxy is excluded."
                     }[lang])
 
@@ -1747,63 +1833,82 @@ if submitted:
         div = diversification_metrics(pd.to_numeric(out["share"], errors="coerce").fillna(0).tolist())
         st.markdown("### " + {"kk":"Егіс құрылымының әртараптануы","ru":"Диверсификация структуры посевов","en":"Cropping-structure diversification"}[lang])
         d1,d2,d3 = st.columns(3)
-        d1.metric("HHI", f"{div['hhi']:.3f}")
+        d1.metric({"kk":"Герфиндал-Хиршман индексі","ru":"Индекс Герфиндаля-Хиршмана","en":"HHI"}[lang], f"{div['hhi']:.3f}")
         d2.metric({"kk":"Тиімді дақылдар саны","ru":"Эффективное число культур","en":"Effective number of crops"}[lang], f"{div['effective_number_of_crops']:.2f}")
         d3.metric({"kk":"Әртараптандыру","ru":"Диверсификация","en":"Diversification"}[lang], f"{div['diversification_0_100']:.1f}/100")
-        st.caption({"kk":"HHI егіс құрылымының концентрациясын сипаттайды; төмен мән бірнеше дақыл арасында біркелкі бөлінуді көрсетеді.","ru":"HHI характеризует концентрацию структуры посевов; более низкое значение соответствует более равномерному распределению площади между культурами.","en":"HHI describes cropping concentration; a lower value corresponds to a more even allocation across crops."}[lang])
+        st.caption({"kk":"Герфиндал-Хиршман индексі егіс құрылымының шоғырлануын сипаттайды; төмен мән бірнеше дақыл арасында біркелкі бөлінуді көрсетеді.","ru":"Индекс Герфиндаля-Хиршмана характеризует концентрацию структуры посевов; более низкое значение соответствует более равномерному распределению площади между культурами.","en":"HHI describes cropping concentration; a lower value corresponds to a more even allocation across crops."}[lang])
 
     # Build a lightweight export snapshot from results already calculated on screen.
     if mode_key == "mode5" and "livestock" in locals():
         benchmark_export = livestock.get("district_benchmark", {}) or {}
         forecast_export = livestock.get("forecast", {}) or {}
+        table_indicator = {"kk":"Көрсеткіш","ru":"Показатель","en":"Indicator"}[lang]
+        table_value = {"kk":"Мәні","ru":"Значение","en":"Value"}[lang]
+        head_source_export = {
+            "user": {"kk":"Пайдаланушы дерегі","ru":"Данные пользователя","en":"User data"}[lang],
+            "district_reference": {"kk":"Аудандық анықтамалық мән","ru":"Районное справочное значение","en":"District reference"}[lang],
+            "unknown": {"kk":"Белгісіз","ru":"Неизвестно","en":"Unknown"}[lang],
+        }.get(str(livestock.get("heads_source")), str(livestock.get("heads_source")))
+        forecast_tier_export = {
+            "validated": {"kk":"Тексерілген","ru":"Проверенный","en":"Validated"}[lang],
+            "usable": {"kk":"Қолдануға болады","ru":"Допустимый","en":"Usable"}[lang],
+            "guarded": {"kk":"Шектелген","ru":"Ограниченный","en":"Guarded"}[lang],
+            "withheld": {"kk":"Жарияланбайды","ru":"Не публикуется","en":"Withheld"}[lang],
+        }.get(str(forecast_export.get("forecast_tier")), str(forecast_export.get("forecast_tier") or ""))
+        published_export = {
+            True: {"kk":"Иә","ru":"Да","en":"Yes"}[lang],
+            False: {"kk":"Жоқ","ru":"Нет","en":"No"}[lang],
+        }.get(bool(forecast_export.get("publish_forecast")))
+        def _row(label_kk, label_ru, label_en, value):
+            return {table_indicator: {"kk":label_kk,"ru":label_ru,"en":label_en}[lang], table_value: value}
         report_payload["table"] = [
-            {"Indicator":"Livestock share of district output, %","Value":livestock.get("livestock_share_pct")},
-            {"Indicator":"Herd used in calculation, head","Value":livestock.get("heads")},
-            {"Indicator":"Herd source","Value":livestock.get("heads_source")},
-            {"Indicator":"Latest official district herd, head","Value":benchmark_export.get("latest_district_heads")},
-            {"Indicator":"Latest official year","Value":benchmark_export.get("latest_year")},
-            {"Indicator":"District herd percentile, %","Value":benchmark_export.get("district_percentile")},
-            {"Indicator":"Livestock units, LU","Value":livestock.get("livestock_units")},
-            {"Indicator":"Livestock units per pasture ha","Value":livestock.get("lu_per_pasture_ha")},
-            {"Indicator":"Reference water, L/head/day","Value":livestock.get("reference_water_l_head_day")},
-            {"Indicator":"Reference annual water, m3","Value":livestock.get("reference_water_m3_year")},
-            {"Indicator":"Available-water coverage of reference, %","Value":livestock.get("reference_water_coverage_pct")},
-            {"Indicator":"Observed water, m3/head","Value":livestock.get("water_m3_per_head")},
-            {"Indicator":"Reference feed DM, kg/head/day","Value":livestock.get("reference_feed_dm_kg_head_day")},
-            {"Indicator":"Reference annual feed DM, t","Value":livestock.get("reference_feed_dm_t_year")},
-            {"Indicator":"Entered feed coverage of reference, %","Value":livestock.get("feed_reference_coverage_pct")},
-            {"Indicator":"Observed energy, kWh/head","Value":livestock.get("energy_kwh_per_head")},
-            {"Indicator":"Operational CO2e, kg","Value":livestock.get("operational_co2e_kg")},
-            {"Indicator":"Productivity relative to regional reference, %","Value":livestock.get("productivity_reference_ratio_pct")},
-            {"Indicator":"Forecast year","Value":forecast_export.get("forecast_year")},
-            {"Indicator":"ML forecast published","Value":forecast_export.get("publish_forecast")},
-            {"Indicator":"ML forecast tier","Value":forecast_export.get("forecast_tier")},
-            {"Indicator":"ML forecast herd, head","Value":forecast_export.get("forecast_heads") if forecast_export.get("publish_forecast") else None},
-            {"Indicator":"ML forecast change, %","Value":forecast_export.get("forecast_change_pct") if forecast_export.get("publish_forecast") else None},
-            {"Indicator":"ML validation R2 overall (log scale)","Value":forecast_export.get("r2_log")},
-            {"Indicator":"ML validation median APE overall, %","Value":forecast_export.get("median_ape_pct")},
-            {"Indicator":"ML validation n overall","Value":forecast_export.get("validation_n")},
-            {"Indicator":"ML validation R2 selected category (log scale)","Value":((forecast_export.get("species_validation") or {}).get("r2_log"))},
-            {"Indicator":"ML validation median APE selected category, %","Value":((forecast_export.get("species_validation") or {}).get("median_ape_pct"))},
-            {"Indicator":"ML validation n selected category","Value":((forecast_export.get("species_validation") or {}).get("n"))},
-            {"Indicator":"Apr-Sep temperature, C","Value":livestock.get("temperature_c")},
-            {"Indicator":"Apr-Sep precipitation, mm","Value":livestock.get("precipitation_mm")},
-            {"Indicator":"Apr-Sep root-zone wetness","Value":livestock.get("root_zone_wetness")},
-            {"Indicator":"Apr-Sep solar radiation, MJ/m2/day","Value":livestock.get("solar_radiation_mj_m2_day")},
-            {"Indicator":"Degraded pasture, ha","Value":livestock.get("degraded_pasture_ha")},
-            {"Indicator":"Observed-input completeness, %","Value":livestock.get("input_completeness_pct")},
+            _row("Аудан өніміндегі мал шаруашылығы үлесі, %", "Доля животноводства в выпуске района, %", "Livestock share of district output, %", livestock.get("livestock_share_pct")),
+            _row("Есепте қолданылған мал саны, бас", "Поголовье в расчете, голов", "Herd used in calculation, head", livestock.get("heads")),
+            _row("Мал санының дереккөзі", "Источник данных о поголовье", "Herd source", head_source_export),
+            _row("Соңғы ресми аудандық мал саны, бас", "Последнее официальное районное поголовье, голов", "Latest official district herd, head", benchmark_export.get("latest_district_heads")),
+            _row("Соңғы ресми жыл", "Последний официальный год", "Latest official year", benchmark_export.get("latest_year")),
+            _row("Аудандық салыстырмалы пайыздық деңгей, %", "Районный сравнительный перцентиль, %", "District herd percentile, %", benchmark_export.get("district_percentile")),
+            _row("Шартты мал бірлігі", "Условные единицы скота", "Livestock units (LU)", livestock.get("livestock_units")),
+            _row("Жайылым гектарына шартты мал бірлігі", "Условные единицы скота на гектар пастбища", "Livestock units per pasture ha", livestock.get("lu_per_pasture_ha")),
+            _row("Анықтамалық су қажеттілігі, л/бас/тәул.", "Справочная потребность в воде, л/гол./сут.", "Reference water, L/head/day", livestock.get("reference_water_l_head_day")),
+            _row("Жылдық анықтамалық су қажеттілігі, м³", "Справочная годовая потребность в воде, м³", "Reference annual water, m³", livestock.get("reference_water_m3_year")),
+            _row("Қолжетімді судың қажеттілікті жабуы, %", "Покрытие справочной потребности доступной водой, %", "Available-water coverage of reference, %", livestock.get("reference_water_coverage_pct")),
+            _row("Нақты су тұтынуы, м³/бас", "Фактическое водопотребление, м³/гол.", "Observed water, m³/head", livestock.get("water_m3_per_head")),
+            _row("Жемшөп құрғақ затының қажеттілігі, кг/бас/тәул.", "Потребность в сухом веществе корма, кг/гол./сут.", "Reference feed dry matter, kg/head/day", livestock.get("reference_feed_dm_kg_head_day")),
+            _row("Жылдық жемшөп қажеттілігі, т құрғақ зат", "Годовая потребность в кормах, т сухого вещества", "Reference annual feed dry matter, t", livestock.get("reference_feed_dm_t_year")),
+            _row("Енгізілген жемшөп қорының қажеттілікті жабуы, %", "Покрытие потребности введенным запасом кормов, %", "Entered feed coverage of reference, %", livestock.get("feed_reference_coverage_pct")),
+            _row("Нақты энергия тұтынуы, басына", "Фактическое энергопотребление на голову", "Observed energy, kWh/head", livestock.get("energy_kwh_per_head")),
+            _row("Электр энергиясына байланысты CO₂e, кг", "Выбросы CO₂e, связанные с электроэнергией, кг", "Operational CO₂e, kg", livestock.get("operational_co2e_kg")),
+            _row("Өңірлік мәнге қатысты өнімділік, %", "Продуктивность относительно регионального значения, %", "Productivity relative to regional reference, %", livestock.get("productivity_reference_ratio_pct")),
+            _row("Болжам жылы", "Год прогноза", "Forecast year", forecast_export.get("forecast_year")),
+            _row("Машиналық оқыту болжамы жариялана ма", "Публикуется ли прогноз машинного обучения", "Machine-learning forecast published", published_export),
+            _row("Болжамның сенімділік деңгейі", "Уровень надежности прогноза", "Forecast tier", forecast_tier_export),
+            _row("Машиналық оқыту болжамы, бас", "Прогноз машинного обучения, голов", "Machine-learning forecast herd, head", forecast_export.get("forecast_heads") if forecast_export.get("publish_forecast") else None),
+            _row("Болжамдағы өзгеріс, %", "Изменение по прогнозу, %", "Forecast change, %", forecast_export.get("forecast_change_pct") if forecast_export.get("publish_forecast") else None),
+            _row("Жалпы R², логарифмдік шкала", "Общий R², логарифмическая шкала", "Overall R², log scale", forecast_export.get("r2_log")),
+            _row("Жалпы медианалық абсолюттік пайыздық қате, %", "Общая медианная абсолютная процентная ошибка, %", "Overall median absolute percentage error, %", forecast_export.get("median_ape_pct")),
+            _row("Жалпы тексеру бақылауларының саны", "Общее число проверочных наблюдений", "Overall validation observations", forecast_export.get("validation_n")),
+            _row("Таңдалған санаттың R² көрсеткіші", "R² выбранной категории", "Selected-category R²", ((forecast_export.get("species_validation") or {}).get("r2_log"))),
+            _row("Таңдалған санаттың медианалық абсолюттік пайыздық қатесі, %", "Медианная абсолютная процентная ошибка выбранной категории, %", "Selected-category median absolute percentage error, %", ((forecast_export.get("species_validation") or {}).get("median_ape_pct"))),
+            _row("Таңдалған санат бойынша тексеру бақылаулары", "Число проверочных наблюдений выбранной категории", "Selected-category validation observations", ((forecast_export.get("species_validation") or {}).get("n"))),
+            _row("Сәуір-қыркүйек температурасы, °C", "Температура апреля-сентября, °C", "Apr-Sep temperature, °C", livestock.get("temperature_c")),
+            _row("Сәуір-қыркүйек жауын-шашыны, мм", "Осадки апреля-сентября, мм", "Apr-Sep precipitation, mm", livestock.get("precipitation_mm")),
+            _row("Сәуір-қыркүйектегі тамыр аймағының ылғалы", "Влажность корневой зоны в апреле-сентябре", "Apr-Sep root-zone wetness", livestock.get("root_zone_wetness")),
+            _row("Сәуір-қыркүйек күн радиациясы, МДж/м²/тәул.", "Солнечная радиация апреля-сентября, МДж/м²/сут.", "Apr-Sep solar radiation, MJ/m²/day", livestock.get("solar_radiation_mj_m2_day")),
+            _row("Деградацияланған жайылым, га", "Деградированное пастбище, га", "Degraded pasture, ha", livestock.get("degraded_pasture_ha")),
+            _row("Нақты енгізілген деректердің толықтығы, %", "Полнота фактически введенных данных, %", "Observed-input completeness, %", livestock.get("input_completeness_pct")),
         ]
     elif mode_key == "mode1":
         if "pred" in locals():
-            report_payload["summary"].append({"label":t["baseline_label"], "value":f"{pred:.1f} ц/га" if lang != "en" else f"{pred:.1f} centners/ha"})
+            report_payload["summary"].append({"label":t["baseline_label"], "value":f"{pred:.1f} {UNITS['centner_ha']}"})
         elif "scenario" in locals() and scenario is not None:
             report_payload["summary"].append({"label":{"kk":"QŪNAR бағасы","ru":"Оценка QŪNAR","en":"QŪNAR score"}[lang], "value":f"{float(scenario['QUNAR_score_0_100']):.1f}/100"})
         if "resource" in locals():
-            if resource.get("farm_freshwater_m3") is not None: report_payload["summary"].append({"label":t["freshwater"],"value":f"{resource['farm_freshwater_m3']:,.0f} m³"})
-            if resource.get("energy_kwh") is not None: report_payload["summary"].append({"label":t["energy_use"],"value":f"{resource['energy_kwh']:,.0f} kWh"})
-            if resource.get("operational_co2e_kg") is not None: report_payload["summary"].append({"label":t["co2"],"value":f"{resource['operational_co2e_kg']:,.0f} kg CO₂e"})
+            if resource.get("farm_freshwater_m3") is not None: report_payload["summary"].append({"label":t["freshwater"],"value":f"{resource['farm_freshwater_m3']:,.0f} {UNITS['m3']}"})
+            if resource.get("energy_kwh") is not None: report_payload["summary"].append({"label":t["energy_use"],"value":f"{resource['energy_kwh']:,.0f} {UNITS['kwh']}"})
+            if resource.get("operational_co2e_kg") is not None: report_payload["summary"].append({"label":t["co2"],"value":f"{resource['operational_co2e_kg']:,.0f} {UNITS['kg']} CO₂e"})
         if "econ" in locals():
-            report_payload["summary"].append({"label":t["total_saving"],"value":f"{econ['total_saving_kzt']:,.0f} KZT"})
+            report_payload["summary"].append({"label":t["total_saving"],"value":f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}"})
         report_payload["analysis"] = list(locals().get("analysis", []) or [])
         report_payload["recommendations"] = structured_recommendations(locals().get("recs", []) or [], report_payload["analysis"], lang)
         if "econ" in locals() and float(econ.get("total_saving_kzt", 0) or 0) > 0:
@@ -1822,7 +1927,7 @@ if submitted:
             if econ.get("water_saving_kzt") is not None:
                 cats.append({"kk":"Су үнемдеу","ru":"Экономия воды","en":"Water saving"}[lang]); vals.append(float(econ.get("water_saving_kzt",0)))
             if cats and any(v != 0 for v in vals):
-                report_payload["chart"]={"title":{"kk":"Маусымдық үнем құрылымы","ru":"Структура потенциальной сезонной экономии","en":"Potential seasonal savings structure"}[lang],"section_title":{"kk":"Экономикалық әсердің құрылымы","ru":"Структура экономического эффекта","en":"Economic effect structure"}[lang],"categories":cats,"values":vals,"value_label":"KZT","axis_label":"KZT"}
+                report_payload["chart"]={"title":{"kk":"Маусымдық үнем құрылымы","ru":"Структура потенциальной сезонной экономии","en":"Potential seasonal savings structure"}[lang],"section_title":{"kk":"Экономикалық әсердің құрылымы","ru":"Структура экономического эффекта","en":"Economic effect structure"}[lang],"categories":cats,"values":vals,"value_label":UNITS["currency"],"axis_label":UNITS["currency"]}
     elif mode_key == "mode2":
         if "scenario" in locals() and scenario is not None:
             report_payload["summary"] = [
@@ -1840,7 +1945,7 @@ if submitted:
                 "value_label":"0-100","axis_label":"0-100"
             }
         elif "ml_pred" in locals() and ml_pred is not None:
-            report_payload["summary"] = [{"label":{"kk":"Күтілетін өнімділік","ru":"Ожидаемая урожайность","en":"Expected yield"}[lang],"value":f"{ml_pred:.1f} ц/га"}]
+            report_payload["summary"] = [{"label":{"kk":"Күтілетін өнімділік","ru":"Ожидаемая урожайность","en":"Expected yield"}[lang],"value":f"{ml_pred:.1f} {UNITS['centner_ha']}"}]
     elif mode_key == "mode3" and "ranking" in locals():
         report_payload["table"] = ranking[keep].to_dict(orient="records")
         top_row = ranking.iloc[0]
@@ -1850,14 +1955,14 @@ if submitted:
             "title":{"kk":"Негізгі таңдау","ru":"Приоритетный выбор","en":"Priority choice"}[lang],
             "text":{"kk":f"{top_name} ағымдағы критерийлер бойынша бірінші орында. Оны автоматты шешім емес, бастапқы басым нұсқа ретінде қарастырыңыз.","ru":f"{top_name} занимает первое место по текущему набору критериев. Рассматривайте его как приоритетный вариант для дальнейшей проверки, а не как автоматическое решение.","en":f"{top_name} ranks first under the current criteria. Treat it as the priority option for further verification, not an automatic decision."}[lang],
             "evidence":{"kk":f"QŪNAR жалпы бағасы {top_score:.1f}/100; рейтинг климатты, су тиімділігін және дерек сенімділігін бірге салыстырады.","ru":f"Общий балл QŪNAR {top_score:.1f}/100; рейтинг учитывает климат, водную эффективность и надежность исходных данных.","en":f"QŪNAR overall score is {top_score:.1f}/100; the ranking combines climate, water efficiency and evidence reliability."}[lang],
-            "effect":{"kk":"Келесі қадам - топ-3 нұсқаны су қолжетімділігі, технология және нарықтық жағдай бойынша салыстыру.","ru":"Следующий шаг - сопоставить TOP-3 по доступности воды, технологии выращивания и рыночным условиям.","en":"Next, compare the top three options against water availability, production technology and market conditions."}[lang],
+            "effect":{"kk":"Келесі қадам - топ-3 нұсқаны су қолжетімділігі, технология және нарықтық жағдай бойынша салыстыру.","ru":"Следующий шаг - сопоставить три лучших варианта по доступности воды, технологии выращивания и рыночным условиям.","en":"Next, compare the top three options against water availability, production technology and market conditions."}[lang],
             "evidence_label":{"kk":"Негіздеме","ru":"Основание","en":"Evidence"}[lang],
             "effect_label":{"kk":"Келесі қадам","ru":"Следующий шаг","en":"Next step"}[lang],
         }]
         score_col={'kk':'QŪNAR жалпы бағасы','ru':'Общий балл QŪNAR','en':'QŪNAR overall score'}[lang]
         crop_col={'kk':'Дақыл','ru':'Культура','en':'Crop'}[lang]
         top5=ranking.head(5)
-        report_payload["chart"]={"title":{"kk":"QŪNAR бойынша TOP-5","ru":"TOP-5 культур по QŪNAR","en":"QŪNAR top 5 crops"}[lang],"section_title":{"kk":"Салыстырмалы рейтинг","ru":"Сравнительный рейтинг","en":"Comparative ranking"}[lang],"categories":top5[crop_col].astype(str).tolist(),"values":pd.to_numeric(top5[score_col],errors='coerce').fillna(0).astype(float).tolist(),"value_label":"0-100","axis_label":"0-100"}
+        report_payload["chart"]={"title":{"kk":"QŪNAR бойынша үздік 5 дақыл","ru":"5 лучших культур по QŪNAR","en":"QŪNAR top 5 crops"}[lang],"section_title":{"kk":"Салыстырмалы рейтинг","ru":"Сравнительный рейтинг","en":"Comparative ranking"}[lang],"categories":top5[crop_col].astype(str).tolist(),"values":pd.to_numeric(top5[score_col],errors='coerce').fillna(0).astype(float).tolist(),"value_label":"0-100","axis_label":"0-100"}
     elif mode_key == "mode4" and "out" in locals():
         report_payload["table"] = out.to_dict(orient="records")
         if "opt" in locals():
