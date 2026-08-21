@@ -59,10 +59,23 @@ div[data-testid="stMetricLabel"] { font-size: 1.02rem !important; font-weight: 6
 div[data-baseweb="input"] input, div[data-baseweb="select"] { min-height: 46px; font-size: 17px !important; }
 div[data-testid="stAlert"] { border-radius: 12px; }
 [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
-.qunar-hero { text-align:center; padding:.45rem 1rem 1.05rem; margin-bottom:1.1rem; background:transparent; border:0; border-radius:0; box-shadow:none; }
-.qunar-brand { font-size:68px; line-height:1.02; font-weight:850; letter-spacing:2px; color:var(--qunar); }
-.qunar-acronym { margin-top:.72rem; font-size:29px; line-height:1.22; font-weight:400; color:#111111; letter-spacing:.005em; }
-.qunar-translation { margin-top:.48rem; font-size:22px; line-height:1.25; font-weight:500; color:#53655d; letter-spacing:.01em; }
+.qunar-hero { text-align:center; padding:3.35rem 1rem 1.10rem; margin:0 0 1.1rem; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; }
+.qunar-brand { font-size:68px; line-height:1.18; font-weight:900; letter-spacing:2px; color:var(--qunar); margin:0; padding:.10em 0 0; overflow:visible; }
+.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:#222222; letter-spacing:.002em; }
+.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:#000000; letter-spacing:.01em; }
+.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:#53655d; letter-spacing:.008em; }
+@media (max-width: 900px) {
+  .qunar-hero { padding-top:4.25rem; }
+  .qunar-brand { font-size:56px; line-height:1.20; }
+  .qunar-acronym { font-size:23px; line-height:1.30; }
+  .qunar-translation { font-size:19px; }
+}
+@media (max-width: 600px) {
+  .qunar-hero { padding-top:4.85rem; padding-left:.35rem; padding-right:.35rem; }
+  .qunar-brand { font-size:46px; line-height:1.22; }
+  .qunar-acronym { font-size:19px; line-height:1.34; }
+  .qunar-translation { font-size:17px; line-height:1.32; }
+}
 .qunar-key, .qunar-reco { background:var(--qunar-soft); border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
 .qunar-key strong, .qunar-reco strong { font-weight:800; }
 .qunar-insight { background:#fff; border:1px solid #e1e8e2; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
@@ -336,7 +349,7 @@ st.markdown(
     f"""
     <div class="qunar-hero">
       <div class="qunar-brand">QŪNAR</div>
-      <div class="qunar-acronym">Quantified Utilization of Natural Agricultural Resources</div>
+      <div class="qunar-acronym"><span class="qunar-initial">Q</span>uantified <span class="qunar-initial">U</span>tilization of <span class="qunar-initial">N</span>atural <span class="qunar-initial">A</span>gricultural <span class="qunar-initial">R</span>esources</div>
       {f'<div class="qunar-translation">{_brand_translation}</div>' if _brand_translation else ''}
     </div>
     """,

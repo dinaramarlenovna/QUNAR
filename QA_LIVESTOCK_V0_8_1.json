@@ -37,57 +37,57 @@
       "benchmark_species": "Camels",
       "n_validation": 44,
       "r2_log": 0.8927283558290342,
-      "mae_heads": 381.16621186534013,
+      "mae_heads": 381.1662118653401,
       "median_ape_pct": 21.560371561884573,
-      "mape_pct": 104.9803419169093
+      "mape_pct": 104.98034191690932
     },
     {
       "benchmark_species": "Cattle",
       "n_validation": 50,
-      "r2_log": 0.7394935644296446,
-      "mae_heads": 10497.044306546264,
-      "median_ape_pct": 10.838438195155067,
-      "mape_pct": 31.85757659866584
+      "r2_log": 0.7394935644296443,
+      "mae_heads": 10497.044306546273,
+      "median_ape_pct": 10.838438195154861,
+      "mape_pct": 31.85757659866587
     },
     {
       "benchmark_species": "Cows",
       "n_validation": 50,
-      "r2_log": 0.6662183970097639,
-      "mae_heads": 5803.23940405575,
-      "median_ape_pct": 14.02280664404354,
-      "mape_pct": 32.366664523847255
+      "r2_log": 0.6662183970097648,
+      "mae_heads": 5803.239404055731,
+      "median_ape_pct": 14.022806644043385,
+      "mape_pct": 32.36666452384718
     },
     {
       "benchmark_species": "Horses",
       "n_validation": 50,
-      "r2_log": 0.8628457826391778,
-      "mae_heads": 1887.6318105341613,
-      "median_ape_pct": 5.816766591086552,
-      "mape_pct": 19.555136167158697
+      "r2_log": 0.8628457826391774,
+      "mae_heads": 1887.631810534162,
+      "median_ape_pct": 5.816766591086557,
+      "mape_pct": 19.555136167158743
     },
     {
       "benchmark_species": "Pigs",
       "n_validation": 24,
-      "r2_log": -0.07651502440471813,
-      "mae_heads": 304.4679353219962,
-      "median_ape_pct": 103.47648210108389,
-      "mape_pct": 414.8615410184595
+      "r2_log": -0.07651502440471836,
+      "mae_heads": 304.4679353219961,
+      "median_ape_pct": 103.47648210108393,
+      "mape_pct": 414.8615410184596
     },
     {
       "benchmark_species": "Poultry",
       "n_validation": 50,
-      "r2_log": 0.8237241801577802,
-      "mae_heads": 30883.847373240424,
+      "r2_log": 0.8237241801577803,
+      "mae_heads": 30883.847373240456,
       "median_ape_pct": 12.262103174534392,
-      "mape_pct": 40.334385210831336
+      "mape_pct": 40.33438521083129
     },
     {
       "benchmark_species": "Sheep/goats",
       "n_validation": 50,
-      "r2_log": 0.8830061910687259,
-      "mae_heads": 34269.98969852567,
-      "median_ape_pct": 8.309008339439618,
-      "mape_pct": 28.981822382555944
+      "r2_log": 0.8830061910687261,
+      "mae_heads": 34269.98969852557,
+      "median_ape_pct": 8.309008339439536,
+      "mape_pct": 28.981822382555865
     }
   ],
   "forecast_guard": {

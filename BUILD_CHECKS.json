@@ -1,9 +1,18 @@
 {
+  "version": "0.8.3-district-crop-2025",
   "syntax_ok": true,
-  "geodata_source": true,
-  "clear_map": true,
-  "no_stale_map_when_off": true,
-  "district_rows": true,
-  "mode2_distinct": true,
-  "ml_validation_research_only": true
+  "core_tests_passed": 5,
+  "smoke_test_ok": true,
+  "panel_rows": 1362,
+  "year_min": 2004,
+  "year_max": 2025,
+  "districts": 17,
+  "crops": 6,
+  "new_rows_2024": 68,
+  "new_rows_2025": 71,
+  "duplicate_keys": 0,
+  "missing_required_ml_fields": 0,
+  "groupkfold_r2": 0.9262796531797115,
+  "latest_forward_2021_2025_r2": 0.8078978453286044,
+  "latest_forward_baseline_r2": 0.787591425591082
 }

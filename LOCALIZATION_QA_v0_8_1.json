@@ -1,0 +1,8 @@
+{
+  "checked_files": [
+    "app.py",
+    "core/config.py"
+  ],
+  "local_forbidden_issues": [],
+  "english_cyrillic_issues": []
+}
