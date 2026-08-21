@@ -421,3 +421,152 @@ def build_combined_pdf_report(payloads: list[dict]) -> bytes:
     doc.build(story)
     out.seek(0)
     return out.getvalue()
+
+
+def _word_add_payload(doc, payload: dict, include_inputs: bool = True, include_brand: bool = True):
+    from docx.shared import Pt, Cm
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.enum.table import WD_TABLE_ALIGNMENT, WD_CELL_VERTICAL_ALIGNMENT
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+
+    def shade(cell, fill):
+        tcPr = cell._tc.get_or_add_tcPr()
+        shd = OxmlElement('w:shd')
+        shd.set(qn('w:fill'), fill)
+        tcPr.append(shd)
+
+    def add_heading(text, level=1):
+        p = doc.add_paragraph()
+        p.style = doc.styles[f'Heading {min(level, 3)}']
+        r = p.add_run(_clean(text))
+        r.font.color.rgb = None
+        return p
+
+    if include_brand:
+        p = doc.add_paragraph()
+        p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+        r = p.add_run('QŪNAR')
+        r.bold = True; r.font.size = Pt(24)
+        if payload.get('brand_translation'):
+            p2 = doc.add_paragraph(_clean(payload.get('brand_translation')))
+            p2.alignment = WD_ALIGN_PARAGRAPH.CENTER
+
+    add_heading(payload.get('mode_label', ''), 1)
+    meta = doc.add_paragraph()
+    meta.add_run(f"{payload.get('generated_label','Generated')}: ").bold = True
+    meta.add_run(_clean(payload.get('generated_at','')))
+    if payload.get('assessment_year'):
+        meta.add_run(f" | { {'kk':'Есептік жыл','ru':'Расчётный год','en':'Calculation year'}.get(payload.get('lang','en'),'Calculation year')}: {payload.get('assessment_year')}")
+    if payload.get('assessment_type'):
+        meta.add_run(f" | {_clean(payload.get('assessment_type'))}")
+
+    summary = payload.get('summary', []) or []
+    if summary:
+        add_heading(payload.get('summary_title','Key results'), 2)
+        table = doc.add_table(rows=1, cols=3)
+        table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        table.style = 'Table Grid'
+        hdr = table.rows[0].cells
+        for i, txt in enumerate([payload.get('indicator_label','Indicator'), payload.get('value_label','Value'), payload.get('note_label','Note')]):
+            hdr[i].text = _clean(txt); shade(hdr[i], 'EAF3EC')
+        for item in summary:
+            cells = table.add_row().cells
+            cells[0].text = _clean(item.get('label'))
+            cells[1].text = _clean(item.get('value'))
+            cells[2].text = _clean(item.get('note'))
+            for c in cells: c.vertical_alignment = WD_CELL_VERTICAL_ALIGNMENT.TOP
+
+    recommendations = payload.get('recommendations', []) or []
+    if recommendations:
+        add_heading(payload.get('recommendations_title','Recommendations'), 2)
+        for i, rec in enumerate(recommendations, 1):
+            if isinstance(rec, dict):
+                p = doc.add_paragraph(style='List Number')
+                p.add_run(_clean(rec.get('title') or f'Recommendation {i}')).bold = True
+                if rec.get('text') or rec.get('recommendation'):
+                    doc.add_paragraph(_clean(rec.get('text') or rec.get('recommendation')))
+                if rec.get('evidence'):
+                    p = doc.add_paragraph(); p.add_run(f"{_clean(rec.get('evidence_label','Evidence'))}: ").bold = True; p.add_run(_clean(rec.get('evidence')))
+                if rec.get('effect'):
+                    p = doc.add_paragraph(); p.add_run(f"{_clean(rec.get('effect_label','Expected effect'))}: ").bold = True; p.add_run(_clean(rec.get('effect')))
+            else:
+                doc.add_paragraph(_clean(rec), style='List Number')
+
+    analysis = payload.get('analysis', []) or []
+    if analysis:
+        add_heading(payload.get('analysis_title','Analysis'), 2)
+        for text in analysis:
+            doc.add_paragraph(_clean(text))
+
+    table_data = payload.get('table')
+    if table_data:
+        add_heading(payload.get('table_title','Detailed result'), 2)
+        df = pd.DataFrame(table_data)
+        if not df.empty:
+            df = df.iloc[:, :8].head(25)
+            table = doc.add_table(rows=1, cols=len(df.columns))
+            table.style = 'Table Grid'
+            table.alignment = WD_TABLE_ALIGNMENT.CENTER
+            for j, col in enumerate(df.columns):
+                table.rows[0].cells[j].text = _clean(col); shade(table.rows[0].cells[j], 'EAF3EC')
+            for _, rr in df.iterrows():
+                cells = table.add_row().cells
+                for j, val in enumerate(rr.tolist()): cells[j].text = _clean(val)
+
+    if include_inputs and payload.get('inputs'):
+        doc.add_page_break()
+        add_heading(payload.get('inputs_title','Inputs and sources'), 2)
+        table = doc.add_table(rows=1, cols=3)
+        table.style = 'Table Grid'; table.alignment = WD_TABLE_ALIGNMENT.CENTER
+        labels = [payload.get('parameter_label','Parameter'), payload.get('value_label','Value'), payload.get('source_label','Source')]
+        for j, txt in enumerate(labels): table.rows[0].cells[j].text = _clean(txt); shade(table.rows[0].cells[j], 'EAF3EC')
+        for p_, v_, s_ in payload['inputs']:
+            cells = table.add_row().cells
+            cells[0].text = _clean(p_); cells[1].text = _clean(v_); cells[2].text = _clean(s_)
+
+
+def _word_document_base(title='QŪNAR report'):
+    from docx import Document
+    from docx.shared import Pt, Cm
+    doc = Document()
+    section = doc.sections[0]
+    section.top_margin = Cm(1.8); section.bottom_margin = Cm(1.8); section.left_margin = Cm(2.0); section.right_margin = Cm(2.0)
+    styles = doc.styles
+    styles['Normal'].font.name = 'Arial'; styles['Normal'].font.size = Pt(10.5)
+    for name, size in [('Heading 1', 16), ('Heading 2', 13), ('Heading 3', 11)]:
+        styles[name].font.name = 'Arial'; styles[name].font.size = Pt(size); styles[name].font.bold = True
+    doc.core_properties.title = title
+    doc.core_properties.author = 'QŪNAR'
+    return doc
+
+
+def build_word_report(payload: dict) -> bytes:
+    doc = _word_document_base('QŪNAR report')
+    _word_add_payload(doc, payload, include_inputs=True, include_brand=True)
+    out = BytesIO(); doc.save(out); out.seek(0); return out.getvalue()
+
+
+def build_combined_word_report(payloads: list[dict]) -> bytes:
+    payloads = [p for p in payloads if p]
+    lang = (payloads[0].get('lang') if payloads else 'en') or 'en'
+    title = {'kk':'Біріктірілген аналитикалық есеп','ru':'Сводный аналитический отчет','en':'Integrated analytical report'}.get(lang,'Integrated analytical report')
+    doc = _word_document_base('QŪNAR integrated report')
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; r = p.add_run('QŪNAR'); r.bold = True
+    p = doc.add_paragraph(title); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    structure = {'kk':'Есеп құрылымы','ru':'Структура отчета','en':'Report structure'}.get(lang,'Report structure')
+    doc.add_heading(structure, level=1)
+    for i, payload in enumerate(payloads, 1): doc.add_paragraph(f"{i}. {_clean(payload.get('mode_label',''))}")
+    for i, payload in enumerate(payloads):
+        doc.add_page_break()
+        _word_add_payload(doc, payload, include_inputs=False, include_brand=False)
+    inputs = _unique_inputs(payloads)
+    if inputs:
+        doc.add_page_break(); doc.add_heading({'kk':'Біріктірілген бастапқы деректер мен дереккөздер','ru':'Сводные исходные данные и источники','en':'Consolidated inputs and sources'}.get(lang), level=1)
+        table = doc.add_table(rows=1, cols=3); table.style='Table Grid'
+        labels = [{'kk':'Көрсеткіш','ru':'Показатель','en':'Parameter'}.get(lang), {'kk':'Мәні','ru':'Значение','en':'Value'}.get(lang), {'kk':'Дереккөз / рөл','ru':'Источник / роль','en':'Source / role'}.get(lang)]
+        for j,x in enumerate(labels): table.rows[0].cells[j].text=_clean(x)
+        for p_,v_,s_ in inputs:
+            cells=table.add_row().cells; cells[0].text=_clean(p_); cells[1].text=_clean(v_); cells[2].text=_clean(s_)
+    out=BytesIO(); doc.save(out); out.seek(0); return out.getvalue()

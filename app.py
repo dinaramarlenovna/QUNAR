@@ -1,10 +1,12 @@
 
 from datetime import date, datetime
+import uuid
 import time
 import html
 import json
 import hashlib
 import streamlit as st
+import streamlit.components.v1 as components
 import pandas as pd
 
 from core.config import (
@@ -25,7 +27,7 @@ from core.location import browser_geolocation, reverse_geocode
 from core.admin_boundaries import detect_point, detect_polygon, boundary_geojson
 from core.optimizer import optimize_structure
 from core.clrem import check_crop_codes, label as extended_crop_label, method as crop_method, scenario_for_crop, observed_for_crop, observed_extra_for_district, decision_table
-from core.reporting import build_excel_report, build_pdf_report, build_combined_excel_report, build_combined_pdf_report
+from core.reporting import build_excel_report, build_pdf_report, build_word_report, build_combined_excel_report, build_combined_pdf_report, build_combined_word_report
 from core.environment import environmental_diagnostics, diversification_metrics
 from core.livestock import (
     SPECIES, SPECIES_LABELS, PRODUCT_TYPES, PRODUCT_LABELS, DEFAULT_PRODUCT,
@@ -33,7 +35,79 @@ from core.livestock import (
     district_species_benchmark, regional_productivity_benchmarks,
 )
 
+GA_MEASUREMENT_ID = "G-B2WV23W45Y"
+GA_PAGE_LOCATION = "https://qunar-turkestan.streamlit.app"
+
+
+def _ga_client_id():
+    return st.session_state.setdefault("ga_client_id", str(uuid.uuid4()))
+
+
+def ga_event(event_name: str, **params):
+    """Send a lightweight GA4 event from an isolated Streamlit component."""
+    payload = {"client_session_id": _ga_client_id(), **{k: v for k, v in params.items() if v is not None}}
+    js_params = json.dumps(payload, ensure_ascii=False, default=str)
+    event = json.dumps(str(event_name))
+    html_block = f"""
+    <script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
+    <script>
+      window.dataLayer = window.dataLayer || [];
+      function gtag(){{dataLayer.push(arguments);}}
+      gtag('js', new Date());
+      gtag('config', '{GA_MEASUREMENT_ID}', {{
+        'send_page_view': false,
+        'page_location': '{GA_PAGE_LOCATION}',
+        'page_title': 'QŪNAR'
+      }});
+      gtag('event', {event}, Object.assign({{
+        'page_location': '{GA_PAGE_LOCATION}',
+        'page_title': 'QŪNAR',
+        'transport_type': 'beacon'
+      }}, {js_params}));
+    </script>
+    """
+    components.html(html_block, height=0, width=0)
+
+
+def _default_widget_help(label):
+    text = str(label or "").lower()
+    lang_hint = globals().get("lang", "ru")
+    rules = [
+        (("коэффициент эмиссии", "emission factor", "эмисси"), "Показывает, сколько кг CO₂e связано с потреблением 1 кВт·ч электроэнергии. Используется для оценки углеродной нагрузки.", "Amount of CO₂e associated with 1 kWh of electricity; used to estimate operational carbon load."),
+        (("площад", "area", "алаң"), "Площадь участка или производственной территории, для которой выполняется расчёт.", "Area of the field or production unit used in the calculation."),
+        (("доступн", "available water"), "Общий объём воды, доступный для рассматриваемого производственного сезона. В режиме оптимизации это общий водный бюджет хозяйства: QŪNAR распределяет его между культурами автоматически, поэтому пользователю не нужно заранее делить воду по культурам.", "Total water available for the production season under assessment. In optimization mode this is the farm-level seasonal water budget; QŪNAR allocates it among crops automatically, so the user does not need to pre-allocate water crop by crop."),
+        (("расход воды", "water use", "water used"), "Для растениеводства укажите суммарное фактическое или ожидаемое водопотребление за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Если значение неизвестно, оставьте 0: QŪNAR использует отдельную нормативную оценку и явно помечает её как расчётную.", "For crops, enter total observed or expected water use for the full production cycle - from pre-sowing preparation/sowing through harvest. If unknown, leave 0: QŪNAR uses a separate reference estimate and labels it as modelled rather than observed."),
+        (("энерг", "electric"), "Для растениеводства укажите суммарное энергопотребление, непосредственно связанное с выбранной культурой за полный производственный цикл - подготовка почвы, посев, орошение/перекачка, уход и уборка, если эти операции потребляют энергию. Если значение неизвестно, оставьте 0.", "For crops, enter total energy directly attributable to the selected crop over the full production cycle - soil preparation, sowing, irrigation/pumping, crop care and harvest where energy is used. Leave 0 if unknown."),
+        (("тариф", "tariff"), "Цена единицы ресурса, используемая для расчёта затрат и потенциальной экономии.", "Price per unit of resource used to estimate cost and potential savings."),
+        (("виэ", "renewable", "green share"), "Доля электроэнергии из возобновляемых источников в рассматриваемом сценарии.", "Share of electricity supplied by renewable sources in the scenario."),
+        (("повтор", "reuse"), "Доля воды, повторно использованной в рассматриваемом производственном цикле. Она уменьшает потребность в новом водозаборе; если фактическая доля неизвестна, оставьте 0 и не трактуйте это как подтверждённое отсутствие повторного использования.", "Share of water reused within the production cycle under assessment. It reduces the need for additional withdrawal; if the observed share is unknown, leave 0 and do not interpret this as verified absence of reuse."),
+        (("инвест", "investment"), "Дополнительные инвестиционные затраты для оценки срока окупаемости ресурсосберегающего решения.", "Additional investment used to estimate the payback period of a resource-saving option."),
+        (("пестиц", "pesticide"), "Фактическая нагрузка пестицидами. Если данных нет, показатель остаётся неизвестным и не заменяется нулём.", "Observed pesticide load. Missing values remain unknown rather than being treated as zero."),
+        (("солен", "salinity"), "Показатель засоления почвы, если он известен пользователю или подтверждён наблюдениями.", "Soil salinity indicator when observed or supplied by the user."),
+        (("деград", "degrad"), "Доля деградированной территории/пастбища, если она известна. Используется как экологический диагностический фактор.", "Observed degraded land/pasture share used as an environmental diagnostic."),
+        (("максимальн", "maximum share"), "Ограничивает долю одной культуры в оптимизированной структуре, снижая чрезмерную концентрацию.", "Caps the share of any one crop in the optimized structure to limit excessive concentration."),
+        (("количество культур", "number of crops"), "Число культур, между которыми оптимизатор распределяет доступную площадь.", "Number of crops among which the optimizer allocates the available area."),
+    ]
+    for keys, ru, en in rules:
+        if any(k in text for k in keys):
+            return ru if lang_hint in ("ru", "kk") else en
+    return "Краткое пояснение параметра: выберите или введите значение, соответствующее вашему хозяйству или сценарию." if lang_hint in ("ru", "kk") else "Parameter help: choose or enter the value that best matches the farm or scenario."
+
+
+def q_number_input(label, *args, **kwargs):
+    kwargs.setdefault("help", _default_widget_help(label)); return st.number_input(label, *args, **kwargs)
+def q_selectbox(label, *args, **kwargs):
+    kwargs.setdefault("help", _default_widget_help(label)); return st.selectbox(label, *args, **kwargs)
+def q_radio(label, *args, **kwargs):
+    kwargs.setdefault("help", _default_widget_help(label)); return st.radio(label, *args, **kwargs)
+def q_toggle(label, *args, **kwargs):
+    kwargs.setdefault("help", _default_widget_help(label)); return st.toggle(label, *args, **kwargs)
+
 st.set_page_config(page_title=APP_NAME, page_icon="🌱", layout="wide", initial_sidebar_state="expanded")
+
+if not st.session_state.get("ga_page_view_sent"):
+    st.session_state["ga_page_view_sent"] = True
+    ga_event("page_view")
 
 st.markdown("""
 <style>
@@ -138,6 +212,10 @@ def _cached_excel_report(payload_json: str) -> bytes:
 def _cached_pdf_report(payload_json: str) -> bytes:
     return build_pdf_report(json.loads(payload_json))
 
+@st.cache_data(show_spinner=False)
+def _cached_word_report(payload_json: str) -> bytes:
+    return build_word_report(json.loads(payload_json))
+
 
 @st.cache_data(show_spinner=False)
 def _cached_combined_excel(payload_json: str) -> bytes:
@@ -146,6 +224,10 @@ def _cached_combined_excel(payload_json: str) -> bytes:
 @st.cache_data(show_spinner=False)
 def _cached_combined_pdf(payload_json: str) -> bytes:
     return build_combined_pdf_report(json.loads(payload_json))
+
+@st.cache_data(show_spinner=False)
+def _cached_combined_word(payload_json: str) -> bytes:
+    return build_combined_word_report(json.loads(payload_json))
 
 def _report_basket():
     return st.session_state.setdefault("qunar_report_basket", {})
@@ -158,6 +240,7 @@ def render_report_workspace(lang: str):
         "clear": {"kk":"Есепті тазарту","ru":"Очистить отчет","en":"Clear report"}[lang],
         "pdf": {"kk":"Толық PDF жүктеу","ru":"Скачать полный PDF","en":"Download full PDF"}[lang],
         "xlsx": {"kk":"Толық Excel жүктеу","ru":"Скачать полный Excel","en":"Download full Excel"}[lang],
+        "word": {"kk":"Толық Word жүктеу","ru":"Скачать полный Word","en":"Download full Word"}[lang],
     }
     basket = _report_basket()
     with st.expander(f"{labels['title']} ({len(basket)}/5)", expanded=False):
@@ -167,7 +250,7 @@ def render_report_workspace(lang: str):
         st.markdown("**" + labels["included"] + ":**")
         for payload in basket.values():
             st.write("• " + str(payload.get("mode_label", "")))
-        c1, c2, c3 = st.columns([1,1,0.7])
+        c1, c2, c3, c4 = st.columns([1,1,1,0.7])
         payloads = list(basket.values())
         payload_json = json.dumps(payloads, ensure_ascii=False, sort_keys=True, default=str)
         bundle_id = hashlib.sha256(payload_json.encode("utf-8")).hexdigest()[:16]
@@ -175,23 +258,37 @@ def render_report_workspace(lang: str):
             st.session_state["qunar_bundle_id"] = bundle_id
             st.session_state.pop("qunar_full_pdf", None)
             st.session_state.pop("qunar_full_xlsx", None)
+            st.session_state.pop("qunar_full_word", None)
         with c1:
             if st.button({"kk":"Толық PDF дайындау","ru":"Подготовить полный PDF","en":"Prepare full PDF"}[lang], use_container_width=True, key=f"prep_full_pdf_{bundle_id}"):
+                ga_event("generate_report", report_format="pdf", report_scope="combined")
                 with st.spinner({"kk":"PDF дайындалуда...","ru":"Формируем PDF...","en":"Building PDF..."}[lang]):
                     st.session_state["qunar_full_pdf"] = _cached_combined_pdf(payload_json)
             if st.session_state.get("qunar_full_pdf"):
-                st.download_button(labels["pdf"], data=st.session_state["qunar_full_pdf"], file_name=f"QUNAR_full_report_{datetime.now():%Y%m%d_%H%M}.pdf", mime="application/pdf", use_container_width=True, key=f"full_pdf_{bundle_id}")
+                clicked = st.download_button(labels["pdf"], data=st.session_state["qunar_full_pdf"], file_name=f"QUNAR_full_report_{datetime.now():%Y%m%d_%H%M}.pdf", mime="application/pdf", use_container_width=True, key=f"full_pdf_{bundle_id}")
+                if clicked: ga_event("download_pdf", report_scope="combined")
         with c2:
             if st.button({"kk":"Толық Excel дайындау","ru":"Подготовить полный Excel","en":"Prepare full Excel"}[lang], use_container_width=True, key=f"prep_full_xlsx_{bundle_id}"):
+                ga_event("generate_report", report_format="excel", report_scope="combined")
                 with st.spinner({"kk":"Excel дайындалуда...","ru":"Формируем Excel...","en":"Building Excel..."}[lang]):
                     st.session_state["qunar_full_xlsx"] = _cached_combined_excel(payload_json)
             if st.session_state.get("qunar_full_xlsx"):
-                st.download_button(labels["xlsx"], data=st.session_state["qunar_full_xlsx"], file_name=f"QUNAR_full_report_{datetime.now():%Y%m%d_%H%M}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key=f"full_xlsx_{bundle_id}")
+                clicked = st.download_button(labels["xlsx"], data=st.session_state["qunar_full_xlsx"], file_name=f"QUNAR_full_report_{datetime.now():%Y%m%d_%H%M}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key=f"full_xlsx_{bundle_id}")
+                if clicked: ga_event("download_excel", report_scope="combined")
         with c3:
+            if st.button({"kk":"Толық Word дайындау","ru":"Подготовить полный Word","en":"Prepare full Word"}[lang], use_container_width=True, key=f"prep_full_word_{bundle_id}"):
+                ga_event("generate_report", report_format="word", report_scope="combined")
+                with st.spinner({"kk":"Word дайындалуда...","ru":"Формируем Word...","en":"Building Word..."}[lang]):
+                    st.session_state["qunar_full_word"] = _cached_combined_word(payload_json)
+            if st.session_state.get("qunar_full_word"):
+                clicked = st.download_button(labels["word"], data=st.session_state["qunar_full_word"], file_name=f"QUNAR_full_report_{datetime.now():%Y%m%d_%H%M}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key=f"full_word_{bundle_id}")
+                if clicked: ga_event("download_word", report_scope="combined")
+        with c4:
             if st.button(labels["clear"], use_container_width=True, key="clear_report_basket"):
                 st.session_state["qunar_report_basket"] = {}
                 st.session_state.pop("qunar_full_pdf", None)
                 st.session_state.pop("qunar_full_xlsx", None)
+                st.session_state.pop("qunar_full_word", None)
                 st.rerun()
 
 @st.fragment
@@ -203,6 +300,8 @@ def render_export_panel(report_payload: dict, lang: str):
         "down_xlsx": {"kk":"Excel жүктеу","ru":"Скачать Excel","en":"Download Excel"}[lang],
         "prep_pdf": {"kk":"PDF дайындау","ru":"Подготовить PDF","en":"Prepare PDF"}[lang],
         "down_pdf": {"kk":"PDF жүктеу","ru":"Скачать PDF","en":"Download PDF"}[lang],
+        "prep_word": {"kk":"Word дайындау","ru":"Подготовить Word","en":"Prepare Word"}[lang],
+        "down_word": {"kk":"Word жүктеу","ru":"Скачать Word","en":"Download Word"}[lang],
         "ready": {"kk":"Файл дайын. Төмендегі жүктеу батырмасын басыңыз.","ru":"Файл готов. Нажмите кнопку скачивания ниже.","en":"File ready. Use the download button below."}[lang],
         "add": {"kk":"Жалпы есепке қосу","ru":"Добавить в общий отчет","en":"Add to combined report"}[lang],
         "added": {"kk":"Бұл бөлім жалпы есепке қосылды.","ru":"Этот раздел добавлен в общий отчет.","en":"This section was added to the combined report."}[lang],
@@ -213,6 +312,7 @@ def render_export_panel(report_payload: dict, lang: str):
         st.session_state["qunar_export_report_id"] = report_id
         st.session_state.pop("qunar_xlsx", None)
         st.session_state.pop("qunar_pdf", None)
+        st.session_state.pop("qunar_word", None)
 
     with st.expander(labels["title"], expanded=bool(st.session_state.get("qunar_xlsx") or st.session_state.get("qunar_pdf"))):
         st.caption(labels["caption"])
@@ -221,24 +321,41 @@ def render_export_panel(report_payload: dict, lang: str):
             basket[str(report_payload.get("mode_key", report_id))] = report_payload
             st.session_state["qunar_report_basket"] = basket
             st.success(labels["added"])
-        ex1, ex2 = st.columns(2)
+        ex1, ex2, ex3 = st.columns(3)
         with ex1:
             if st.button(labels["prep_xlsx"], use_container_width=True, key=f"prepare_xlsx_{report_id}"):
+                ga_event("generate_report", report_format="excel", report_scope="single", mode_key=report_payload.get("mode_key"))
                 with st.spinner(labels["prep_xlsx"] + "..."):
                     st.session_state["qunar_xlsx"] = _cached_excel_report(payload_json)
             if st.session_state.get("qunar_xlsx"):
                 st.success(labels["ready"])
-                st.download_button(labels["down_xlsx"], data=st.session_state["qunar_xlsx"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key=f"download_xlsx_{report_id}")
+                clicked = st.download_button(labels["down_xlsx"], data=st.session_state["qunar_xlsx"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.xlsx", mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet", use_container_width=True, key=f"download_xlsx_{report_id}")
+                if clicked: ga_event("download_excel", report_scope="single", mode_key=report_payload.get("mode_key"))
         with ex2:
             if st.button(labels["prep_pdf"], use_container_width=True, key=f"prepare_pdf_{report_id}"):
+                ga_event("generate_report", report_format="pdf", report_scope="single", mode_key=report_payload.get("mode_key"))
                 with st.spinner(labels["prep_pdf"] + "..."):
                     st.session_state["qunar_pdf"] = _cached_pdf_report(payload_json)
             if st.session_state.get("qunar_pdf"):
                 st.success(labels["ready"])
-                st.download_button(labels["down_pdf"], data=st.session_state["qunar_pdf"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.pdf", mime="application/pdf", use_container_width=True, key=f"download_pdf_{report_id}")
+                clicked = st.download_button(labels["down_pdf"], data=st.session_state["qunar_pdf"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.pdf", mime="application/pdf", use_container_width=True, key=f"download_pdf_{report_id}")
+                if clicked: ga_event("download_pdf", report_scope="single", mode_key=report_payload.get("mode_key"))
+        with ex3:
+            if st.button(labels["prep_word"], use_container_width=True, key=f"prepare_word_{report_id}"):
+                ga_event("generate_report", report_format="word", report_scope="single", mode_key=report_payload.get("mode_key"))
+                with st.spinner(labels["prep_word"] + "..."):
+                    st.session_state["qunar_word"] = _cached_word_report(payload_json)
+            if st.session_state.get("qunar_word"):
+                st.success(labels["ready"])
+                clicked = st.download_button(labels["down_word"], data=st.session_state["qunar_word"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key=f"download_word_{report_id}")
+                if clicked: ga_event("download_word", report_scope="single", mode_key=report_payload.get("mode_key"))
 
-lang_label = st.sidebar.selectbox("Тіл / Язык / Language", list(LANGUAGES.keys()), index=0)
+lang_label = st.sidebar.selectbox("Тіл / Язык / Language", list(LANGUAGES.keys()), index=0, help="Интерфейс тілі / Язык интерфейса / Interface language")
 lang = LANGUAGES[lang_label]
+if st.session_state.get("ga_last_language") != lang:
+    if st.session_state.get("ga_last_language") is not None:
+        ga_event("change_language", language=lang)
+    st.session_state["ga_last_language"] = lang
 # Copy translations locally so deployment remains backward-compatible if Streamlit
 # briefly serves app.py with a cached/older core.config during a GitHub redeploy.
 t = dict(TEXT[lang])
@@ -325,9 +442,11 @@ user_level = st.sidebar.radio(
     ["farmer", "specialist", "researcher"],
     format_func=lambda x: {"farmer": t["level_farmer"], "specialist": t["level_specialist"], "researcher": t["level_researcher"]}[x],
     index=0,
+    help={"kk":"Интерфейс күрделілігін таңдаңыз: базалық, кеңейтілген немесе зерттеушілік параметрлер.","ru":"Выберите уровень интерфейса: базовые, расширенные или исследовательские параметры.","en":"Choose the interface depth: basic, advanced or research parameters."}[lang],
 )
 if user_level == "farmer":
     st.sidebar.caption(t["level_basic_hint"])
+    st.sidebar.caption({"kk":"QŪNAR анонимді пайдалану статистикасын Google Analytics арқылы жинайды.","ru":"QŪNAR собирает обезличенную статистику использования через Google Analytics.","en":"QŪNAR collects anonymized usage statistics through Google Analytics."}[lang])
 elif user_level == "specialist":
     st.sidebar.caption(t["level_advanced_hint"])
 else:
@@ -360,8 +479,44 @@ st.info(t["session_warning"])
 st.caption(t["save_restore_note"])
 
 mode_keys = ["mode1", "mode2", "mode3", "mode4", "mode5"]
-mode_key = st.sidebar.radio(t["mode"], mode_keys, format_func=lambda k: t.get(k, k))
-district = st.sidebar.selectbox(t["district"], DISTRICT_ORDER, format_func=district_label)
+mode_key = st.sidebar.radio(t["mode"], mode_keys, format_func=lambda k: t.get(k, k), help={"kk":"QŪNAR есептеу міндетін таңдаңыз.","ru":"Выберите задачу, которую должен выполнить QŪNAR.","en":"Choose the analytical task QŪNAR should perform."}[lang])
+if st.session_state.get("ga_last_mode") != mode_key:
+    if st.session_state.get("ga_last_mode") is not None:
+        ga_event("assessment_mode", mode_key=mode_key)
+    st.session_state["ga_last_mode"] = mode_key
+district = st.sidebar.selectbox(t["district"], DISTRICT_ORDER, format_func=district_label, help={"kk":"Есептеу жүргізілетін әкімшілік аудан немесе қала.","ru":"Административный район или город, для которого выполняется расчёт.","en":"Administrative district or city used for the calculation."}[lang])
+
+SEASON_MODE_LABELS = {
+    "kk": {"next":"Келесі маусым", "current":"Ағымдағы маусым", "completed":"Соңғы аяқталған маусым"},
+    "ru": {"next":"Следующий сезон", "current":"Текущий сезон", "completed":"Последний завершённый сезон"},
+    "en": {"next":"Next season", "current":"Current season", "completed":"Last completed season"},
+}[lang]
+season_mode = st.sidebar.radio(
+    {"kk":"Бағалау кезеңі","ru":"Период оценки","en":"Assessment period"}[lang],
+    ["next","current","completed"],
+    format_func=lambda x: SEASON_MODE_LABELS[x],
+    index=0,
+    help={"kk":"Келесі маусым - жоспарлау сценарийі; ағымдағы - маусым барысындағы алдын ала мониторинг; аяқталған - толық өткен маусымды ретроспективті бағалау.","ru":"Следующий сезон - плановый сценарий; текущий - предварительный мониторинг по мере поступления данных; завершённый - ретроспективная оценка полного сезона.","en":"Next season is the planning scenario; current season is an in-season preliminary assessment; completed season is a retrospective full-season assessment."}[lang],
+)
+_today = date.today()
+if season_mode == "next":
+    calculation_year = _today.year + 1
+    assessment_type = {"kk":"жоспарлы әлеуетті сценарий","ru":"плановый потенциальный сценарий","en":"prospective planning scenario"}[lang]
+    climate_period_label = f"04-09 / {calculation_year} ({ {'kk':'тарихи климаттық профиль','ru':'исторический климатический профиль','en':'historical climate profile'}[lang] })"
+elif season_mode == "current":
+    calculation_year = _today.year
+    assessment_type = {"kk":"алдын ала ағымдағы бағалау","ru":"предварительная текущая оценка","en":"preliminary current-season assessment"}[lang]
+    climate_period_label = f"01.04.{calculation_year}-30.09.{calculation_year}"
+else:
+    calculation_year = _today.year if _today > date(_today.year, 9, 30) else _today.year - 1
+    assessment_type = {"kk":"ретроспективті бағалау","ru":"ретроспективная оценка","en":"retrospective assessment"}[lang]
+    climate_period_label = f"01.04.{calculation_year}-30.09.{calculation_year}"
+
+st.sidebar.caption({
+    "kk":f"Есептік жыл: {calculation_year}. Ашық алқаптағы дақылдар үшін базалық климаттық терезе - сәуір-қыркүйек.",
+    "ru":f"Расчётный год: {calculation_year}. Для культур открытого грунта базовое климатическое окно - апрель-сентябрь.",
+    "en":f"Calculation year: {calculation_year}. The baseline climate window for open-field crops is April-September.",
+}[lang])
 
 centroids = load_centroids()
 default_lat, default_lon = centroids[district]
@@ -383,8 +538,11 @@ if st.session_state["district_for_location"] != district and not st.session_stat
     st.session_state.district_for_location = district
 
 st.caption(t["fast_mode_note"])
+st.caption({"kk":"Әдістемелік ескерту: QŪNAR бір ауыл шаруашылығы маусымын бағалайды. Ашық алқаптағы дақылдардың ML-климат блогы сәуір-қыркүйек аралығындағы температура, жауын-шашын, тамыр аймағының ылғалдылығы және күн радиациясын пайдаланады. Бұл барлық дақыл үшін дәл фенологиялық күнтізбе емес, салыстырмалы модельдеу үшін бірыңғай белсенді вегетация терезесі.","ru":"Методическая сноска: QŪNAR оценивает один сельскохозяйственный сезон. В ML-климатическом блоке культур открытого грунта используются температура, осадки, влажность корневой зоны и солнечная радиация за апрель-сентябрь. Это унифицированное окно активной вегетации для сопоставимого моделирования, а не точный фенологический календарь каждой культуры.","en":"Method note: QŪNAR evaluates one agricultural season. The open-field crop ML climate block uses April-September temperature, precipitation, root-zone wetness and solar radiation. This is a standardized active-season window for comparable modelling, not an exact phenological calendar for every crop."}[lang])
+st.caption({"kk":"Уақыт шекаралары: сәуір-қыркүйек тек ML климаттық белгілеріне қатысты. Су, энергия және басқа өндірістік ресурстар дақылдың толық өндірістік циклі бойынша - егіс алдындағы дайындықтан/себуден бастап өнім жинауға дейін есепке алынады. Сондықтан климаттық терезе мен ресурстық есептің уақыт шекарасы бірдей болуға міндетті емес.","ru":"Временные границы расчёта: апрель-сентябрь относится только к климатическим признакам ML. Вода, энергия и другие производственные ресурсы учитываются за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Поэтому временные границы климатического окна и ресурсного учёта намеренно различаются.","en":"Time scope: April-September applies only to the ML climate features. Water, energy and other production resources are accounted for over the full crop production cycle - from pre-sowing preparation/sowing through harvest. The climate-feature window and the resource-accounting boundary are therefore intentionally different."}[lang])
+st.caption({"kk":"Қолданылу шекарасы: ағымдағы дақылдардың ML-ядросы ашық алқап өндірісіне арналған. Жылыжай өндірісі жылыту, жарықтандыру, желдету және бірнеше өндірістік циклді ескеретін жеке болашақ модуль ретінде қарастырылады.","ru":"Граница применимости: текущий ML-контур растениеводства откалиброван для открытого грунта. Тепличное производство требует отдельного будущего модуля с отоплением, освещением, вентиляцией и возможными несколькими циклами производства.","en":"Scope boundary: the current crop ML core is calibrated for open-field production. Greenhouse production requires a separate future module covering heating, lighting, ventilation and potentially multiple production cycles."}[lang])
 
-gps_enabled = st.toggle(t["gps_use"], value=False, help=t["gps_title"])
+gps_enabled = q_toggle(t["gps_use"], value=False, help=t["gps_title"])
 if gps_enabled:
     gps_loc, gps_err = timed_call("Browser geolocation", browser_geolocation)
     if gps_err == "missing_component":
@@ -410,7 +568,7 @@ if gps_enabled:
             pass
 
 
-location_source = st.radio(
+location_source = q_radio(
     t.get("location_source", {"kk":"Геодерек көзі","ru":"Источник геоданных","en":"Geodata source"}[lang]),
     ["district", "map"],
     format_func=lambda x: t.get("location_district", {"kk":"Таңдалған аудан бойынша есептеу","ru":"Считать по выбранному району","en":"Calculate by selected district"}[lang]) if x == "district" else t.get("location_map", {"kk":"Картадағы контур бойынша есептеу","ru":"Считать по контуру на карте","en":"Calculate by map polygon"}[lang]),
@@ -427,7 +585,7 @@ if st.button(t.get("clear_map", {"kk":"Картаны тазалау / конт�
     st.session_state.detected_map_district = None
     st.success(t.get("clear_map_done", {"kk":"Карта контуры тазаланды.","ru":"Контур карты очищен.","en":"Map boundary cleared."}[lang]))
 
-use_map = st.toggle(t["map_toggle"], value=False, help=t["map_help"], disabled=(location_source == "district"))
+use_map = q_toggle(t["map_toggle"], value=False, help=t["map_help"], disabled=(location_source == "district"))
 st.caption(t["polygon_help"])
 
 if not use_map or location_source == "district":
@@ -519,14 +677,14 @@ area_input_label = t["area"] if mode_key != "mode5" else {
 with st.container():
     c1, c2, c3 = st.columns(3)
     with c1:
-        area_ha = st.number_input(area_input_label, min_value=0.1, value=10.0, step=0.5, help=t["declared_area_help"])
+        area_ha = q_number_input(area_input_label, min_value=0.1, value=10.0, step=0.5, help=t["declared_area_help"])
     with c2:
         available_water_label = t["water"] if mode_key != "mode5" else {
             "kk":"Жылдық қолжетімді су көлемі, м³",
             "ru":"Доступный годовой объем воды, м³",
             "en":"Available annual water volume, m³",
         }[lang]
-        available_water = st.number_input(
+        available_water = q_number_input(
             available_water_label, min_value=0.0, value=0.0, step=1000.0, help=t["available_water_note"]
         )
     with c3:
@@ -539,9 +697,9 @@ with st.container():
 
     crop = None
     if mode_key == "mode1":
-        crop = st.selectbox(t["crop"], check_crop_codes(), format_func=lambda c: extended_crop_label(c, lang))
+        crop = q_selectbox(t["crop"], check_crop_codes(), format_func=lambda c: extended_crop_label(c, lang))
     elif mode_key == "mode2":
-        crop = st.selectbox(t["crop"], check_crop_codes(), format_func=lambda c: extended_crop_label(c, lang))
+        crop = q_selectbox(t["crop"], check_crop_codes(), format_func=lambda c: extended_crop_label(c, lang))
 
     livestock_species = "Cattle"
     livestock_heads = 0.0
@@ -553,13 +711,13 @@ with st.container():
         st.markdown("#### " + {"kk":"Мал шаруашылығының өндірістік профилі","ru":"Производственный профиль животноводства","en":"Livestock production profile"}[lang])
         l1,l2,l3,l4 = st.columns(4)
         with l1:
-            livestock_species = st.selectbox(
+            livestock_species = q_selectbox(
                 {"kk":"Мал түрі","ru":"Вид животных","en":"Livestock type"}[lang],
                 SPECIES,
                 format_func=lambda x: SPECIES_LABELS[lang][x],
             )
         with l2:
-            livestock_heads = st.number_input(
+            livestock_heads = q_number_input(
                 {"kk":"Мал саны, бас","ru":"Поголовье, голов","en":"Number of animals, head"}[lang],
                 min_value=0.0, value=0.0, step=10.0,
                 help={
@@ -569,14 +727,14 @@ with st.container():
                 }[lang],
             )
         with l3:
-            livestock_production_kind = st.selectbox(
+            livestock_production_kind = q_selectbox(
                 {"kk":"Өнім түрі","ru":"Вид продукции","en":"Product type"}[lang],
                 PRODUCT_TYPES,
                 index=PRODUCT_TYPES.index(DEFAULT_PRODUCT.get(livestock_species, "meat_tonnes")),
                 format_func=lambda x: PRODUCT_LABELS[lang][x],
             )
         with l4:
-            livestock_production_amount = st.number_input(
+            livestock_production_amount = q_number_input(
                 {"kk":"Жылдық өнім көлемі","ru":"Годовой объем продукции","en":"Annual production volume"}[lang],
                 min_value=0.0, value=0.0, step=1.0,
                 help={
@@ -586,7 +744,7 @@ with st.container():
                 }[lang],
             )
 
-        livestock_feed_source = st.selectbox(
+        livestock_feed_source = q_selectbox(
             {"kk":"Жемшөп қоры туралы дерек","ru":"Данные о годовом запасе кормов","en":"Annual feed-supply data"}[lang],
             ["unknown", "own"],
             format_func=lambda x: {
@@ -595,7 +753,7 @@ with st.container():
             }[x],
         )
         if livestock_feed_source == "own":
-            livestock_fodder_t = st.number_input(
+            livestock_fodder_t = q_number_input(
                 {"kk":"Жылдық жемшөп қоры, т құрғақ зат","ru":"Годовой запас кормов, т сухого вещества","en":"Annual feed supply, t dry matter"}[lang],
                 min_value=0.0, value=0.0, step=1.0,
             )
@@ -636,17 +794,17 @@ with st.container():
         st.markdown("#### " + {"kk":"Мал шаруашылығы ресурстары","ru":"Ресурсы животноводства","en":"Livestock resources"}[lang])
         lr1, lr2 = st.columns(2)
         with lr1:
-            water_used = st.number_input(
+            water_used = q_number_input(
                 {"kk":"Нақты жылдық су тұтынуы, м³","ru":"Фактическое годовое водопотребление, м³","en":"Observed annual water use, m³"}[lang],
                 min_value=0.0, value=0.0, step=100.0,
             )
         with lr2:
-            energy = st.number_input(
+            energy = q_number_input(
                 {"kk":"Нақты жылдық энергия тұтынуы, кВт·сағ","ru":"Фактическое годовое энергопотребление, кВт·ч","en":"Observed annual energy use, kWh"}[lang],
                 min_value=0.0, value=0.0, step=100.0,
             )
         if user_level == "researcher":
-            ef = st.number_input(t["ef"], min_value=0.0, value=float(DEFAULT_EF_KZ_KGCO2_PER_KWH), step=0.001)
+            ef = q_number_input(t["ef"], min_value=0.0, value=float(DEFAULT_EF_KZ_KGCO2_PER_KWH), step=0.001)
             st.caption(t["ef_source"])
         else:
             ef = float(DEFAULT_EF_KZ_KGCO2_PER_KWH)
@@ -659,44 +817,46 @@ with st.container():
         st.markdown("#### " + {"kk":"Негізгі шаруашылық деректері","ru":"Основные данные хозяйства","en":"Essential farm data"}[lang])
         b1,b2,b3=st.columns(3)
         with b1:
-            water_used = st.number_input(t["water_used"], min_value=0.0, value=0.0, step=1000.0)
+            water_used = q_number_input(t["water_used"], min_value=0.0, value=0.0, step=1000.0)
         with b2:
-            energy = st.number_input(t["energy"], min_value=0.0, value=0.0, step=100.0)
+            energy = q_number_input(t["energy"], min_value=0.0, value=0.0, step=100.0)
         with b3:
-            irrigation_type = st.selectbox(
+            irrigation_type = q_selectbox(
                 t["irrigation_type"], ["unknown","furrow","sprinkler","drip","mixed"],
                 format_func=lambda x:{"unknown":t["irrigation_unknown"],"furrow":t["irrigation_furrow"],"sprinkler":t["irrigation_sprinkler"],"drip":t["irrigation_drip"],"mixed":t["irrigation_mixed"]}[x]
             )
         st.caption({"kk":"Қалған техникалық параметрлер анықтамалық сценариймен есептеледі. Нақты тарифтер, өлшеу сенсорлары, сорғы және сценарийлер үшін «Кеңейтілген» деңгейді таңдаңыз.","ru":"Остальные технические параметры рассчитываются по справочному сценарию. Для точных тарифов, датчиков, насоса и сценариев выберите «Расширенный» уровень.","en":"Other technical parameters use the reference scenario. Choose Advanced for exact tariffs, sensors, pump and what-if settings."}[lang])
+        st.caption({"kk":"Өсімдік шаруашылығы үшін енгізілетін нақты су мен энергия мәндері толық өндірістік циклге жатады; оларды сәуір-қыркүйек климаттық терезесімен шектемеңіз.","ru":"Для растениеводства фактические вода и энергия относятся ко всему производственному циклу культуры; ограничивать эти значения только апрелем-сентябрём не нужно.","en":"For crops, observed water and energy refer to the full production cycle; do not restrict these inputs to the April-September climate window."}[lang])
     else:
         with st.expander(t["resource_inputs"], expanded=True):
             a,b=st.columns(2)
             with a:
-                water_used=st.number_input(t["water_used"],min_value=0.0,value=0.0,step=1000.0)
-                reuse=st.number_input(t["reuse"],min_value=0.0,max_value=100.0,value=0.0,step=0.1)
-                irrigation_type=st.selectbox(t["irrigation_type"],["unknown","furrow","sprinkler","drip","mixed"],format_func=lambda x:{"unknown":t["irrigation_unknown"],"furrow":t["irrigation_furrow"],"sprinkler":t["irrigation_sprinkler"],"drip":t["irrigation_drip"],"mixed":t["irrigation_mixed"]}[x])
+                water_used=q_number_input(t["water_used"],min_value=0.0,value=0.0,step=1000.0)
+                reuse=q_number_input(t["reuse"],min_value=0.0,max_value=100.0,value=0.0,step=0.1)
+                irrigation_type=q_selectbox(t["irrigation_type"],["unknown","furrow","sprinkler","drip","mixed"],format_func=lambda x:{"unknown":t["irrigation_unknown"],"furrow":t["irrigation_furrow"],"sprinkler":t["irrigation_sprinkler"],"drip":t["irrigation_drip"],"mixed":t["irrigation_mixed"]}[x])
                 water_meter=st.checkbox(t["has_water_meter"],value=False)
                 soil_sensors=st.checkbox(t["has_soil_sensors"],value=False)
             with b:
-                energy=st.number_input(t["energy"],min_value=0.0,value=0.0,step=100.0)
+                energy=q_number_input(t["energy"],min_value=0.0,value=0.0,step=100.0)
                 efficient_pump=st.checkbox(t["has_efficient_pump"],value=False)
-                current_solar=st.number_input(t["current_solar"],min_value=0.0,max_value=100.0,value=0.0,step=0.1)
-                target_solar=st.number_input(t["target_solar"],min_value=0.0,max_value=100.0,value=float(DEFAULT_GREEN_SHARE_TARGET),step=0.5)
+                current_solar=q_number_input(t["current_solar"],min_value=0.0,max_value=100.0,value=0.0,step=0.1)
+                target_solar=q_number_input(t["target_solar"],min_value=0.0,max_value=100.0,value=float(DEFAULT_GREEN_SHARE_TARGET),step=0.5)
+            st.caption({"kk":"Ресурстық енгізулер толық өндірістік циклге жатады: егіс алдындағы дайындық/себу, өсіру кезеңі және өнім жинау. Сәуір-қыркүйек шекарасы тек ML климаттық белгілеріне қолданылады.","ru":"Ресурсные вводы относятся к полному производственному циклу: предпосевная подготовка/посев, выращивание и уборка. Граница апрель-сентябрь применяется только к климатическим признакам ML.","en":"Resource inputs cover the full production cycle: pre-sowing preparation/sowing, crop growth and harvest. The April-September boundary applies only to ML climate features."}[lang])
             st.markdown("##### "+t["econ_block"])
             st.caption(t["whatif_help"])
             p1,p2,p3,p4=st.columns(4)
             with p1:
-                electricity_tariff=st.number_input(t["electricity_tariff"],min_value=0.0,value=float(DEFAULT_ELECTRICITY_TARIFF_KZT_KWH),step=0.1)
+                electricity_tariff=q_number_input(t["electricity_tariff"],min_value=0.0,value=float(DEFAULT_ELECTRICITY_TARIFF_KZT_KWH),step=0.1)
             with p2:
-                water_tariff=st.number_input(t["water_tariff"],min_value=0.0,value=float(DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3),step=0.01)
+                water_tariff=q_number_input(t["water_tariff"],min_value=0.0,value=float(DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3),step=0.01)
             with p3:
-                water_saving_target=st.number_input(t["water_saving_target"],min_value=0.0,max_value=100.0,value=float(DEFAULT_WATER_SAVING_TARGET),step=0.1)
+                water_saving_target=q_number_input(t["water_saving_target"],min_value=0.0,max_value=100.0,value=float(DEFAULT_WATER_SAVING_TARGET),step=0.1)
             with p4:
-                investment=st.number_input(t["investment"],min_value=0.0,value=0.0,step=100000.0)
-            seasons_per_year=st.number_input(t["seasons_per_year"],min_value=1.0,value=1.0,step=1.0)
+                investment=q_number_input(t["investment"],min_value=0.0,value=0.0,step=100000.0)
+            seasons_per_year=q_number_input(t["seasons_per_year"],min_value=1.0,value=1.0,step=1.0)
             if user_level == "researcher":
                 st.markdown("##### " + {"kk":"Зерттеу параметрлері","ru":"Исследовательские параметры","en":"Research parameters"}[lang])
-                ef=st.number_input(t["ef"],min_value=0.0,value=float(DEFAULT_EF_KZ_KGCO2_PER_KWH),step=0.001)
+                ef=q_number_input(t["ef"],min_value=0.0,value=float(DEFAULT_EF_KZ_KGCO2_PER_KWH),step=0.001)
                 st.caption(t["ef_source"])
                 st.caption(t["tariff_source_note"])
                 st.caption(t["decimal_note"])
@@ -708,7 +868,7 @@ with st.container():
 
     if mode_key == "mode5":
         with st.expander({"kk":"Жайылымның экологиялық диагностикасы (міндетті емес)","ru":"Экологическая диагностика пастбища (необязательно)","en":"Pasture environmental diagnostics (optional)"}[lang], expanded=False):
-            pasture_source = st.selectbox(
+            pasture_source = q_selectbox(
                 {"kk":"Жайылым деградациясы туралы дерек","ru":"Данные о деградации пастбища","en":"Pasture-degradation data"}[lang],
                 ["unknown", "own"],
                 format_func=lambda x: {
@@ -717,7 +877,7 @@ with st.container():
                 }[x],
             )
             if pasture_source == "own":
-                pasture_degraded_share_pct = st.number_input(
+                pasture_degraded_share_pct = q_number_input(
                     {"kk":"Деградацияланған жайылым үлесі, %","ru":"Доля деградированного пастбища, %","en":"Degraded pasture share, %"}[lang],
                     min_value=0.0, max_value=100.0, value=0.0, step=1.0,
                 )
@@ -732,7 +892,7 @@ with st.container():
         with st.expander({"kk":"Экологиялық диагностика (міндетті емес)","ru":"Экологическая диагностика (необязательно)","en":"Environmental diagnostics (optional)"}[lang], expanded=False):
             ee1,ee2 = st.columns(2)
             with ee1:
-                pesticide_source = st.selectbox(
+                pesticide_source = q_selectbox(
                     {"kk":"Пестицид жүктемесі туралы дерек","ru":"Данные о пестицидной нагрузке","en":"Pesticide-load data"}[lang],
                     ["unknown", "own"],
                     format_func=lambda x: {
@@ -741,14 +901,14 @@ with st.container():
                     }[x],
                 )
                 if pesticide_source == "own":
-                    pesticide_kg_ha = st.number_input(
+                    pesticide_kg_ha = q_number_input(
                         {"kk":"Пестицид жүктемесі, кг/га","ru":"Пестицидная нагрузка, кг/га","en":"Pesticide load, kg/ha"}[lang],
                         min_value=0.0, value=0.0, step=0.01,
                     )
                 else:
                     pesticide_kg_ha = None
             with ee2:
-                salinity_source = st.selectbox(
+                salinity_source = q_selectbox(
                     {"kk":"Тұздану туралы дерек","ru":"Данные о засолении","en":"Salinity data"}[lang],
                     ["unknown", "own"],
                     format_func=lambda x: {
@@ -757,7 +917,7 @@ with st.container():
                     }[x],
                 )
                 if salinity_source == "own":
-                    salinized_share_pct = st.number_input(
+                    salinized_share_pct = q_number_input(
                         {"kk":"Тұзданған жер үлесі, %","ru":"Доля засоленной земли, %","en":"Salinized land share, %"}[lang],
                         min_value=0.0, max_value=100.0, value=0.0, step=1.0,
                     )
@@ -777,11 +937,11 @@ with st.container():
             }[lang])
             ec1,ec2,ec3=st.columns(3)
             with ec1:
-                expected_yield_c_ha=st.number_input({"kk":"Күтілетін өнімділік, ц/га","ru":"Ожидаемая урожайность, ц/га","en":"Expected yield, centners/ha"}[lang],min_value=0.0,value=0.0,step=1.0)
+                expected_yield_c_ha=q_number_input({"kk":"Күтілетін өнімділік, ц/га","ru":"Ожидаемая урожайность, ц/га","en":"Expected yield, centners/ha"}[lang],min_value=0.0,value=0.0,step=1.0)
             with ec2:
-                selling_price_kzt_t=st.number_input({"kk":"Сату бағасы, тг/т","ru":"Цена реализации, тг/т","en":"Selling price, KZT/t"}[lang],min_value=0.0,value=0.0,step=1000.0)
+                selling_price_kzt_t=q_number_input({"kk":"Сату бағасы, тг/т","ru":"Цена реализации, тг/т","en":"Selling price, KZT/t"}[lang],min_value=0.0,value=0.0,step=1000.0)
             with ec3:
-                variable_cost_kzt_ha=st.number_input({"kk":"Басқа айнымалы шығындар, тг/га","ru":"Прочие переменные затраты, тг/га","en":"Other variable costs, KZT/ha"}[lang],min_value=0.0,value=0.0,step=10000.0)
+                variable_cost_kzt_ha=q_number_input({"kk":"Басқа айнымалы шығындар, тг/га","ru":"Прочие переменные затраты, тг/га","en":"Other variable costs, KZT/ha"}[lang],min_value=0.0,value=0.0,step=10000.0)
 
     optimization_profile = "balanced"
     optimization_max_share = 0.40
@@ -790,7 +950,7 @@ with st.container():
         st.markdown("#### " + {"kk":"Оңтайландыру сценарийі","ru":"Сценарий оптимизации","en":"Optimization scenario"}[lang])
         op1, op2, op3 = st.columns(3)
         with op1:
-            optimization_profile = st.selectbox(
+            optimization_profile = q_selectbox(
                 {"kk":"Басымдық","ru":"Приоритет","en":"Priority"}[lang],
                 ["balanced", "climate", "resource"],
                 format_func=lambda x: {
@@ -800,12 +960,12 @@ with st.container():
                 }[x],
             )
         with op2:
-            optimization_max_share = st.number_input(
+            optimization_max_share = q_number_input(
                 {"kk":"Бір дақылдың ең жоғары үлесі, %","ru":"Максимальная доля одной культуры, %","en":"Maximum share of one crop, %"}[lang],
                 min_value=20.0, max_value=80.0, value=40.0, step=5.0
             ) / 100.0
         with op3:
-            optimization_n_crops = int(st.number_input(
+            optimization_n_crops = int(q_number_input(
                 {"kk":"Егіс құрылымындағы дақылдар саны","ru":"Количество культур в структуре посевов","en":"Number of crops in the cropping structure"}[lang],
                 min_value=2, max_value=8, value=5, step=1,
                 help={
@@ -818,6 +978,7 @@ with st.container():
     submitted = st.button(t["calculate"], type="primary", use_container_width=True, key="calculate_main")
 
 if submitted:
+    ga_event("run_assessment", mode_key=mode_key, season_mode=season_mode, calculation_year=calculation_year, user_level=user_level)
     live_ok = False
 
     # v0.7.4: zero water input means "use the official/default district-crop norm",
@@ -846,6 +1007,9 @@ if submitted:
         "mode_label": t.get(mode_key, mode_key),
         "generated_label": {"kk":"Есеп жасалған уақыт","ru":"Дата расчета","en":"Generated"}[lang],
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
+        "assessment_year": calculation_year,
+        "assessment_type": assessment_type,
+        "climate_period": climate_period_label,
         "summary_title": {"kk":"Негізгі нәтижелер","ru":"Ключевые результаты","en":"Key results"}[lang],
         "indicator_label": {"kk":"Көрсеткіш","ru":"Показатель","en":"Indicator"}[lang],
         "value_label": {"kk":"Мәні","ru":"Значение","en":"Value"}[lang],
@@ -858,6 +1022,9 @@ if submitted:
         "table_title": {"kk":"Толық нәтиже","ru":"Подробный результат","en":"Detailed result"}[lang],
         "summary": [], "analysis": [], "recommendations": [], "table": None,
         "inputs": [
+            [{"kk":"Бағалау режимі","ru":"Режим оценки","en":"Assessment mode"}[lang], SEASON_MODE_LABELS[season_mode], {"kk":"QŪNAR сценарий логикасы","ru":"Сценарная логика QŪNAR","en":"QŪNAR scenario logic"}[lang]],
+            [{"kk":"Есептік жыл","ru":"Расчётный год","en":"Calculation year"}[lang], str(calculation_year), assessment_type],
+            [{"kk":"Климаттық терезе","ru":"Климатическое окно","en":"Climate window"}[lang], climate_period_label, {"kk":"Сәуір-қыркүйек базалық спецификациясы","ru":"Базовая спецификация апрель-сентябрь","en":"April-September baseline specification"}[lang]],
             [t["district"], district_label(used_district), {"kk":"Әкімшілік полигон/таңдау","ru":"Административный полигон/выбор","en":"Administrative polygon/selection"}[lang]],
             [area_input_label, f"{area_ha:.2f}", t["source_user"]],
             [{"kk":"Есеп координатасы","ru":"Координаты расчета","en":"Calculation coordinates"}[lang], f"{calc_lat:.6f}, {calc_lon:.6f}", {"kk":"Карта/аудан","ru":"Карта/район","en":"Map/district"}[lang]],
@@ -891,18 +1058,27 @@ if submitted:
     climate = district_climate(used_district) or {}
     baseline_climate = dict(climate)
     climate_source = t["fallback_source"]
+    climate_period_actual = climate_period_label
+    partial_season = False
 
-    if True:
+    if season_mode == "next":
+        # Prospective planning: future weather does not yet exist, so the validated
+        # historical district climate profile is used as the baseline scenario.
+        climate_source = {"kk":"2004-2025 тарихи аудандық климаттық профиль","ru":"Исторический районный климатический профиль 2004-2025","en":"Historical district climate profile, 2004-2025"}[lang]
+    else:
         try:
             with st.spinner(t["nasa_loading"]):
-                nasa = timed_call("NASA POWER", fetch_growing_season, calc_lat, calc_lon)
+                nasa = timed_call("NASA POWER", fetch_growing_season, calc_lat, calc_lon, calculation_year)
             climate = {**climate, **nasa}
             climate_source = t["live_source"]
+            climate_period_actual = f"{nasa.get('period_start','')}-{nasa.get('period_end','')}"
+            partial_season = bool(nasa.get("partial_season", False))
             live_ok = True
         except Exception:
             st.warning(t["nasa_error"])
 
     st.subheader(t["results"])
+    st.caption({"kk":f"Бағалау: {SEASON_MODE_LABELS[season_mode]} | есептік жыл: {calculation_year} | климаттық кезең: {climate_period_actual}" + (" | маусым әлі аяқталмаған" if partial_season else ""),"ru":f"Оценка: {SEASON_MODE_LABELS[season_mode]} | расчётный год: {calculation_year} | климатический период: {climate_period_actual}" + (" | сезон ещё не завершён" if partial_season else ""),"en":f"Assessment: {SEASON_MODE_LABELS[season_mode]} | calculation year: {calculation_year} | climate period: {climate_period_actual}" + (" | season is still incomplete" if partial_season else "")}[lang])
     if mode_key == "mode5":
         st.caption({
             "kk":"Мал шаруашылығы модулі ауданның өндірістік құрылымын, климаттық экспозициясын және шаруашылық енгізген су, жемшөп, жайылым, энергия мен өнім деректерін біріктіреді.",
@@ -1849,7 +2025,7 @@ if submitted:
         st.caption({"kk":"Бұл блок QŪNAR-да дәлелмен немесе нақты енгізумен қамтамасыз етілген климаттық, топырақ-ылғал, энергия-көміртек, пестицид және тұздану көрсеткіштерін бөлек көрсетеді. Экожүйенің толық жағдайы жеке бақылау жиынтығын қажет етеді.","ru":"Блок показывает экологически значимые показатели, обеспеченные климатическими данными или фактическим вводом: тепло, осадки, влажность корневой зоны, энергия/CO₂, пестициды и засоление. Комплексное состояние экосистемы требует отдельного набора наблюдений.","en":"This block reports environmentally relevant indicators supported by climate data or observed input: heat, precipitation, root-zone wetness, energy/CO₂, pesticides and salinity. Full ecosystem condition requires a separate observation set."}[lang])
 
     if mode_key == "mode4" and "out" in locals():
-        div = diversification_metrics(pd.to_numeric(alloc["share"], errors="coerce").fillna(0).tolist())
+        div = diversification_metrics(pd.to_numeric(out["share"], errors="coerce").fillna(0).tolist())
         st.markdown("### " + {"kk":"Егіс құрылымының әртараптануы","ru":"Диверсификация структуры посевов","en":"Cropping-structure diversification"}[lang])
         d1,d2,d3 = st.columns(3)
         d1.metric({"kk":"Герфиндал-Хиршман индексі","ru":"Индекс Герфиндаля-Хиршмана","en":"HHI"}[lang], f"{div['hhi']:.3f}")
