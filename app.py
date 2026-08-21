@@ -227,7 +227,16 @@ def render_export_panel(report_payload: dict, lang: str):
 
 lang_label = st.sidebar.selectbox("Тіл / Язык / Language", list(LANGUAGES.keys()), index=0)
 lang = LANGUAGES[lang_label]
-t = TEXT[lang]
+# Copy translations locally so deployment remains backward-compatible if Streamlit
+# briefly serves app.py with a cached/older core.config during a GitHub redeploy.
+t = dict(TEXT[lang])
+_MODE_LABEL_FALLBACK = {
+    "kk": {"mode5": "Мал шаруашылығы ресурстарын бағалау"},
+    "ru": {"mode5": "Оценить ресурсы животноводства"},
+    "en": {"mode5": "Assess livestock resources"},
+}
+for _key, _label in _MODE_LABEL_FALLBACK[lang].items():
+    t.setdefault(_key, _label)
 user_level = st.sidebar.radio(
     t["user_level"],
     ["farmer", "specialist", "researcher"],
@@ -262,7 +271,7 @@ st.info(t["session_warning"])
 st.caption(t["save_restore_note"])
 
 mode_keys = ["mode1", "mode2", "mode3", "mode4", "mode5"]
-mode_key = st.sidebar.radio(t["mode"], mode_keys, format_func=lambda k: t[k])
+mode_key = st.sidebar.radio(t["mode"], mode_keys, format_func=lambda k: t.get(k, k))
 district = st.sidebar.selectbox(t["district"], DISTRICT_ORDER, format_func=district_label)
 
 centroids = load_centroids()

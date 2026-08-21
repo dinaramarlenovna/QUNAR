@@ -42,3 +42,5 @@ Added in the current update:
 - livestock reports distinguish farm observations, district reference scenarios and unknown values;
 - full livestock matrix QA passed for 17 territories x 9 user livestock types (153 cases);
 - reproducibility outputs: `LIVESTOCK_METHOD_v0_8_1.md`, `livestock_validation_v0_8_1.py`, `QA_LIVESTOCK_V0_8_1.json`, and `data/livestock_validation_by_species.csv`.
+
+- deployment hotfix: mode labels now have an app-level fallback, preventing a KeyError during mixed-version Streamlit/GitHub redeploys.
