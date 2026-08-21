@@ -1,0 +1,9 @@
+{
+  "syntax_ok": true,
+  "geodata_source": true,
+  "clear_map": true,
+  "no_stale_map_when_off": true,
+  "district_rows": true,
+  "mode2_distinct": true,
+  "ml_validation_research_only": true
+}

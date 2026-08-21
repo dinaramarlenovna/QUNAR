@@ -1,0 +1,25 @@
+{
+  "sauran_climate": [
+    {
+      "District": "Sauran District",
+      "Apr-Sep temperature, °C": 23.332586520947178,
+      "Apr-Sep precipitation, mm": 58.39666666666667,
+      "Apr-Sep root-zone wetness": 0.4476138433515482,
+      "Apr-Sep solar radiation, MJ/m²/day": 23.95491803278689
+    }
+  ],
+  "sauran_wheat_context": [
+    {
+      "District": "Sauran District",
+      "Crop": "Wheat",
+      "historical_yield_median": 29.5,
+      "historical_yield_mean": 29.233333333333334,
+      "historical_yield_q25": 28.35,
+      "historical_yield_q75": 30.25,
+      "district_crop_sown_area_median_th_ha": 4.3,
+      "n_years": 3,
+      "first_year": 2021,
+      "last_year": 2023
+    }
+  ]
+}

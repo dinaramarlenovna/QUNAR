@@ -1,0 +1,11 @@
+{
+  "python_syntax": "passed",
+  "admin_units_in_geojson": 17,
+  "all_17_centroids_match_admin_polygon": true,
+  "map_district_can_override_selected_district": true,
+  "NASA_uses_selected_map_coordinates_when_map_source": true,
+  "WaPOR_uses_field_polygon": true,
+  "mode2_full_economic_block_deduplicated": true,
+  "mode3_candidate_crop_catalog_added": true,
+  "mode4_fake_optimization_not_emitted": true
+}

@@ -1,0 +1,10 @@
+{
+  "python_syntax": true,
+  "optimizer_crash_fixed": true,
+  "optimizer_cases_tested": 1088,
+  "optimizer_constraint_failures": 0,
+  "scientific_validation_reproducible": true,
+  "groupkfold_by_year": {"MAE": 8.4500, "RMSE": 15.4538, "R2": 0.92794},
+  "chronological_holdout_2021_2023": {"MAE": 14.9512, "RMSE": 27.1979, "R2": 0.82998},
+  "note": "Full Streamlit UI pytest was not executed in the build container because Streamlit is not installed there; Python modules were syntax-compiled and core optimizer/validation logic was executed directly."
+}

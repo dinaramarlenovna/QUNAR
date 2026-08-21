@@ -1,0 +1,26 @@
+{
+  "best_model": "Random Forest",
+  "test_rows": 255,
+  "sauran_corn_prediction_centners_ha": 37.548385515872994,
+  "resource_test": {
+    "water_total_m3": 100000.0,
+    "water_reused_m3": 10000.0,
+    "freshwater_m3": 90000.0,
+    "water_m3_per_ha": 5000.0,
+    "energy_kwh": 5000.0,
+    "energy_kwh_per_ha": 250.0,
+    "operational_co2e_kg": 2500.0,
+    "operational_co2e_kg_per_ha": 125.0
+  },
+  "reliability_test": {
+    "score": 75,
+    "level": "high",
+    "components": {
+      "field_geometry": true,
+      "live_climate": false,
+      "actual_water": true,
+      "actual_energy": true,
+      "emission_factor": true
+    }
+  }
+}

@@ -1,0 +1,10 @@
+{
+  "wheat_clrem_all_17": true,
+  "rice_ml_only": true,
+  "extended_crop_count": 18,
+  "optimizer_rows": 5,
+  "optimizer_share_sum": 1.0,
+  "optimizer_area_sum": 10.0,
+  "optimizer_cap_ok": true,
+  "optimizer_pareto_count": 6
+}

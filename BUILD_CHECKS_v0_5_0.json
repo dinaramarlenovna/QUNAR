@@ -1,0 +1,10 @@
+{
+  "syntax_ok": true,
+  "clrem_rows": 255,
+  "clrem_districts": 17,
+  "clrem_products": 15,
+  "registry_crops": 18,
+  "barley_not_ml": true,
+  "mode2_extended": true,
+  "mode3_multicriteria": true
+}
