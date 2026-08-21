@@ -533,6 +533,25 @@ with st.form("farm_inputs", clear_on_submit=False):
 
 if submitted:
     live_ok = False
+
+    # v0.7.4: zero water input means "use the official/default district-crop norm",
+# not "assume zero water". User-entered positive values always override it.
+water_default_info = default_water_requirement(used_district, crop, irrigation_type) if crop is not None else None
+if water_used > 0:
+    effective_water_used = float(water_used)
+    water_input_source = "user"
+elif water_default_info is not None:
+    effective_water_used = float(water_default_info.m3_ha) * float(area_ha)
+    water_input_source = "official_default"
+    st.caption({
+        "kk":f"Су шығыны енгізілмегендіктен, есепте {water_default_info.m3_ha:,.0f} м³/га әдепкі мәні қолданылды. Оны өз дерегіңізбен ауыстыруға болады.",
+        "ru":f"Расход воды не введен, поэтому используется редактируемое значение по умолчанию {water_default_info.m3_ha:,.0f} м³/га. Источник: {water_default_info.source_label}.",
+        "en":f"No farm water use was entered, so the editable default {water_default_info.m3_ha:,.0f} m³/ha is used. Source: {water_default_info.source_label}."
+    }[lang])
+else:
+    effective_water_used = 0.0
+    water_input_source = "none"
+    
     report_payload = {
         "mode_key": mode_key,
         "lang": lang,
@@ -565,24 +584,6 @@ if submitted:
     climate = district_climate(used_district) or {}
     baseline_climate = dict(climate)
     climate_source = t["fallback_source"]
-
-    # v0.7.4: zero water input means "use the official/default district-crop norm",
-    # not "assume zero water". User-entered positive values always override it.
-    water_default_info = default_water_requirement(used_district, crop, irrigation_type) if crop is not None else None
-    if water_used > 0:
-        effective_water_used = float(water_used)
-        water_input_source = "user"
-    elif water_default_info is not None:
-        effective_water_used = float(water_default_info.m3_ha) * float(area_ha)
-        water_input_source = "official_default"
-        st.caption({
-            "kk":f"Су шығыны енгізілмегендіктен, есепте {water_default_info.m3_ha:,.0f} м³/га әдепкі мәні қолданылды. Оны өз дерегіңізбен ауыстыруға болады.",
-            "ru":f"Расход воды не введен, поэтому используется редактируемое значение по умолчанию {water_default_info.m3_ha:,.0f} м³/га. Источник: {water_default_info.source_label}.",
-            "en":f"No farm water use was entered, so the editable default {water_default_info.m3_ha:,.0f} m³/ha is used. Source: {water_default_info.source_label}."
-        }[lang])
-    else:
-        effective_water_used = 0.0
-        water_input_source = "none"
 
     if True:
         try:
