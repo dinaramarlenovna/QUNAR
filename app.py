@@ -70,38 +70,99 @@ def ga_event(event_name: str, **params):
 
 
 def _default_widget_help(label):
+    """Localized help text for every QŪNAR input widget."""
     text = str(label or "").lower()
-    lang_hint = globals().get("lang", "ru")
+    lang_hint = st.session_state.get("qunar_lang", globals().get("lang", "ru"))
     rules = [
-        (("коэффициент эмиссии", "emission factor", "эмисси"), "Показывает, сколько кг CO₂e связано с потреблением 1 кВт·ч электроэнергии. Используется для оценки углеродной нагрузки.", "Amount of CO₂e associated with 1 kWh of electricity; used to estimate operational carbon load."),
-        (("площад", "area", "алаң"), "Площадь участка или производственной территории, для которой выполняется расчёт.", "Area of the field or production unit used in the calculation."),
-        (("доступн", "available water"), "Общий объём воды, доступный для рассматриваемого производственного сезона. В режиме оптимизации это общий водный бюджет хозяйства: QŪNAR распределяет его между культурами автоматически, поэтому пользователю не нужно заранее делить воду по культурам.", "Total water available for the production season under assessment. In optimization mode this is the farm-level seasonal water budget; QŪNAR allocates it among crops automatically, so the user does not need to pre-allocate water crop by crop."),
-        (("расход воды", "water use", "water used"), "Для растениеводства укажите суммарное фактическое или ожидаемое водопотребление за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Если значение неизвестно, оставьте 0: QŪNAR использует отдельную нормативную оценку и явно помечает её как расчётную.", "For crops, enter total observed or expected water use for the full production cycle - from pre-sowing preparation/sowing through harvest. If unknown, leave 0: QŪNAR uses a separate reference estimate and labels it as modelled rather than observed."),
-        (("энерг", "electric"), "Для растениеводства укажите суммарное энергопотребление, непосредственно связанное с выбранной культурой за полный производственный цикл - подготовка почвы, посев, орошение/перекачка, уход и уборка, если эти операции потребляют энергию. Если значение неизвестно, оставьте 0.", "For crops, enter total energy directly attributable to the selected crop over the full production cycle - soil preparation, sowing, irrigation/pumping, crop care and harvest where energy is used. Leave 0 if unknown."),
-        (("тариф", "tariff"), "Цена единицы ресурса, используемая для расчёта затрат и потенциальной экономии.", "Price per unit of resource used to estimate cost and potential savings."),
-        (("виэ", "renewable", "green share"), "Доля электроэнергии из возобновляемых источников в рассматриваемом сценарии.", "Share of electricity supplied by renewable sources in the scenario."),
-        (("повтор", "reuse"), "Доля воды, повторно использованной в рассматриваемом производственном цикле. Она уменьшает потребность в новом водозаборе; если фактическая доля неизвестна, оставьте 0 и не трактуйте это как подтверждённое отсутствие повторного использования.", "Share of water reused within the production cycle under assessment. It reduces the need for additional withdrawal; if the observed share is unknown, leave 0 and do not interpret this as verified absence of reuse."),
-        (("инвест", "investment"), "Дополнительные инвестиционные затраты для оценки срока окупаемости ресурсосберегающего решения.", "Additional investment used to estimate the payback period of a resource-saving option."),
-        (("пестиц", "pesticide"), "Фактическая нагрузка пестицидами. Если данных нет, показатель остаётся неизвестным и не заменяется нулём.", "Observed pesticide load. Missing values remain unknown rather than being treated as zero."),
-        (("солен", "salinity"), "Показатель засоления почвы, если он известен пользователю или подтверждён наблюдениями.", "Soil salinity indicator when observed or supplied by the user."),
-        (("деград", "degrad"), "Доля деградированной территории/пастбища, если она известна. Используется как экологический диагностический фактор.", "Observed degraded land/pasture share used as an environmental diagnostic."),
-        (("максимальн", "maximum share"), "Ограничивает долю одной культуры в оптимизированной структуре, снижая чрезмерную концентрацию.", "Caps the share of any one crop in the optimized structure to limit excessive concentration."),
-        (("количество культур", "number of crops"), "Число культур, между которыми оптимизатор распределяет доступную площадь.", "Number of crops among which the optimizer allocates the available area."),
+        (("коэффициент эмиссии", "emission factor", "эмисси", "эмиссия коэффициенті"),
+         "Электр энергиясының 1 кВт·сағ тұтынуына байланысты CO₂e мөлшерін көрсетеді. Операциялық көміртек жүктемесін бағалау үшін қолданылады.",
+         "Показывает, сколько кг CO₂e связано с потреблением 1 кВт·ч электроэнергии. Используется для оценки углеродной нагрузки.",
+         "Amount of CO₂e associated with 1 kWh of electricity; used to estimate operational carbon load."),
+        (("площад", "area", "алаң", "аумақ"),
+         "Есеп жүргізілетін егістік немесе өндірістік аумақтың көлемі.",
+         "Площадь участка или производственной территории, для которой выполняется расчёт.",
+         "Area of the field or production unit used in the calculation."),
+        (("доступн", "available water", "қолжетімді су", "су көлемі"),
+         "Қарастырылып отырған өндірістік маусымға қолжетімді жалпы су көлемі. Оңтайландыру режимінде бұл шаруашылықтың маусымдық су бюджеті: QŪNAR суды дақылдар арасында автоматты түрде бөледі, сондықтан пайдаланушыға оны алдын ала дақылдар бойынша бөлу қажет емес.",
+         "Общий объём воды, доступный для рассматриваемого производственного сезона. В режиме оптимизации это общий водный бюджет хозяйства: QŪNAR распределяет его между культурами автоматически, поэтому пользователю не нужно заранее делить воду по культурам.",
+         "Total water available for the production season under assessment. In optimization mode this is the farm-level seasonal water budget; QŪNAR allocates it among crops automatically, so the user does not need to pre-allocate water crop by crop."),
+        (("расход воды", "water use", "water used", "су тұтын", "су пайдалану"),
+         "Өсімдік шаруашылығы үшін таңдалған дақылдың толық өндірістік циклі бойынша нақты немесе күтілетін су тұтынуын көрсетіңіз: егіс алдындағы дайындықтан/себуден бастап өнім жинауға дейін. Мән белгісіз болса, 0 қалдырыңыз: QŪNAR жеке нормативтік бағалауды қолданады және оны есептік мән ретінде нақты белгілейді.",
+         "Для растениеводства укажите суммарное фактическое или ожидаемое водопотребление за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Если значение неизвестно, оставьте 0: QŪNAR использует отдельную нормативную оценку и явно помечает её как расчётную.",
+         "For crops, enter total observed or expected water use for the full production cycle - from pre-sowing preparation/sowing through harvest. If unknown, leave 0: QŪNAR uses a separate reference estimate and labels it as modelled rather than observed."),
+        (("энерг", "electric", "электр", "квт"),
+         "Өсімдік шаруашылығы үшін таңдалған дақылға тікелей қатысты толық өндірістік циклдегі энергия тұтынуын көрсетіңіз: топырақты дайындау, себу, суару/сорғылау, күтім және өнім жинау, егер бұл операциялар энергия тұтынса. Мән белгісіз болса, 0 қалдырыңыз.",
+         "Для растениеводства укажите суммарное энергопотребление, непосредственно связанное с выбранной культурой за полный производственный цикл - подготовка почвы, посев, орошение/перекачка, уход и уборка, если эти операции потребляют энергию. Если значение неизвестно, оставьте 0.",
+         "For crops, enter total energy directly attributable to the selected crop over the full production cycle - soil preparation, sowing, irrigation/pumping, crop care and harvest where energy is used. Leave 0 if unknown."),
+        (("тариф", "tariff", "баға", "құны"),
+         "Шығындар мен ықтимал үнемді есептеу үшін қолданылатын ресурстың бір бірлігінің бағасы.",
+         "Цена единицы ресурса, используемая для расчёта затрат и потенциальной экономии.",
+         "Price per unit of resource used to estimate cost and potential savings."),
+        (("виэ", "renewable", "green share", "жаңартылатын", "жасыл энергия"),
+         "Қарастырылып отырған сценарийдегі жаңартылатын көздерден алынатын электр энергиясының үлесі.",
+         "Доля электроэнергии из возобновляемых источников в рассматриваемом сценарии.",
+         "Share of electricity supplied by renewable sources in the scenario."),
+        (("повтор", "reuse", "қайта пайдалан", "қайталама су"),
+         "Қарастырылып отырған өндірістік циклде қайта пайдаланылатын судың үлесі. Бұл жаңа су алуға қажеттілікті азайтады. Нақты үлес белгісіз болса, 0 қалдырыңыз; бұл қайта пайдалану мүлде жоқ екенінің расталған дәлелі ретінде түсіндірілмейді.",
+         "Доля воды, повторно использованной в рассматриваемом производственном цикле. Она уменьшает потребность в новом водозаборе; если фактическая доля неизвестна, оставьте 0 и не трактуйте это как подтверждённое отсутствие повторного использования.",
+         "Share of water reused within the production cycle under assessment. It reduces the need for additional withdrawal; if the observed share is unknown, leave 0 and do not interpret this as verified absence of reuse."),
+        (("инвест", "investment", "инвестиция"),
+         "Ресурс үнемдейтін шешімнің өтелу мерзімін бағалау үшін енгізілетін қосымша инвестициялық шығын.",
+         "Дополнительные инвестиционные затраты для оценки срока окупаемости ресурсосберегающего решения.",
+         "Additional investment used to estimate the payback period of a resource-saving option."),
+        (("пестиц", "pesticide", "пестицид"),
+         "Пестицидтердің нақты жүктемесі. Дерек жоқ болса, көрсеткіш белгісіз күйінде қалады және нөлмен алмастырылмайды.",
+         "Фактическая нагрузка пестицидами. Если данных нет, показатель остаётся неизвестным и не заменяется нулём.",
+         "Observed pesticide load. Missing values remain unknown rather than being treated as zero."),
+        (("солен", "salinity", "тұздан"),
+         "Пайдаланушыға белгілі немесе бақылаумен расталған жағдайда топырақтың тұздану көрсеткіші.",
+         "Показатель засоления почвы, если он известен пользователю или подтверждён наблюдениями.",
+         "Soil salinity indicator when observed or supplied by the user."),
+        (("деград", "degrad", "деградация"),
+         "Белгілі болған жағдайда деградацияланған аумақтың немесе жайылымның үлесі. Экологиялық диагностикалық фактор ретінде қолданылады.",
+         "Доля деградированной территории/пастбища, если она известна. Используется как экологический диагностический фактор.",
+         "Observed degraded land/pasture share used as an environmental diagnostic."),
+        (("максимальн", "maximum share", "ең жоғары үлес", "максималды үлес"),
+         "Оңтайландырылған құрылымда бір дақылдың үлесіне шектеу қояды және шамадан тыс шоғырлануды азайтады.",
+         "Ограничивает долю одной культуры в оптимизированной структуре, снижая чрезмерную концентрацию.",
+         "Caps the share of any one crop in the optimized structure to limit excessive concentration."),
+        (("количество культур", "number of crops", "дақыл саны", "дақылдар саны"),
+         "Оңтайландырғыш қолжетімді егістік аумақты бөлетін дақылдардың саны.",
+         "Число культур, между которыми оптимизатор распределяет доступную площадь.",
+         "Number of crops among which the optimizer allocates the available area."),
+        (("target water", "water saving", "су үнем", "суды үнем"),
+         "Суды үнемдеу сценарийінде ағымдағы су қажеттілігімен салыстырғанда көзделетін қысқарту үлесі.",
+         "Целевая доля снижения водопотребления относительно текущей потребности в сценарии водосбережения.",
+         "Target reduction in water use relative to the current requirement in the water-saving scenario."),
     ]
-    for keys, ru, en in rules:
+    for keys, kk, ru, en in rules:
         if any(k in text for k in keys):
-            return ru if lang_hint in ("ru", "kk") else en
-    return "Краткое пояснение параметра: выберите или введите значение, соответствующее вашему хозяйству или сценарию." if lang_hint in ("ru", "kk") else "Parameter help: choose or enter the value that best matches the farm or scenario."
+            return {"kk": kk, "ru": ru, "en": en}.get(lang_hint, en)
+    return {
+        "kk": "Параметр туралы қысқаша түсіндірме: шаруашылығыңызға немесе қарастырылып отырған сценарийге сәйкес мәнді таңдаңыз немесе енгізіңіз.",
+        "ru": "Краткое пояснение параметра: выберите или введите значение, соответствующее вашему хозяйству или сценарию.",
+        "en": "Parameter help: choose or enter the value that best matches the farm or scenario.",
+    }.get(lang_hint, "Parameter help: choose or enter the value that best matches the farm or scenario.")
 
+
+def _resolved_help(label, provided_help=None):
+    """Resolve widget help in the active interface language."""
+    if provided_help is not None:
+        return provided_help
+    return _default_widget_help(label)
 
 def q_number_input(label, *args, **kwargs):
-    kwargs.setdefault("help", _default_widget_help(label)); return st.number_input(label, *args, **kwargs)
+    kwargs["help"] = _resolved_help(label, kwargs.get("help"))
+    return st.number_input(label, *args, **kwargs)
 def q_selectbox(label, *args, **kwargs):
-    kwargs.setdefault("help", _default_widget_help(label)); return st.selectbox(label, *args, **kwargs)
+    kwargs["help"] = _resolved_help(label, kwargs.get("help"))
+    return st.selectbox(label, *args, **kwargs)
 def q_radio(label, *args, **kwargs):
-    kwargs.setdefault("help", _default_widget_help(label)); return st.radio(label, *args, **kwargs)
+    kwargs["help"] = _resolved_help(label, kwargs.get("help"))
+    return st.radio(label, *args, **kwargs)
 def q_toggle(label, *args, **kwargs):
-    kwargs.setdefault("help", _default_widget_help(label)); return st.toggle(label, *args, **kwargs)
+    kwargs["help"] = _resolved_help(label, kwargs.get("help"))
+    return st.toggle(label, *args, **kwargs)
 
 st.set_page_config(page_title=APP_NAME, page_icon="🌱", layout="wide", initial_sidebar_state="expanded")
 
@@ -350,8 +411,9 @@ def render_export_panel(report_payload: dict, lang: str):
                 clicked = st.download_button(labels["down_word"], data=st.session_state["qunar_word"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key=f"download_word_{report_id}")
                 if clicked: ga_event("download_word", report_scope="single", mode_key=report_payload.get("mode_key"))
 
-lang_label = st.sidebar.selectbox("Тіл / Язык / Language", list(LANGUAGES.keys()), index=0, help="Интерфейс тілі / Язык интерфейса / Interface language")
+lang_label = st.sidebar.selectbox("Тіл / Язык / Language", list(LANGUAGES.keys()), index=0, help="Интерфейс тілін таңдаңыз / Выберите язык интерфейса / Choose the interface language")
 lang = LANGUAGES[lang_label]
+st.session_state["qunar_lang"] = lang
 if st.session_state.get("ga_last_language") != lang:
     if st.session_state.get("ga_last_language") is not None:
         ga_event("change_language", language=lang)
