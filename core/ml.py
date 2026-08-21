@@ -61,7 +61,7 @@ def validation_summary():
         ("num", StandardScaler(), FEATURES_NUM),
     ])
     pipe = Pipeline([("pre", pre), ("model", RandomForestRegressor(
-        n_estimators=250, random_state=42, min_samples_leaf=2, n_jobs=-1
+        n_estimators=350, random_state=42, min_samples_leaf=2, n_jobs=-1
     ))])
     pred = cross_val_predict(pipe, X, y, cv=GroupKFold(n_splits=n_splits), groups=groups)
     return {"mae":float(mean_absolute_error(y,pred)),
