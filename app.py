@@ -498,7 +498,7 @@ area_input_label = t["area"] if mode_key != "mode5" else {
     "en":"Pasture / production land area, ha",
 }[lang]
 
-with st.form("farm_inputs", clear_on_submit=False):
+with st.container():
     c1, c2, c3 = st.columns(3)
     with c1:
         area_ha = st.number_input(area_input_label, min_value=0.1, value=10.0, step=0.5, help=t["declared_area_help"])
@@ -797,7 +797,7 @@ with st.form("farm_inputs", clear_on_submit=False):
                 }[lang]
             ))
 
-    submitted = st.form_submit_button(t["calculate"], type="primary", use_container_width=True)
+    submitted = st.button(t["calculate"], type="primary", use_container_width=True, key="calculate_main")
 
 if submitted:
     live_ok = False
