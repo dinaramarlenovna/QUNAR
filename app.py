@@ -327,12 +327,35 @@ def district_label(code):
 def crop_label(code):
     return CROP_LABELS[lang].get(code, code)
 
+def format_brand_acronym(text: str, acronym: str = "QUNAR") -> str:
+    """Bold the letters that form QUNAR while keeping the rest of the expansion regular."""
+    safe_text = html.escape(str(text))
+    chars = list(safe_text)
+    search_from = 0
+
+    for letter in acronym:
+        pos = -1
+        for i in range(search_from, len(chars)):
+            if chars[i].upper() == letter:
+                pos = i
+                break
+        if pos == -1:
+            # If the configured expansion no longer contains all Q-U-N-A-R letters,
+            # show it safely without producing broken emphasis.
+            return safe_text
+        chars[pos] = f"<b>{chars[pos]}</b>"
+        search_from = pos + 1
+
+    return "".join(chars)
+
+brand_line_html = format_brand_acronym(t["brand_line"])
+
 st.markdown(
     f"""
     <div class="qunar-hero">
       <div class="qunar-brand">QŪNAR</div>
-      <div class="qunar-acronym">{t["brand_line"]}</div>
-      <div class="qunar-translation">{t["brand_translation"]}</div>
+      <div class="qunar-acronym">{brand_line_html}</div>
+      <div class="qunar-translation">{html.escape(str(t["brand_translation"]))}</div>
     </div>
     """,
     unsafe_allow_html=True,
