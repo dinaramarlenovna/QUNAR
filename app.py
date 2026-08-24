@@ -5,6 +5,10 @@ import time
 import html
 import json
 import hashlib
+import smtplib
+import ssl
+from email.message import EmailMessage
+from urllib.parse import quote
 import streamlit as st
 import streamlit.components.v1 as components
 import pandas as pd
@@ -37,132 +41,146 @@ from core.livestock import (
 
 GA_MEASUREMENT_ID = "G-B2WV23W45Y"
 GA_PAGE_LOCATION = "https://qunar-turkestan.streamlit.app"
+PUBLIC_VERSION = "v0.8.1"
 
 
 def _ga_client_id():
-    return st.session_state.setdefault("ga_client_id", str(uuid.uuid4()))
+    # Stable for the current Streamlit session and suitable for GA4 Measurement Protocol.
+    return st.session_state.setdefault("ga_client_id", f"{int(uuid.uuid4().int % 10**10)}.{int(time.time())}")
+
+
+def _secret(name, default=None):
+    try:
+        return st.secrets.get(name, default)
+    except Exception:
+        return default
 
 
 def ga_event(event_name: str, **params):
-    """Send a lightweight GA4 event from an isolated Streamlit component."""
-    payload = {"client_session_id": _ga_client_id(), **{k: v for k, v in params.items() if v is not None}}
-    js_params = json.dumps(payload, ensure_ascii=False, default=str)
+    """Send GA4 events. Prefer official Measurement Protocol when its API secret is configured."""
+    payload = {k: v for k, v in params.items() if v is not None}
+    payload.setdefault("page_location", GA_PAGE_LOCATION)
+    payload.setdefault("page_title", "QŪNAR")
+    payload.setdefault("app_version", PUBLIC_VERSION)
+
+    api_secret = _secret("GA4_API_SECRET")
+    if api_secret:
+        try:
+            import requests
+            requests.post(
+                f"https://www.google-analytics.com/mp/collect?measurement_id={GA_MEASUREMENT_ID}&api_secret={api_secret}",
+                json={
+                    "client_id": _ga_client_id(),
+                    "events": [{"name": str(event_name), "params": payload}],
+                },
+                timeout=4,
+            )
+            return
+        except Exception:
+            pass
+
+    # Browser fallback. This works even though Streamlit cannot place scripts in the top-level <head>.
+    js_payload = json.dumps(payload, ensure_ascii=False, default=str)
     event = json.dumps(str(event_name))
+    cid = json.dumps(_ga_client_id())
     html_block = f"""
-    <script async src="https://www.googletagmanager.com/gtag/js?id={GA_MEASUREMENT_ID}"></script>
     <script>
-      window.dataLayer = window.dataLayer || [];
-      function gtag(){{dataLayer.push(arguments);}}
-      gtag('js', new Date());
-      gtag('config', '{GA_MEASUREMENT_ID}', {{
-        'send_page_view': false,
-        'page_location': '{GA_PAGE_LOCATION}',
-        'page_title': 'QŪNAR'
-      }});
-      gtag('event', {event}, Object.assign({{
-        'page_location': '{GA_PAGE_LOCATION}',
-        'page_title': 'QŪNAR',
-        'transport_type': 'beacon'
-      }}, {js_params}));
+      (() => {{
+        const p = new URLSearchParams({{
+          v: '2',
+          tid: '{GA_MEASUREMENT_ID}',
+          cid: {cid},
+          en: {event},
+          dl: '{GA_PAGE_LOCATION}',
+          dt: 'QŪNAR',
+          ul: navigator.language || 'en'
+        }});
+        const extra = {js_payload};
+        for (const [k,v] of Object.entries(extra)) {{
+          if (v !== null && v !== undefined) p.set('ep.' + k, String(v));
+        }}
+        fetch('https://www.google-analytics.com/g/collect?' + p.toString(), {{
+          method: 'POST', mode: 'no-cors', keepalive: true
+        }}).catch(() => {{}});
+      }})();
     </script>
     """
-    components.html(html_block, height=0, width=0)
+    components.html(html_block, height=1, width=1)
+
+
+def _send_bug_report(description: str, contact: str = "", error_text: str = "", screenshot=None):
+    """Email a bug report when SMTP secrets are configured; otherwise return False."""
+    try:
+        mail_cfg = st.secrets.get("email", {})
+    except Exception:
+        mail_cfg = {}
+    host = mail_cfg.get("smtp_host")
+    port = int(mail_cfg.get("smtp_port", 465) or 465)
+    user = mail_cfg.get("smtp_user")
+    password = mail_cfg.get("smtp_password")
+    recipient = mail_cfg.get("recipient") or user
+    if not all([host, user, password, recipient]):
+        return False, recipient
+
+    msg = EmailMessage()
+    msg["Subject"] = f"QŪNAR {PUBLIC_VERSION} - bug report"
+    msg["From"] = user
+    msg["To"] = recipient
+    if contact:
+        msg["Reply-To"] = contact
+    body = (
+        f"Version: {PUBLIC_VERSION}\n"
+        f"Time UTC: {datetime.utcnow().isoformat(timespec='seconds')}Z\n"
+        f"Page: {GA_PAGE_LOCATION}\n\n"
+        f"Description:\n{description.strip()}\n\n"
+        f"Error text / copied message:\n{error_text.strip() or '(not provided)'}\n"
+    )
+    msg.set_content(body)
+    if screenshot is not None:
+        data = screenshot.getvalue()
+        ctype = screenshot.type or "image/png"
+        maintype, subtype = (ctype.split("/", 1) + ["png"])[:2]
+        msg.add_attachment(data, maintype=maintype, subtype=subtype, filename=screenshot.name or "screenshot.png")
+    context = ssl.create_default_context()
+    with smtplib.SMTP_SSL(host, port, context=context, timeout=10) as server:
+        server.login(user, password)
+        server.send_message(msg)
+    return True, recipient
 
 
 def _default_widget_help(label):
-    """Localized help text for every QŪNAR input widget."""
     text = str(label or "").lower()
-    lang_hint = st.session_state.get("qunar_lang", globals().get("lang", "ru"))
+    lang_hint = globals().get("lang", "ru")
     rules = [
-        (("коэффициент эмиссии", "emission factor", "эмисси", "эмиссия коэффициенті"),
-         "Электр энергиясының 1 кВт·сағ тұтынуына байланысты CO₂e мөлшерін көрсетеді. Операциялық көміртек жүктемесін бағалау үшін қолданылады.",
-         "Показывает, сколько кг CO₂e связано с потреблением 1 кВт·ч электроэнергии. Используется для оценки углеродной нагрузки.",
-         "Amount of CO₂e associated with 1 kWh of electricity; used to estimate operational carbon load."),
-        (("площад", "area", "алаң", "аумақ"),
-         "Есеп жүргізілетін егістік немесе өндірістік аумақтың көлемі.",
-         "Площадь участка или производственной территории, для которой выполняется расчёт.",
-         "Area of the field or production unit used in the calculation."),
-        (("доступн", "available water", "қолжетімді су", "су көлемі"),
-         "Қарастырылып отырған өндірістік маусымға қолжетімді жалпы су көлемі. Оңтайландыру режимінде бұл шаруашылықтың маусымдық су бюджеті: QŪNAR суды дақылдар арасында автоматты түрде бөледі, сондықтан пайдаланушыға оны алдын ала дақылдар бойынша бөлу қажет емес.",
-         "Общий объём воды, доступный для рассматриваемого производственного сезона. В режиме оптимизации это общий водный бюджет хозяйства: QŪNAR распределяет его между культурами автоматически, поэтому пользователю не нужно заранее делить воду по культурам.",
-         "Total water available for the production season under assessment. In optimization mode this is the farm-level seasonal water budget; QŪNAR allocates it among crops automatically, so the user does not need to pre-allocate water crop by crop."),
-        (("расход воды", "water use", "water used", "су тұтын", "су пайдалану"),
-         "Өсімдік шаруашылығы үшін таңдалған дақылдың толық өндірістік циклі бойынша нақты немесе күтілетін су тұтынуын көрсетіңіз: егіс алдындағы дайындықтан/себуден бастап өнім жинауға дейін. Мән белгісіз болса, 0 қалдырыңыз: QŪNAR жеке нормативтік бағалауды қолданады және оны есептік мән ретінде нақты белгілейді.",
-         "Для растениеводства укажите суммарное фактическое или ожидаемое водопотребление за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Если значение неизвестно, оставьте 0: QŪNAR использует отдельную нормативную оценку и явно помечает её как расчётную.",
-         "For crops, enter total observed or expected water use for the full production cycle - from pre-sowing preparation/sowing through harvest. If unknown, leave 0: QŪNAR uses a separate reference estimate and labels it as modelled rather than observed."),
-        (("энерг", "electric", "электр", "квт"),
-         "Өсімдік шаруашылығы үшін таңдалған дақылға тікелей қатысты толық өндірістік циклдегі энергия тұтынуын көрсетіңіз: топырақты дайындау, себу, суару/сорғылау, күтім және өнім жинау, егер бұл операциялар энергия тұтынса. Мән белгісіз болса, 0 қалдырыңыз.",
-         "Для растениеводства укажите суммарное энергопотребление, непосредственно связанное с выбранной культурой за полный производственный цикл - подготовка почвы, посев, орошение/перекачка, уход и уборка, если эти операции потребляют энергию. Если значение неизвестно, оставьте 0.",
-         "For crops, enter total energy directly attributable to the selected crop over the full production cycle - soil preparation, sowing, irrigation/pumping, crop care and harvest where energy is used. Leave 0 if unknown."),
-        (("тариф", "tariff", "баға", "құны"),
-         "Шығындар мен ықтимал үнемді есептеу үшін қолданылатын ресурстың бір бірлігінің бағасы.",
-         "Цена единицы ресурса, используемая для расчёта затрат и потенциальной экономии.",
-         "Price per unit of resource used to estimate cost and potential savings."),
-        (("виэ", "renewable", "green share", "жаңартылатын", "жасыл энергия"),
-         "Қарастырылып отырған сценарийдегі жаңартылатын көздерден алынатын электр энергиясының үлесі.",
-         "Доля электроэнергии из возобновляемых источников в рассматриваемом сценарии.",
-         "Share of electricity supplied by renewable sources in the scenario."),
-        (("повтор", "reuse", "қайта пайдалан", "қайталама су"),
-         "Қарастырылып отырған өндірістік циклде қайта пайдаланылатын судың үлесі. Бұл жаңа су алуға қажеттілікті азайтады. Нақты үлес белгісіз болса, 0 қалдырыңыз; бұл қайта пайдалану мүлде жоқ екенінің расталған дәлелі ретінде түсіндірілмейді.",
-         "Доля воды, повторно использованной в рассматриваемом производственном цикле. Она уменьшает потребность в новом водозаборе; если фактическая доля неизвестна, оставьте 0 и не трактуйте это как подтверждённое отсутствие повторного использования.",
-         "Share of water reused within the production cycle under assessment. It reduces the need for additional withdrawal; if the observed share is unknown, leave 0 and do not interpret this as verified absence of reuse."),
-        (("инвест", "investment", "инвестиция"),
-         "Ресурс үнемдейтін шешімнің өтелу мерзімін бағалау үшін енгізілетін қосымша инвестициялық шығын.",
-         "Дополнительные инвестиционные затраты для оценки срока окупаемости ресурсосберегающего решения.",
-         "Additional investment used to estimate the payback period of a resource-saving option."),
-        (("пестиц", "pesticide", "пестицид"),
-         "Пестицидтердің нақты жүктемесі. Дерек жоқ болса, көрсеткіш белгісіз күйінде қалады және нөлмен алмастырылмайды.",
-         "Фактическая нагрузка пестицидами. Если данных нет, показатель остаётся неизвестным и не заменяется нулём.",
-         "Observed pesticide load. Missing values remain unknown rather than being treated as zero."),
-        (("солен", "salinity", "тұздан"),
-         "Пайдаланушыға белгілі немесе бақылаумен расталған жағдайда топырақтың тұздану көрсеткіші.",
-         "Показатель засоления почвы, если он известен пользователю или подтверждён наблюдениями.",
-         "Soil salinity indicator when observed or supplied by the user."),
-        (("деград", "degrad", "деградация"),
-         "Белгілі болған жағдайда деградацияланған аумақтың немесе жайылымның үлесі. Экологиялық диагностикалық фактор ретінде қолданылады.",
-         "Доля деградированной территории/пастбища, если она известна. Используется как экологический диагностический фактор.",
-         "Observed degraded land/pasture share used as an environmental diagnostic."),
-        (("максимальн", "maximum share", "ең жоғары үлес", "максималды үлес"),
-         "Оңтайландырылған құрылымда бір дақылдың үлесіне шектеу қояды және шамадан тыс шоғырлануды азайтады.",
-         "Ограничивает долю одной культуры в оптимизированной структуре, снижая чрезмерную концентрацию.",
-         "Caps the share of any one crop in the optimized structure to limit excessive concentration."),
-        (("количество культур", "number of crops", "дақыл саны", "дақылдар саны"),
-         "Оңтайландырғыш қолжетімді егістік аумақты бөлетін дақылдардың саны.",
-         "Число культур, между которыми оптимизатор распределяет доступную площадь.",
-         "Number of crops among which the optimizer allocates the available area."),
-        (("target water", "water saving", "су үнем", "суды үнем"),
-         "Суды үнемдеу сценарийінде ағымдағы су қажеттілігімен салыстырғанда көзделетін қысқарту үлесі.",
-         "Целевая доля снижения водопотребления относительно текущей потребности в сценарии водосбережения.",
-         "Target reduction in water use relative to the current requirement in the water-saving scenario."),
+        (("коэффициент эмиссии", "emission factor", "эмисси"), "Показывает, сколько кг CO₂e связано с потреблением 1 кВт·ч электроэнергии. Используется для оценки углеродной нагрузки.", "Amount of CO₂e associated with 1 kWh of electricity; used to estimate operational carbon load."),
+        (("площад", "area", "алаң"), "Площадь участка или производственной территории, для которой выполняется расчёт.", "Area of the field or production unit used in the calculation."),
+        (("доступн", "available water"), "Общий объём воды, доступный для рассматриваемого производственного сезона. В режиме оптимизации это общий водный бюджет хозяйства: QŪNAR распределяет его между культурами автоматически, поэтому пользователю не нужно заранее делить воду по культурам.", "Total water available for the production season under assessment. In optimization mode this is the farm-level seasonal water budget; QŪNAR allocates it among crops automatically, so the user does not need to pre-allocate water crop by crop."),
+        (("расход воды", "water use", "water used"), "Для растениеводства укажите суммарное фактическое или ожидаемое водопотребление за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Если значение неизвестно, оставьте 0: QŪNAR использует отдельную нормативную оценку и явно помечает её как расчётную.", "For crops, enter total observed or expected water use for the full production cycle - from pre-sowing preparation/sowing through harvest. If unknown, leave 0: QŪNAR uses a separate reference estimate and labels it as modelled rather than observed."),
+        (("энерг", "electric"), "Для растениеводства укажите суммарное энергопотребление, непосредственно связанное с выбранной культурой за полный производственный цикл - подготовка почвы, посев, орошение/перекачка, уход и уборка, если эти операции потребляют энергию. Если значение неизвестно, оставьте 0.", "For crops, enter total energy directly attributable to the selected crop over the full production cycle - soil preparation, sowing, irrigation/pumping, crop care and harvest where energy is used. Leave 0 if unknown."),
+        (("тариф", "tariff"), "Цена единицы ресурса, используемая для расчёта затрат и потенциальной экономии.", "Price per unit of resource used to estimate cost and potential savings."),
+        (("виэ", "renewable", "green share"), "Доля электроэнергии из возобновляемых источников в рассматриваемом сценарии.", "Share of electricity supplied by renewable sources in the scenario."),
+        (("повтор", "reuse"), "Доля воды, повторно использованной в рассматриваемом производственном цикле. Она уменьшает потребность в новом водозаборе; если фактическая доля неизвестна, оставьте 0 и не трактуйте это как подтверждённое отсутствие повторного использования.", "Share of water reused within the production cycle under assessment. It reduces the need for additional withdrawal; if the observed share is unknown, leave 0 and do not interpret this as verified absence of reuse."),
+        (("инвест", "investment"), "Дополнительные инвестиционные затраты для оценки срока окупаемости ресурсосберегающего решения.", "Additional investment used to estimate the payback period of a resource-saving option."),
+        (("пестиц", "pesticide"), "Фактическая нагрузка пестицидами. Если данных нет, показатель остаётся неизвестным и не заменяется нулём.", "Observed pesticide load. Missing values remain unknown rather than being treated as zero."),
+        (("солен", "salinity"), "Показатель засоления почвы, если он известен пользователю или подтверждён наблюдениями.", "Soil salinity indicator when observed or supplied by the user."),
+        (("деград", "degrad"), "Доля деградированной территории/пастбища, если она известна. Используется как экологический диагностический фактор.", "Observed degraded land/pasture share used as an environmental diagnostic."),
+        (("максимальн", "maximum share"), "Ограничивает долю одной культуры в оптимизированной структуре, снижая чрезмерную концентрацию.", "Caps the share of any one crop in the optimized structure to limit excessive concentration."),
+        (("количество культур", "number of crops"), "Число культур, между которыми оптимизатор распределяет доступную площадь.", "Number of crops among which the optimizer allocates the available area."),
     ]
-    for keys, kk, ru, en in rules:
+    for keys, ru, en in rules:
         if any(k in text for k in keys):
-            return {"kk": kk, "ru": ru, "en": en}.get(lang_hint, en)
-    return {
-        "kk": "Параметр туралы қысқаша түсіндірме: шаруашылығыңызға немесе қарастырылып отырған сценарийге сәйкес мәнді таңдаңыз немесе енгізіңіз.",
-        "ru": "Краткое пояснение параметра: выберите или введите значение, соответствующее вашему хозяйству или сценарию.",
-        "en": "Parameter help: choose or enter the value that best matches the farm or scenario.",
-    }.get(lang_hint, "Parameter help: choose or enter the value that best matches the farm or scenario.")
+            return ru if lang_hint in ("ru", "kk") else en
+    return "Краткое пояснение параметра: выберите или введите значение, соответствующее вашему хозяйству или сценарию." if lang_hint in ("ru", "kk") else "Parameter help: choose or enter the value that best matches the farm or scenario."
 
-
-def _resolved_help(label, provided_help=None):
-    """Resolve widget help in the active interface language."""
-    if provided_help is not None:
-        return provided_help
-    return _default_widget_help(label)
 
 def q_number_input(label, *args, **kwargs):
-    kwargs["help"] = _resolved_help(label, kwargs.get("help"))
-    return st.number_input(label, *args, **kwargs)
+    kwargs.setdefault("help", _default_widget_help(label)); return st.number_input(label, *args, **kwargs)
 def q_selectbox(label, *args, **kwargs):
-    kwargs["help"] = _resolved_help(label, kwargs.get("help"))
-    return st.selectbox(label, *args, **kwargs)
+    kwargs.setdefault("help", _default_widget_help(label)); return st.selectbox(label, *args, **kwargs)
 def q_radio(label, *args, **kwargs):
-    kwargs["help"] = _resolved_help(label, kwargs.get("help"))
-    return st.radio(label, *args, **kwargs)
+    kwargs.setdefault("help", _default_widget_help(label)); return st.radio(label, *args, **kwargs)
 def q_toggle(label, *args, **kwargs):
-    kwargs["help"] = _resolved_help(label, kwargs.get("help"))
-    return st.toggle(label, *args, **kwargs)
+    kwargs.setdefault("help", _default_widget_help(label)); return st.toggle(label, *args, **kwargs)
 
 st.set_page_config(page_title=APP_NAME, page_icon="🌱", layout="wide", initial_sidebar_state="expanded")
 
@@ -411,9 +429,8 @@ def render_export_panel(report_payload: dict, lang: str):
                 clicked = st.download_button(labels["down_word"], data=st.session_state["qunar_word"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key=f"download_word_{report_id}")
                 if clicked: ga_event("download_word", report_scope="single", mode_key=report_payload.get("mode_key"))
 
-lang_label = st.sidebar.selectbox("Тіл / Язык / Language", list(LANGUAGES.keys()), index=0, help="Интерфейс тілін таңдаңыз / Выберите язык интерфейса / Choose the interface language")
+lang_label = st.sidebar.selectbox("Тіл / Язык / Language", list(LANGUAGES.keys()), index=0, help="Интерфейс тілі / Язык интерфейса / Interface language")
 lang = LANGUAGES[lang_label]
-st.session_state["qunar_lang"] = lang
 if st.session_state.get("ga_last_language") != lang:
     if st.session_state.get("ga_last_language") is not None:
         ga_event("change_language", language=lang)
@@ -509,6 +526,38 @@ user_level = st.sidebar.radio(
 if user_level == "farmer":
     st.sidebar.caption(t["level_basic_hint"])
     st.sidebar.caption({"kk":"QŪNAR анонимді пайдалану статистикасын Google Analytics арқылы жинайды.","ru":"QŪNAR собирает обезличенную статистику использования через Google Analytics.","en":"QŪNAR collects anonymized usage statistics through Google Analytics."}[lang])
+
+    with st.sidebar.expander({"kk":"Қате туралы хабарлау","ru":"Сообщить об ошибке","en":"Report an error"}[lang]):
+        st.caption({
+            "kk":"Мәселені сипаттаңыз, қате мәтінін қойыңыз және қажет болса скриншот тіркеңіз.",
+            "ru":"Опишите проблему, вставьте текст ошибки и при необходимости приложите скриншот.",
+            "en":"Describe the problem, paste the error text and optionally attach a screenshot."
+        }[lang])
+        with st.form("bug_report_form", clear_on_submit=True):
+            bug_desc = st.text_area({"kk":"Не болды?","ru":"Что произошло?","en":"What happened?"}[lang], height=100)
+            bug_error = st.text_area({"kk":"Қате мәтіні","ru":"Текст ошибки","en":"Error text"}[lang], height=90)
+            bug_contact = st.text_input({"kk":"Сіздің e-mail (міндетті емес)","ru":"Ваш e-mail (необязательно)","en":"Your email (optional)"}[lang])
+            bug_shot = st.file_uploader({"kk":"Скриншот (міндетті емес)","ru":"Скриншот (необязательно)","en":"Screenshot (optional)"}[lang], type=["png","jpg","jpeg","webp"])
+            bug_submit = st.form_submit_button({"kk":"Жіберу","ru":"Отправить сообщение","en":"Send report"}[lang], use_container_width=True)
+        if bug_submit:
+            if not (bug_desc or bug_error):
+                st.warning({"kk":"Қысқаша сипаттама немесе қате мәтінін енгізіңіз.","ru":"Добавьте описание или текст ошибки.","en":"Add a description or error text."}[lang])
+            else:
+                try:
+                    sent, recipient = _send_bug_report(bug_desc, bug_contact, bug_error, bug_shot)
+                    if sent:
+                        st.success({"kk":"Хабарлама жіберілді. Рақмет.","ru":"Сообщение отправлено. Спасибо.","en":"Report sent. Thank you."}[lang])
+                        ga_event("bug_report_sent")
+                    else:
+                        st.info({
+                            "kk":"Автоматты жіберу үшін Streamlit Secrets ішінде e-mail параметрлерін қосу қажет.",
+                            "ru":"Для автоматической отправки нужно один раз добавить почтовые параметры в Streamlit Secrets.",
+                            "en":"To enable automatic sending, add the email settings to Streamlit Secrets once."
+                        }[lang])
+                except Exception as exc:
+                    st.error({"kk":"Хабарламаны жіберу сәтсіз аяқталды.","ru":"Не удалось отправить сообщение.","en":"Could not send the report."}[lang])
+                    if user_level == "researcher":
+                        st.caption(str(exc))
 elif user_level == "specialist":
     st.sidebar.caption(t["level_advanced_hint"])
 else:
@@ -2087,7 +2136,7 @@ if submitted:
         st.caption({"kk":"Бұл блок QŪNAR-да дәлелмен немесе нақты енгізумен қамтамасыз етілген климаттық, топырақ-ылғал, энергия-көміртек, пестицид және тұздану көрсеткіштерін бөлек көрсетеді. Экожүйенің толық жағдайы жеке бақылау жиынтығын қажет етеді.","ru":"Блок показывает экологически значимые показатели, обеспеченные климатическими данными или фактическим вводом: тепло, осадки, влажность корневой зоны, энергия/CO₂, пестициды и засоление. Комплексное состояние экосистемы требует отдельного набора наблюдений.","en":"This block reports environmentally relevant indicators supported by climate data or observed input: heat, precipitation, root-zone wetness, energy/CO₂, pesticides and salinity. Full ecosystem condition requires a separate observation set."}[lang])
 
     if mode_key == "mode4" and "out" in locals():
-        div = diversification_metrics(pd.to_numeric(out["share"], errors="coerce").fillna(0).tolist())
+        div = diversification_metrics(pd.to_numeric(alloc["share"], errors="coerce").fillna(0).tolist())
         st.markdown("### " + {"kk":"Егіс құрылымының әртараптануы","ru":"Диверсификация структуры посевов","en":"Cropping-structure diversification"}[lang])
         d1,d2,d3 = st.columns(3)
         d1.metric({"kk":"Герфиндал-Хиршман индексі","ru":"Индекс Герфиндаля-Хиршмана","en":"HHI"}[lang], f"{div['hhi']:.3f}")
