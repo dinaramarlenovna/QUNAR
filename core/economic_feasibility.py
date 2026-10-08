@@ -14,7 +14,7 @@ def economic_feasibility(*, yield_centners_ha=None, selling_price_kzt_t=None,
     """
     y = None if yield_centners_ha is None else float(yield_centners_ha)
     p = None if selling_price_kzt_t is None else float(selling_price_kzt_t)
-    vc = float(variable_cost_kzt_ha or 0.0)
+    vc = None if variable_cost_kzt_ha is None else float(variable_cost_kzt_ha)
     wm = float(water_m3_ha or 0.0)
     wt = float(water_tariff_kzt_m3 or 0.0)
     ek = float(energy_kwh_ha or 0.0)
@@ -37,6 +37,17 @@ def economic_feasibility(*, yield_centners_ha=None, selling_price_kzt_t=None,
 
     yield_t_ha = y / 10.0
     revenue = yield_t_ha * p
+    if vc is None or vc <= 0:
+        out.update({
+            "yield_t_ha": yield_t_ha,
+            "gross_revenue_kzt_ha": revenue,
+            "variable_cost_kzt_ha": None,
+            "contribution_margin_kzt_ha": None,
+            "margin_ratio": None,
+            "economic_score_0_100": None,
+            "status": "variable_cost_required",
+        })
+        return out
     margin = revenue - vc - resource_cost
     ratio = margin / revenue if revenue > 0 else None
     out.update({
