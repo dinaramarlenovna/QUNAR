@@ -5,6 +5,7 @@ import time
 import html
 import json
 import hashlib
+import inspect
 import smtplib
 import ssl
 from email.message import EmailMessage
@@ -2159,7 +2160,27 @@ if submitted:
             "ru":"QŪNAR распределяет площадь по ресурсно-климатической полезности. Уверенность в оценке показывается отдельно и не повышает привлекательность культуры. Если указана доступная вода, она становится жестким ограничением оптимизации.",
             "en":"QŪNAR allocates land using resource-climate utility. Assessment confidence is reported separately and does not make a crop more attractive. Entered available water becomes a hard optimization constraint."
         }[lang])
-        alloc, opt = timed_call("Optimization", optimize_structure, used_district, area_ha, optimization_profile, optimization_max_share, optimization_n_crops, available_water, climate, irrigation_type, optimization_economic_margins if optimization_use_economics else None, optimization_economic_weight)
+        # Compatibility-safe optimizer call. Some deployed QŪNAR v0.8.1 environments may
+        # still contain the earlier optimizer signature without the optional economic arguments.
+        # We inspect the callable instead of catching an arbitrary TypeError from inside the solver.
+        _opt_params = inspect.signature(optimize_structure).parameters
+        _opt_kwargs = {
+            "district": used_district,
+            "area_ha": area_ha,
+            "profile": optimization_profile,
+            "max_share": optimization_max_share,
+            "n_crops": optimization_n_crops,
+            "available_water_m3": available_water,
+            "climate": climate,
+            "irrigation_type": irrigation_type,
+        }
+        if "economic_margin_by_product" in _opt_params:
+            _opt_kwargs["economic_margin_by_product"] = (
+                optimization_economic_margins if optimization_use_economics else None
+            )
+        if "economic_weight" in _opt_params:
+            _opt_kwargs["economic_weight"] = optimization_economic_weight
+        alloc, opt = timed_call("Optimization", optimize_structure, **_opt_kwargs)
         if alloc.empty:
             st.error({"kk":"Бұл аудан үшін оңтайландыру деректері табылмады.","ru":"Для этого района не найдены данные для оптимизации.","en":"No optimization data were found for this district."}[lang])
         else:
