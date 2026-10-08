@@ -20,7 +20,7 @@ from core.config import (
 )
 from core.data import load_centroids, district_climate, district_crop_context
 from core.nasa import fetch_growing_season
-from core.ml import predict_yield, rank_crops, validation_summary, validation_for_crop
+from core.ml import predict_yield, rank_crops, validation_summary, validation_for_crop, spatial_validation_summary, prediction_interval_for_crop
 from core.resources import calculate_resources
 from core.water_norms import default_water_requirement, PUMPING_REFERENCE_KWH_PER_M3
 from core.economics import DEFAULT_EF_KZ_KGCO2_PER_KWH, DEFAULT_ELECTRICITY_TARIFF_KZT_KWH, DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3, DEFAULT_GREEN_SHARE_TARGET, DEFAULT_WATER_SAVING_TARGET, economic_climate_effect, payback_years
@@ -34,7 +34,6 @@ from core.optimizer import optimize_structure
 from core.clrem import check_crop_codes, label as extended_crop_label, method as crop_method, scenario_for_crop, scenario_for_district, observed_for_crop, observed_extra_for_district, decision_table, registry as clrem_registry
 from core.reporting import build_excel_report, build_pdf_report, build_word_report, build_combined_excel_report, build_combined_pdf_report, build_combined_word_report
 from core.environment import environmental_diagnostics, diversification_metrics
-from core.spatial_allocation import build_allocation_feature_collection
 from core.livestock import (
     SPECIES, SPECIES_LABELS, PRODUCT_TYPES, PRODUCT_LABELS, DEFAULT_PRODUCT,
     livestock_resource_metrics, district_livestock_profile, district_species_history,
@@ -323,7 +322,14 @@ def smart_resource_scenario(lang, irrigation_type, actual_water_m3, area_ha, ref
       'kk':{'user':'пайдаланушы деректері','district_crop_reference':'аудан-дақыл анықтамасы','pumping_reference':'су айдау коэффициенті бойынша бағалау','user_total_with_pumping_estimate':'пайдаланушының жалпы энергиясы; суару үлесі айдау коэффициентімен бағаланды','unavailable':'дерек жоқ'},
       'ru':{'user':'данные пользователя','district_crop_reference':'районно-культурный справочник','pumping_reference':'оценка по коэффициенту перекачки воды','user_total_with_pumping_estimate':'общая энергия пользователя; насосная доля оценена по коэффициенту перекачки','unavailable':'нет данных'},
       'en':{'user':'user data','district_crop_reference':'district-crop reference','pumping_reference':'estimate from pumping-energy coefficient','user_total_with_pumping_estimate':'user total energy; pumping share estimated from water-pumping coefficient','unavailable':'unavailable'}}[lang]
+    if water_source == 'user' and str(energy_source).startswith('user'):
+        evidence_grade = {'kk':'жоғары','ru':'высокая','en':'high'}[lang]
+    elif water_source == 'user' or str(energy_source).startswith('user'):
+        evidence_grade = {'kk':'орташа','ru':'средняя','en':'medium'}[lang]
+    else:
+        evidence_grade = {'kk':'анықтамалық сценарий','ru':'справочный сценарий','en':'reference scenario'}[lang]
     return {'technology':tech,'status':status,'recommendation':recommendation,'water_pressure_pct':pressure,
+      'evidence_grade':evidence_grade,
       'before_water_m3':water,'after_water_m3':after_water,'saved_water_m3':saved_water,
       'before_water_cost_kzt':before_water_cost,'after_water_cost_kzt':after_water_cost,'water_cost_saving_kzt':water_saving_cost,
       'before_energy_kwh':energy,'after_energy_kwh':after_energy,'before_energy_cost_kzt':before_energy_cost,
@@ -1133,6 +1139,9 @@ with st.container():
     optimization_profile = "balanced"
     optimization_max_share = 0.40
     optimization_n_crops = 5
+    optimization_temp_delta_c = 0.0
+    optimization_precip_change_pct = 0.0
+    optimization_water_budget_change_pct = 0.0
     if mode_key == "mode4" and user_level != "farmer":
         st.markdown("#### " + {"kk":"Оңтайландыру сценарийі","ru":"Сценарий оптимизации","en":"Optimization scenario"}[lang])
         op1, op2, op3 = st.columns(3)
@@ -1162,31 +1171,60 @@ with st.container():
                 }[lang]
             ))
 
+    if mode_key == "mode4" and user_level != "farmer":
+        with st.expander({"kk":"Климат және су стресс-сценарийі (міндетті емес)","ru":"Климатический и водный стресс-сценарий (необязательно)","en":"Climate and water stress scenario (optional)"}[lang], expanded=False):
+            _cs1,_cs2,_cs3=st.columns(3)
+            with _cs1:
+                optimization_temp_delta_c=q_number_input({"kk":"Температура өзгерісі, °C","ru":"Изменение температуры, °C","en":"Temperature change, °C"}[lang],min_value=-5.0,max_value=8.0,value=0.0,step=0.5)
+            with _cs2:
+                optimization_precip_change_pct=q_number_input({"kk":"Жауын-шашын өзгерісі, %","ru":"Изменение осадков, %","en":"Precipitation change, %"}[lang],min_value=-80.0,max_value=100.0,value=0.0,step=5.0)
+            with _cs3:
+                optimization_water_budget_change_pct=q_number_input({"kk":"Қолжетімді су бюджетінің өзгерісі, %","ru":"Изменение доступного водного бюджета, %","en":"Available-water budget change, %"}[lang],min_value=-90.0,max_value=100.0,value=0.0,step=5.0)
+            st.caption({"kk":"Бұл SSP/CMIP ұзақмерзімді проекциясы емес. Бұл пайдаланушы анықтайтын stress-test: бастапқы климаттық профильге температура/жауын-шашын өзгерісі және су бюджетінің өзгерісі қолданылады.","ru":"Это не долгосрочная SSP/CMIP-проекция. Это пользовательский стресс-тест: к базовому климатическому профилю применяются заданные изменения температуры, осадков и доступного водного бюджета.","en":"This is not a long-term SSP/CMIP projection. It is a user-defined stress test applying temperature, precipitation and available-water changes to the baseline climate profile."}[lang])
+
     optimization_use_economics = False
+    optimization_objective_mode = "resource"
     optimization_economic_weight = 0.35
     optimization_economic_margins = {}
+    optimization_baseline_shares = {}
     if mode_key == "mode4" and user_level != "farmer":
-        with st.expander({"kk":"Экономикалық мақсат (міндетті емес)","ru":"Экономическая цель (необязательно)","en":"Economic objective (optional)"}[lang], expanded=False):
-            optimization_use_economics = st.checkbox({"kk":"Экономикалық нәтижені мақсаттық функцияға қосу","ru":"Включить экономический результат в целевую функцию","en":"Include economic result in the objective"}[lang], value=False)
-            st.caption({"kk":"Экономикалық деректер автоматты түрде ойдан шығарылмайды. Тек тексерілген шаруашылық/сценарийлік маржаны енгізіңіз. Нөл немесе бос мән экономикалық критерийдің осы дақыл үшін қолжетімсіз екенін білдіреді.","ru":"Экономические данные автоматически не подставляются. Введите подтвержденную или сценарную маржу по культуре в тг/га. Ноль означает, что экономический критерий для этой культуры недоступен.","en":"Economic data are never invented automatically. Enter a verified/scenario crop contribution margin in KZT/ha. Zero means the economic criterion is unavailable for that crop."}[lang])
+        with st.expander({"kk":"Экономикалық мақсат және «дейін/кейін» салыстыру","ru":"Экономическая цель и сравнение «до/после»","en":"Economic objective and before/after comparison"}[lang], expanded=False):
+            optimization_objective_mode = st.selectbox(
+                {"kk":"Оңтайландыру мақсаты","ru":"Цель оптимизации","en":"Optimization objective"}[lang],
+                ["resource","balanced","economic"],
+                format_func=lambda x: {
+                    "resource":{"kk":"Ресурс-климаттық тиімділік","ru":"Ресурсно-климатическая эффективность","en":"Resource-climate efficiency"}[lang],
+                    "balanced":{"kk":"Теңгерімді: ресурс + экономика","ru":"Сбалансированный: ресурсы + экономика","en":"Balanced: resources + economics"}[lang],
+                    "economic":{"kk":"Экономикалық нәтиже басымдығы","ru":"Приоритет экономического результата","en":"Economic-return priority"}[lang],
+                }[x],
+            )
+            optimization_use_economics = optimization_objective_mode != "resource"
+            st.caption({"kk":"QŪNAR жетіспейтін нарықтық деректерді ойдан шығармайды. Экономикалық режим тек пайдаланушы енгізген немесе тексерілген маржа мәндері бар дақылдарды салыстырады. Ағымдағы құрылым үлесін енгізсеңіз, модель «дейін/кейін» экономикалық және су тиімділігін есептейді.","ru":"QŪNAR не выдумывает отсутствующие рыночные данные. Экономические режимы сравнивают только культуры, для которых введена подтвержденная или сценарная маржа. Если указать текущую структуру посевов, модель дополнительно рассчитает экономический и водный эффект «до/после».","en":"QŪNAR never fabricates missing market data. Economic modes compare only crops with a verified/scenario user-entered contribution margin. If the current crop structure is entered, QŪNAR also calculates before/after economic and water effects."}[lang])
             if optimization_use_economics:
-                optimization_economic_weight = st.slider({"kk":"Экономикалық критерий салмағы, %","ru":"Вес экономического критерия, %","en":"Economic-objective weight, %"}[lang], 10, 70, 35, 5) / 100.0
-                try:
-                    _sc = scenario_for_district(used_district, None, irrigation_type)
-                    _reg = clrem_registry()[['CLREM_product', {'kk':'KK','ru':'RU','en':'EN'}[lang]]].dropna().drop_duplicates('CLREM_product')
-                    _reg.columns=['product','display']
-                    _econ_rows = _sc[['product']].drop_duplicates().merge(_reg,on='product',how='left')
-                    _econ_rows['display']=_econ_rows['display'].fillna(_econ_rows['product'])
-                    _econ_rows['margin_kzt_ha']=0.0
-                    _edited = st.data_editor(_econ_rows[['product','display','margin_kzt_ha']], hide_index=True, use_container_width=True,
-                        disabled=['product','display'], column_config={
-                            'product': st.column_config.TextColumn('ID'),
-                            'display': st.column_config.TextColumn({"kk":"Дақыл","ru":"Культура","en":"Crop"}[lang]),
-                            'margin_kzt_ha': st.column_config.NumberColumn({"kk":"Маржа, тг/га","ru":"Маржа, тг/га","en":"Contribution margin, KZT/ha"}[lang], min_value=0.0, step=10000.0, format='%.0f')
-                        })
-                    optimization_economic_margins={str(r['product']):float(r['margin_kzt_ha']) for _,r in _edited.iterrows() if float(r['margin_kzt_ha'] or 0)>0}
-                except Exception as _econ_exc:
-                    st.caption(str(_econ_exc))
+                _default_weight = 70 if optimization_objective_mode == "economic" else 35
+                optimization_economic_weight = st.slider({"kk":"Экономикалық критерий салмағы, %","ru":"Вес экономического критерия, %","en":"Economic-objective weight, %"}[lang], 10, 85, _default_weight, 5) / 100.0
+            try:
+                _sc = scenario_for_district(used_district, None, irrigation_type)
+                _reg = clrem_registry()[['CLREM_product', {'kk':'KK','ru':'RU','en':'EN'}[lang]]].dropna().drop_duplicates('CLREM_product')
+                _reg.columns=['product','display']
+                _econ_rows = _sc[['product']].drop_duplicates().merge(_reg,on='product',how='left')
+                _econ_rows['display']=_econ_rows['display'].fillna(_econ_rows['product'])
+                _econ_rows['margin_kzt_ha']=0.0
+                _econ_rows['current_share_pct']=0.0
+                _edited = st.data_editor(_econ_rows[['product','display','margin_kzt_ha','current_share_pct']], hide_index=True, use_container_width=True,
+                    disabled=['product','display'], column_config={
+                        'product': st.column_config.TextColumn('ID'),
+                        'display': st.column_config.TextColumn({"kk":"Дақыл","ru":"Культура","en":"Crop"}[lang]),
+                        'margin_kzt_ha': st.column_config.NumberColumn({"kk":"Маржа, тг/га","ru":"Маржа, тг/га","en":"Contribution margin, KZT/ha"}[lang], min_value=0.0, step=10000.0, format='%.0f'),
+                        'current_share_pct': st.column_config.NumberColumn({"kk":"Ағымдағы үлес, %","ru":"Текущая доля, %","en":"Current share, %"}[lang], min_value=0.0, max_value=100.0, step=1.0, format='%.1f')
+                    })
+                optimization_economic_margins={str(r['product']):float(r['margin_kzt_ha']) for _,r in _edited.iterrows() if float(r['margin_kzt_ha'] or 0)>0}
+                optimization_baseline_shares={str(r['product']):float(r['current_share_pct']) for _,r in _edited.iterrows() if float(r['current_share_pct'] or 0)>0}
+                _share_sum=sum(optimization_baseline_shares.values())
+                if _share_sum>0 and abs(_share_sum-100.0)>0.5:
+                    st.caption({"kk":f"Ағымдағы үлестердің қосындысы {_share_sum:.1f}%. Салыстыру үшін олар 100%-ға автоматты түрде нормаланады.","ru":f"Сумма текущих долей составляет {_share_sum:.1f}%. Для сравнения QŪNAR автоматически нормализует их до 100%.","en":f"Current shares sum to {_share_sum:.1f}%. QŪNAR normalizes them to 100% for the before/after comparison."}[lang])
+            except Exception as _econ_exc:
+                st.caption(str(_econ_exc))
 
     submitted = st.button(t["calculate"], type="primary", use_container_width=True, key="calculate_main")
 
@@ -1866,6 +1904,7 @@ if submitted:
                 energy_source=("user" if energy > 0 else "pumping_reference"),
             )
             st.markdown("### " + {"kk":"Ақылды ресурс үнемдеу ұсынысы","ru":"Умная рекомендация по экономии ресурсов","en":"Smart resource-saving recommendation"}[lang])
+            st.caption({"kk":f"Сценарий дәлелінің деңгейі: {smart.get('evidence_grade','—')}.","ru":f"Уровень доказательности сценария: {smart.get('evidence_grade','—')}.","en":f"Scenario evidence grade: {smart.get('evidence_grade','—')}."}[lang])
             st.write(smart["status"])
             st.markdown(f'<div class="qunar-reco"><strong>{html.escape(smart["recommendation"])}</strong></div>', unsafe_allow_html=True)
             sc1,sc2,sc3,sc4=st.columns(4)
@@ -1970,6 +2009,12 @@ if submitted:
                         st.caption(f"Машиналық оқыту сапасын жылдар бойынша тексеру: орташа абсолюттік қате (MAE)={val['mae']:.2f} ц/га; орташа квадраттық қатенің түбірі (RMSE)={val.get('rmse', float('nan')):.2f} ц/га; R²={val['r2']:.3f}; 5 уақыттық блок; бақылау саны={val['n']}.")
                     else:
                         st.caption(f"ML validation by year: MAE={val['mae']:.2f} centners/ha; RMSE={val.get('rmse', float('nan')):.2f} centners/ha; R²={val['r2']:.3f}; 5 year-groups; N={val['n']}.")
+                        _pi = prediction_interval_for_crop(crop)
+                        if _pi:
+                            st.caption({"kk":f"90% эмпирикалық OOS белгісіздік жолағы: болжам ±{_pi['half_width_centners_ha']:.1f} ц/га (дақыл бойынша N={_pi['n']}). Бұл параметрлік сенімділік интервалы емес.","ru":f"90% эмпирическая OOS-полоса неопределенности: прогноз ±{_pi['half_width_centners_ha']:.1f} ц/га (N по культуре={_pi['n']}). Это не параметрический доверительный интервал.","en":f"90% empirical OOS uncertainty band: prediction ±{_pi['half_width_centners_ha']:.1f} centners/ha (crop N={_pi['n']}). This is not a parametric confidence interval."}[lang])
+                        _sv = spatial_validation_summary()
+                        if _sv:
+                            st.caption({"kk":f"Кеңістіктік тасымалдану стресс-тесті (leave-one-district-out): R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} аумақ.","ru":f"Стресс-тест пространственной переносимости leave-one-district-out: R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} территорий.","en":f"Leave-one-district-out spatial transferability stress test: R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} territories."}[lang])
 
     elif mode_key == "mode2":
         st.markdown("### " + {"kk":"Дақылдың жарамдылығын бағалау","ru":"Оценка пригодности культуры","en":"Crop suitability assessment"}[lang])
@@ -2164,14 +2209,26 @@ if submitted:
         # still contain the earlier optimizer signature without the optional economic arguments.
         # We inspect the callable instead of catching an arbitrary TypeError from inside the solver.
         _opt_params = inspect.signature(optimize_structure).parameters
+        _scenario_climate = dict(climate or {})
+        if optimization_temp_delta_c:
+            _k="Apr-Sep temperature, °C"
+            if _k in _scenario_climate and _scenario_climate.get(_k) is not None:
+                _scenario_climate[_k]=float(_scenario_climate[_k])+float(optimization_temp_delta_c)
+        if optimization_precip_change_pct:
+            _k="Apr-Sep precipitation, mm"
+            if _k in _scenario_climate and _scenario_climate.get(_k) is not None:
+                _scenario_climate[_k]=max(0.0,float(_scenario_climate[_k])*(1.0+float(optimization_precip_change_pct)/100.0))
+        _scenario_available_water=float(available_water or 0.0)
+        if _scenario_available_water>0 and optimization_water_budget_change_pct:
+            _scenario_available_water=max(0.0,_scenario_available_water*(1.0+float(optimization_water_budget_change_pct)/100.0))
         _opt_kwargs = {
             "district": used_district,
             "area_ha": area_ha,
             "profile": optimization_profile,
             "max_share": optimization_max_share,
             "n_crops": optimization_n_crops,
-            "available_water_m3": available_water,
-            "climate": climate,
+            "available_water_m3": _scenario_available_water,
+            "climate": _scenario_climate,
             "irrigation_type": irrigation_type,
         }
         if "economic_margin_by_product" in _opt_params:
@@ -2180,6 +2237,10 @@ if submitted:
             )
         if "economic_weight" in _opt_params:
             _opt_kwargs["economic_weight"] = optimization_economic_weight
+        if "objective_mode" in _opt_params:
+            _opt_kwargs["objective_mode"] = optimization_objective_mode
+        if "baseline_share_by_product" in _opt_params:
+            _opt_kwargs["baseline_share_by_product"] = optimization_baseline_shares
         alloc, opt = timed_call("Optimization", optimize_structure, **_opt_kwargs)
         if alloc.empty:
             st.error({"kk":"Бұл аудан үшін оңтайландыру деректері табылмады.","ru":"Для этого района не найдены данные для оптимизации.","en":"No optimization data were found for this district."}[lang])
@@ -2214,30 +2275,25 @@ if submitted:
                 "en":f"The proposed structure allocates {area_ha:.1f} ha across {len(out)} crops. The largest share is {out.iloc[0,1]:.1f}%."
             }[lang])
             if opt.get("economic_objective_active"):
-                em1,em2=st.columns(2)
+                em1,em2,em3=st.columns(3)
                 em1.metric({"kk":"Орташа экономикалық маржа","ru":"Средняя экономическая маржа","en":"Weighted economic margin"}[lang], f"{opt.get('weighted_economic_margin_kzt_ha',0):,.0f} KZT/ha")
                 em2.metric({"kk":"Экономикалық критерий салмағы","ru":"Вес экономического критерия","en":"Economic-objective weight"}[lang], f"{opt.get('economic_weight',0)*100:.0f}%")
+                em3.metric({"kk":"Оңтайландырылған маржа","ru":"Оптимизированная маржа","en":"Optimized contribution margin"}[lang], f"{opt.get('optimized_contribution_margin_kzt',0):,.0f} KZT")
                 st.caption({"kk":"Экономикалық критерий тек пайдаланушы енгізген оң маржа мәндері бар дақылдарға қолданылады; QŪNAR жетіспейтін нарықтық деректерді автоматты түрде толтырмайды.","ru":"Экономический критерий используется только для культур с введенной пользователем положительной маржой; QŪNAR не заполняет отсутствующие рыночные данные автоматически.","en":"The economic criterion is used only for crops with positive user-entered margins; QŪNAR does not fill missing market data automatically."}[lang])
-
-            if calc_geojson and len(out) > 0:
-                try:
-                    import folium
-                    from streamlit_folium import st_folium
-                    fc = build_allocation_feature_collection(calc_geojson, alloc, name_col=name_col)
-                    if fc.get("features"):
-                        st.markdown("#### " + {"kk":"Егіс құрылымының кеңістіктік визуализациясы","ru":"Пространственная визуализация структуры посевов","en":"Spatial visualization of the cropping structure"}[lang])
-                        st.caption({"kk":"Бұл түстер нақты топырақтық микрозоналау емес. Олар оңтайландырылған үлестерді пайдаланушы салған контур ішінде көрнекі түрде бөледі. Нақты «қай жерде қай дақыл» шешімі үшін ұяшық деңгейіндегі топырақ, ылғал, рельеф және суару инфрақұрылымы қажет.","ru":"Цветные зоны показывают распределение оптимизированных долей внутри выбранного контура. Это визуальный сценарий, а не доказательство того, что конкретная часть поля агрономически лучше для данной культуры. Для настоящей пространственной оптимизации нужны внутриполевые данные по почве, влаге, рельефу и оросительной инфраструктуре.","en":"Spatial allocation is an indicative visualization of optimized shares inside the user polygon. It is not evidence that a specific sub-field is agronomically best for a crop. True within-field optimization requires soil, moisture, terrain and irrigation-infrastructure data."}[lang])
-                        center=[calc_lat,calc_lon]
-                        sm=folium.Map(location=center,zoom_start=14,tiles="OpenStreetMap",control_scale=True)
-                        colors=['#4C956C','#F2CC8F','#E07A5F','#81B29A','#577590','#F4A261','#9C89B8','#90BE6D']
-                        for idx,feat in enumerate(fc['features']):
-                            prop=feat.get('properties',{})
-                            color=colors[idx % len(colors)]
-                            folium.GeoJson(feat,style_function=lambda _f,c=color:{'fillColor':c,'color':c,'weight':2,'fillOpacity':0.55},
-                                tooltip=folium.GeoJsonTooltip(fields=['crop','share_pct','area_ha'],aliases=[{"kk":"Дақыл","ru":"Культура","en":"Crop"}[lang],{"kk":"Үлес, %","ru":"Доля, %","en":"Share, %"}[lang],{"kk":"Аудан, га","ru":"Площадь, га","en":"Area, ha"}[lang]])).add_to(sm)
-                        st_folium(sm,height=430,use_container_width=True,key="allocation-map")
-                except Exception as _sp_exc:
-                    if user_level == "researcher": st.caption(f"Spatial visualization: {_sp_exc}")
+                if opt.get('baseline_available'):
+                    st.markdown("#### " + {"kk":"Құрылымның тиімділігі: дейін / кейін","ru":"Эффект структуры: до / после","en":"Structure effect: before / after"}[lang])
+                    _b1,_b2,_b3,_b4=st.columns(4)
+                    _b1.metric({"kk":"Маржа - дейін","ru":"Маржа - до","en":"Margin - before"}[lang], f"{opt.get('baseline_contribution_margin_kzt',0):,.0f} KZT" if opt.get('baseline_contribution_margin_kzt') is not None else "—")
+                    _b2.metric({"kk":"Маржа - кейін","ru":"Маржа - после","en":"Margin - after"}[lang], f"{opt.get('optimized_contribution_margin_kzt',0):,.0f} KZT")
+                    _gain=opt.get('economic_gain_kzt')
+                    _gain_pct=opt.get('economic_gain_pct')
+                    _b3.metric({"kk":"Экономикалық өзгеріс","ru":"Экономический эффект","en":"Economic change"}[lang], f"{_gain:,.0f} KZT" if _gain is not None else "—", f"{_gain_pct:+.1f}%" if _gain_pct is not None else None)
+                    _wch=opt.get('water_change_m3'); _wchp=opt.get('water_change_pct')
+                    _b4.metric({"kk":"Су қажеттілігінің өзгеруі","ru":"Изменение потребности в воде","en":"Water-demand change"}[lang], f"{_wch:,.0f} m³" if _wch is not None else "—", f"{_wchp:+.1f}%" if _wchp is not None else None)
+                    if opt.get('baseline_margin_per_m3_kzt') is not None and opt.get('optimized_margin_per_m3_kzt') is not None:
+                        st.caption({"kk":f"1 м³ суға маржа: дейін {opt['baseline_margin_per_m3_kzt']:.2f} тг/м³, кейін {opt['optimized_margin_per_m3_kzt']:.2f} тг/м³.","ru":f"Маржа на 1 м³ воды: до {opt['baseline_margin_per_m3_kzt']:.2f} тг/м³, после {opt['optimized_margin_per_m3_kzt']:.2f} тг/м³.","en":f"Contribution margin per 1 m³ of water: before {opt['baseline_margin_per_m3_kzt']:.2f} KZT/m³, after {opt['optimized_margin_per_m3_kzt']:.2f} KZT/m³."}[lang])
+            elif opt.get('economic_objective_requested') in ('balanced','economic'):
+                st.warning({"kk":"Экономикалық режим сұралды, бірақ кемінде екі дақыл бойынша маржа енгізілмеген. Сондықтан QŪNAR ресурс-климаттық мақсатқа қауіпсіз түрде қайтты.","ru":"Экономический режим выбран, но маржа введена менее чем для двух культур. QŪNAR безопасно вернулся к ресурсно-климатической целевой функции.","en":"An economic mode was requested, but margins were supplied for fewer than two crops. QŪNAR safely fell back to the resource-climate objective."}[lang])
 
             if opt.get("effective_max_share", optimization_max_share) > optimization_max_share + 1e-9:
                 st.info({
@@ -2253,7 +2309,7 @@ if submitted:
             }[lang])
             if available_water > 0:
                 if opt.get("water_feasible"):
-                    st.success({"kk":f"Су шектеуі орындалды: {opt['modelled_total_water_m3']:,.0f} м³ ≤ {available_water:,.0f} м³.","ru":f"Ограничение по воде соблюдено: {opt['modelled_total_water_m3']:,.0f} м³ ≤ {available_water:,.0f} м³.","en":f"Water constraint satisfied: {opt['modelled_total_water_m3']:,.0f} m³ ≤ {available_water:,.0f} m³."}[lang])
+                    st.success({"kk":f"Су шектеуі орындалды: {opt['modelled_total_water_m3']:,.0f} м³ ≤ {_scenario_available_water:,.0f} м³.","ru":f"Ограничение по воде соблюдено: {opt['modelled_total_water_m3']:,.0f} м³ ≤ {_scenario_available_water:,.0f} м³.","en":f"Water constraint satisfied: {opt['modelled_total_water_m3']:,.0f} m³ ≤ {_scenario_available_water:,.0f} m³."}[lang])
                 else:
                     st.error({"kk":"Берілген су көлемімен таңдалған дақыл саны/үлес шектеулері шеңберінде толық орындалатын құрылым табылмады.","ru":"При указанном объеме воды не найдено полностью выполнимой структуры при текущем числе культур и ограничениях долей.","en":"No fully feasible structure was found under the entered water volume and current crop/share constraints."}[lang])
             if user_level == "researcher":

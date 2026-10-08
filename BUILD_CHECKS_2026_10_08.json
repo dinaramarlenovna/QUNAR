@@ -1,0 +1,15 @@
+{
+  "visible_version": "v0.8.1",
+  "economic_objective_modes": [
+    "resource",
+    "balanced",
+    "economic"
+  ],
+  "before_after_structure_comparison": true,
+  "economic_fallback_without_verified_data": "resource-climate objective",
+  "climate_stress_test": true,
+  "leave_one_district_out_validation": true,
+  "empirical_prediction_uncertainty_90": true,
+  "spatial_allocation": "future development only; not implemented in current build",
+  "missing_market_data_imputation": false
+}

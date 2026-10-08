@@ -1,10 +1,14 @@
 # QŪNAR v0.8.1 - current full source package
 
-Run with:
+This is the current full-source QŪNAR v0.8.1 research-prototype build.
 
-```bash
-pip install -r requirements.txt
-streamlit run app.py
-```
+Main strengthened functions:
+- resource-climate / balanced / economic-priority farm-structure optimization;
+- optional current-structure input and before/after economic-resource comparison;
+- water-energy scenario savings and payback when investment is supplied;
+- evidence grading and explicit reference-data provenance;
+- user-defined climate/water stress tests;
+- crop-specific grouped validation, leave-one-district-out spatial stress testing and empirical prediction-uncertainty bands;
+- within-field crop placement is not implemented in the current build; it is reserved for future development when field-level spatial evidence is available.
 
-Important methodological rule: values calculated from reference inputs are scenario estimates, not observed farm values. Missing market prices, variable costs and technology investment are not automatically invented.
+See `MODEL_IMPROVEMENTS_v0_8_1.md` and `ECONOMIC_REFERENCE_DATA_NOTE_v0_8_1.md` for methodological limits.

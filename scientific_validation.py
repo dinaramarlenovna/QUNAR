@@ -119,6 +119,66 @@ def expanding_five_year_windows(df):
             windows.append(res)
     return windows
 
+
+
+def leave_one_district_out_validation(df):
+    """Spatial transferability test: every district is held out once.
+
+    This is intentionally stricter than the primary GroupKFold-by-year validation.
+    It asks whether the model transfers to a district whose observations were not
+    available during fitting.
+    """
+    rows = []
+    all_y, all_p = [], []
+    for district in sorted(df['District'].dropna().astype(str).unique()):
+        train = df[df['District'].astype(str) != district].copy()
+        test = df[df['District'].astype(str) == district].copy()
+        if train.empty or test.empty:
+            continue
+        model = make_model(n_estimators=250)
+        model.fit(train[CAT + NUM], train[TARGET])
+        pred = model.predict(test[CAT + NUM])
+        m = metrics(test[TARGET], pred)
+        rows.append({'District': district, 'N': int(len(test)), **m})
+        all_y.extend(test[TARGET].astype(float).tolist())
+        all_p.extend(map(float, pred))
+    overall = metrics(np.asarray(all_y), np.asarray(all_p)) if all_y else {'MAE':None,'RMSE':None,'R2':None}
+    overall['N'] = int(len(all_y))
+    overall['districts'] = int(len(rows))
+    return overall, rows
+
+
+def residual_prediction_intervals(df, pred, coverage=0.90):
+    """Empirical out-of-sample residual intervals by crop.
+
+    These are uncertainty bands based on grouped out-of-sample residuals, not formal
+    parametric confidence intervals. They are packaged for transparent UI/reporting.
+    """
+    tmp = df[['Crop', TARGET]].copy()
+    tmp['pred'] = np.asarray(pred, float)
+    tmp['abs_error'] = (tmp[TARGET] - tmp['pred']).abs()
+    q = float(coverage)
+    rows = {}
+    for crop, g in tmp.groupby('Crop'):
+        half = float(g['abs_error'].quantile(q))
+        empirical = float((g['abs_error'] <= half + 1e-12).mean())
+        rows[str(crop)] = {
+            'N': int(len(g)),
+            'coverage_target': q,
+            'half_width_centners_ha': half,
+            'empirical_coverage': empirical,
+            'method': 'absolute grouped-OOS residual quantile',
+        }
+    all_half = float(tmp['abs_error'].quantile(q))
+    return {
+        'coverage_target': q,
+        'overall_half_width_centners_ha': all_half,
+        'overall_empirical_coverage': float((tmp['abs_error'] <= all_half + 1e-12).mean()),
+        'by_crop': rows,
+        'interpretation': 'empirical prediction-uncertainty band; not a parametric confidence interval',
+    }
+
+
 def main():
     df = load_core_data()
     X = df[CAT + NUM]
@@ -135,6 +195,10 @@ def main():
     tmp['pred'] = pred
     for crop, g in tmp.groupby('Crop'):
         per_crop[crop] = {'N': int(len(g)), **metrics(g[TARGET], g['pred'])}
+
+    # Spatial transferability and empirical prediction-uncertainty diagnostics.
+    lodo_overall, lodo_by_district = leave_one_district_out_validation(df)
+    prediction_intervals = residual_prediction_intervals(df, pred, coverage=0.90)
 
     # Production-equivalent fit on the complete validated historical panel.
     model = make_model(n_estimators=350)
@@ -186,6 +250,12 @@ def main():
         'ten_year_stress_holdout': stress,
         'baseline_groupkfold': cv_base,
         'per_crop_groupkfold': per_crop,
+        'leave_one_district_out': {
+            'overall': lodo_overall,
+            'by_district': lodo_by_district,
+            'interpretation': 'spatial transferability stress test; each district held out from training in turn',
+        },
+        'prediction_intervals_90': prediction_intervals,
         'hyperparameter_robustness': robust,
     }
     (ROOT / 'data' / 'scientific_validation.json').write_text(
@@ -217,6 +287,8 @@ def main():
     rows.append({'scheme': 'Training fit RF (reference only)', **train_metrics})
     pd.DataFrame(rows)[['scheme','MAE','RMSE','R2']].to_csv(ROOT / 'data' / 'model_metrics.csv', index=False)
     pd.DataFrame([{'Crop': k, **v} for k, v in per_crop.items()]).to_csv(ROOT / 'data' / 'model_metrics_by_crop.csv', index=False)
+    pd.DataFrame(lodo_by_district).to_csv(ROOT / 'data' / 'model_metrics_leave_one_district_out.csv', index=False)
+    pd.DataFrame([{'Crop': k, **v} for k, v in prediction_intervals['by_crop'].items()]).to_csv(ROOT / 'data' / 'prediction_intervals_by_crop.csv', index=False)
     return result
 
 
