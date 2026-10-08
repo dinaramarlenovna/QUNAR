@@ -1,7 +1,22 @@
+from pathlib import Path
+import csv
 
-DEFAULT_EF_KZ_KGCO2_PER_KWH = 0.6061  # IEA Emissions Factors 2025: Kazakhstan, 606.1 gCO2/kWh
-DEFAULT_ELECTRICITY_TARIFF_KZT_KWH = 45.9872  # editable reference scenario, not universal; user/provider tariff should replace it
-DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3 = 0.845  # editable reference scenario for canal water supply; not drinking/network water
+_REF_FILE = Path(__file__).resolve().parents[1] / "data" / "economic_reference_values.csv"
+
+def _reference_value(indicator: str, fallback: float) -> float:
+    try:
+        with _REF_FILE.open("r", encoding="utf-8", newline="") as fh:
+            for row in csv.DictReader(fh):
+                if row.get("indicator") == indicator:
+                    return float(row.get("value"))
+    except Exception:
+        pass
+    return float(fallback)
+
+
+DEFAULT_EF_KZ_KGCO2_PER_KWH = _reference_value("electricity_emission_factor", 0.6061)
+DEFAULT_ELECTRICITY_TARIFF_KZT_KWH = _reference_value("electricity_tariff", 45.9872)
+DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3 = _reference_value("irrigation_water_tariff", 0.845)
 DEFAULT_GREEN_SHARE_TARGET = 30.0
 DEFAULT_WATER_SAVING_TARGET = 20.0
 

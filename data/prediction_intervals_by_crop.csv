@@ -1,0 +1,7 @@
+Crop,N,coverage_target,half_width_centners_ha,empirical_coverage,method
+Corn,289,0.9,14.808592261904757,0.8996539792387543,absolute grouped-OOS residual quantile
+Cotton,181,0.9,7.829650297619057,0.9005524861878453,absolute grouped-OOS residual quantile
+Potato,290,0.9,56.6643319940476,0.9,absolute grouped-OOS residual quantile
+Rice,53,0.9,20.869850595238095,0.8867924528301887,absolute grouped-OOS residual quantile
+Sunflower,255,0.9,5.442703571428571,0.8980392156862745,absolute grouped-OOS residual quantile
+Wheat,294,0.9,7.946366774891773,0.8979591836734694,absolute grouped-OOS residual quantile

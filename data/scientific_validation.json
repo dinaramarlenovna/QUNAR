@@ -203,5 +203,187 @@
       "RMSE": 16.21030988720063,
       "R2": 0.9261688624848727
     }
-  ]
+  ],
+  "leave_one_district_out": {
+    "overall": {
+      "MAE": 12.886839365638238,
+      "RMSE": 22.34087490858698,
+      "R2": 0.8597647222580673,
+      "N": 1362,
+      "districts": 17
+    },
+    "by_district": [
+      {
+        "District": "Arys City",
+        "N": 100,
+        "MAE": 16.257056284722225,
+        "RMSE": 28.714836948699567,
+        "R2": 0.8057100287891186
+      },
+      {
+        "District": "Baydibek District",
+        "N": 109,
+        "MAE": 12.0464340207448,
+        "RMSE": 23.91530182174829,
+        "R2": 0.7802142040250623
+      },
+      {
+        "District": "Kazygurt District",
+        "N": 81,
+        "MAE": 6.348799028646245,
+        "RMSE": 8.750245615928044,
+        "R2": 0.9774344422702556
+      },
+      {
+        "District": "Keles District",
+        "N": 38,
+        "MAE": 13.857634584804813,
+        "RMSE": 23.765123929617825,
+        "R2": 0.9138550547961881
+      },
+      {
+        "District": "Kentau City",
+        "N": 94,
+        "MAE": 18.39322635645974,
+        "RMSE": 30.312801524021687,
+        "R2": 0.7279361327101628
+      },
+      {
+        "District": "Maktaaral District",
+        "N": 124,
+        "MAE": 14.937602971317439,
+        "RMSE": 22.355443588759098,
+        "R2": 0.7117035569444932
+      },
+      {
+        "District": "Ordabasy District",
+        "N": 110,
+        "MAE": 12.628622672340287,
+        "RMSE": 21.96712665314616,
+        "R2": 0.8874662953045815
+      },
+      {
+        "District": "Otyrar District",
+        "N": 11,
+        "MAE": 20.907230544077137,
+        "RMSE": 35.87989722193178,
+        "R2": -0.987389751497807
+      },
+      {
+        "District": "Sairam District",
+        "N": 90,
+        "MAE": 9.234773701799744,
+        "RMSE": 12.689595754750297,
+        "R2": 0.9592311434295058
+      },
+      {
+        "District": "Saryagash District",
+        "N": 105,
+        "MAE": 9.160694231000486,
+        "RMSE": 14.943400805857355,
+        "R2": 0.9556106871705341
+      },
+      {
+        "District": "Sauran District",
+        "N": 24,
+        "MAE": 32.45053341074434,
+        "RMSE": 53.25442469483766,
+        "R2": 0.6572190303158072
+      },
+      {
+        "District": "Shardara District",
+        "N": 128,
+        "MAE": 16.241328512524806,
+        "RMSE": 23.84296843339342,
+        "R2": 0.7943176127921797
+      },
+      {
+        "District": "Suzak District",
+        "N": 71,
+        "MAE": 16.762478576636582,
+        "RMSE": 24.270462187304872,
+        "R2": 0.7031424733095035
+      },
+      {
+        "District": "Tolebi District",
+        "N": 76,
+        "MAE": 7.404066377473039,
+        "RMSE": 14.291011104428698,
+        "R2": 0.9556509932919478
+      },
+      {
+        "District": "Tulkibas District",
+        "N": 87,
+        "MAE": 13.020787568314512,
+        "RMSE": 22.035631468866274,
+        "R2": 0.8634286615425361
+      },
+      {
+        "District": "Turkestan City",
+        "N": 77,
+        "MAE": 7.812005810071962,
+        "RMSE": 11.6674458433514,
+        "R2": 0.9545059121992863
+      },
+      {
+        "District": "Zhetysay District",
+        "N": 37,
+        "MAE": 6.325081067674816,
+        "RMSE": 8.863434578530445,
+        "R2": 0.9678253059076276
+      }
+    ],
+    "interpretation": "spatial transferability stress test; each district held out from training in turn",
+    "estimator_note": "80-tree RF used for spatial stress test to keep packaged validation reproducible"
+  },
+  "prediction_intervals_90": {
+    "coverage_target": 0.9,
+    "overall_half_width_centners_ha": 20.63212276785717,
+    "overall_empirical_coverage": 0.8994126284875184,
+    "by_crop": {
+      "Corn": {
+        "N": 289,
+        "coverage_target": 0.9,
+        "half_width_centners_ha": 14.808592261904757,
+        "empirical_coverage": 0.8996539792387543,
+        "method": "absolute grouped-OOS residual quantile"
+      },
+      "Cotton": {
+        "N": 181,
+        "coverage_target": 0.9,
+        "half_width_centners_ha": 7.829650297619057,
+        "empirical_coverage": 0.9005524861878453,
+        "method": "absolute grouped-OOS residual quantile"
+      },
+      "Potato": {
+        "N": 290,
+        "coverage_target": 0.9,
+        "half_width_centners_ha": 56.6643319940476,
+        "empirical_coverage": 0.9,
+        "method": "absolute grouped-OOS residual quantile"
+      },
+      "Rice": {
+        "N": 53,
+        "coverage_target": 0.9,
+        "half_width_centners_ha": 20.869850595238095,
+        "empirical_coverage": 0.8867924528301887,
+        "method": "absolute grouped-OOS residual quantile"
+      },
+      "Sunflower": {
+        "N": 255,
+        "coverage_target": 0.9,
+        "half_width_centners_ha": 5.442703571428571,
+        "empirical_coverage": 0.8980392156862745,
+        "method": "absolute grouped-OOS residual quantile"
+      },
+      "Wheat": {
+        "N": 294,
+        "coverage_target": 0.9,
+        "half_width_centners_ha": 7.946366774891773,
+        "empirical_coverage": 0.8979591836734694,
+        "method": "absolute grouped-OOS residual quantile"
+      }
+    },
+    "interpretation": "empirical prediction-uncertainty band; not a parametric confidence interval"
+  }
 }

@@ -88,6 +88,47 @@ def validation_for_crop(crop):
             }
     return validation_summary()
 
+
+
+@st.cache_data(show_spinner=False)
+def spatial_validation_summary():
+    f = DATA_DIR / "scientific_validation.json"
+    if not f.exists():
+        return None
+    data = json.loads(f.read_text(encoding="utf-8"))
+    block = data.get("leave_one_district_out", {})
+    overall = block.get("overall", {})
+    if not overall:
+        return None
+    return {
+        "mae": overall.get("MAE"),
+        "rmse": overall.get("RMSE"),
+        "r2": overall.get("R2"),
+        "n": overall.get("N"),
+        "districts": overall.get("districts"),
+        "cv": "Leave-one-district-out spatial transferability stress test",
+    }
+
+
+@st.cache_data(show_spinner=False)
+def prediction_interval_for_crop(crop, coverage=0.90):
+    f = DATA_DIR / "scientific_validation.json"
+    if not f.exists():
+        return None
+    data = json.loads(f.read_text(encoding="utf-8"))
+    block = data.get("prediction_intervals_90", {}) if abs(float(coverage)-0.90) < 1e-9 else {}
+    row = (block.get("by_crop", {}) or {}).get(str(crop))
+    if not row:
+        return None
+    return {
+        "coverage_target": float(row.get("coverage_target", coverage)),
+        "half_width_centners_ha": float(row.get("half_width_centners_ha")),
+        "empirical_coverage": float(row.get("empirical_coverage")),
+        "n": int(row.get("N", 0)),
+        "method": row.get("method", "empirical grouped-OOS residual quantile"),
+    }
+
+
 @st.cache_data(show_spinner=False)
 def _medians():
     return training_data().groupby(["District","Crop"])[FEATURES_NUM].median()
