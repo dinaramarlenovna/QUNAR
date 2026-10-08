@@ -1,5 +1,5 @@
 {
-  "version": "0.8.3-district-crop-2025",
+  "version": "0.8.1",
   "best_model": "Random Forest",
   "production_training_rows": 1362,
   "production_training_period": "2004-2025",
