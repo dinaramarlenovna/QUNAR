@@ -160,6 +160,7 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
     baseline_available = False
     baseline_margin_total = None
     baseline_water_m3 = None
+    baseline_water_feasible = None
     baseline_margin_per_m3 = None
     economic_gain_kzt = None
     economic_gain_pct = None
@@ -177,8 +178,11 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
                 if coverage > 0.999:
                     baseline_available = True
                     baseline_water_m3 = float((b['baseline_share'] * float(area_ha) * b['official_water_default_m3_ha']).sum())
-                    # Economic comparison is only valid if every baseline crop has user economics.
-                    if (b.loc[b['baseline_share'] > 0, 'economic_margin_kzt_ha'] > 0).all() and optimized_margin_total is not None:
+                    # Comparison of an achievable optimized plan against a baseline
+                    # that breaches the SAME water budget is not an achievable gain.
+                    baseline_water_feasible = (not available_water_m3 or baseline_water_m3 <= float(available_water_m3) + 1e-6)
+                    if (baseline_water_feasible and (b.loc[b['baseline_share'] > 0, 'economic_margin_kzt_ha'] > 0).all()
+                            and optimized_margin_total is not None):
                         baseline_margin_total = float((b['baseline_share'] * float(area_ha) * b['economic_margin_kzt_ha']).sum())
                         baseline_margin_per_m3 = baseline_margin_total / baseline_water_m3 if baseline_water_m3 > 0 else None
                         economic_gain_kzt = optimized_margin_total - baseline_margin_total
@@ -210,6 +214,7 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
         'optimized_contribution_margin_kzt': optimized_margin_total,
         'optimized_margin_per_m3_kzt': optimized_margin_per_m3,
         'baseline_available': baseline_available,
+        'baseline_water_feasible': baseline_water_feasible,
         'baseline_contribution_margin_kzt': baseline_margin_total,
         'baseline_water_m3': baseline_water_m3,
         'baseline_margin_per_m3_kzt': baseline_margin_per_m3,
