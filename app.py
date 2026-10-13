@@ -2389,7 +2389,7 @@ if submitted:
             e1.metric({"kk":"Жалпы түсім, тг/га","ru":"Валовая выручка, тг/га","en":"Gross revenue, KZT/ha"}[lang], f"{econ08['gross_revenue_kzt_ha']:,.0f}")
             e2.metric({"kk":"Ресурстық шығын, тг/га","ru":"Стоимость воды и энергии, тг/га","en":"Water + energy cost, KZT/ha"}[lang], f"{econ08['resource_cost_kzt_ha']:,.0f}")
             _margin = econ08.get('contribution_margin_kzt_ha')
-            e3.metric({"kk":"Салым маржасы, тг/га","ru":"Маржинальный результат, тг/га","en":"Contribution margin, KZT/ha"}[lang], f"{_margin:,.0f}" if _margin is not None else "—")
+            e3.metric({"kk":"Салым маржасы, тг/га","ru":"Отдельная маржа по введённому водопотреблению, тг/га","en":"Contribution margin, KZT/ha"}[lang], f"{_margin:,.0f}" if _margin is not None else "—")
             st.caption({
                 "kk":"Бұл нәтиже таза пайда емес: ол енгізілген баға, айнымалы шығындар, су және энергия шығындары негізіндегі сценарийлік маржа.",
                 "ru":"Этот результат не равен чистой прибыли: это сценарная маржа на основе введенной цены, переменных затрат и учтенных расходов на воду и энергию.",
@@ -2439,10 +2439,10 @@ if submitted:
                     extra_technology_cost_kzt_ha=irrigation_extra_cost,
                     yield_change_pct=irrigation_yield_change_pct,
                     evidence=irrigation_evidence,
-                    lang=lang)
+                    lang=lang, available_water_m3=available_water, reuse_pct=reuse)
                 report_payload["summary"].extend(_irrigation_rows)
             if _margin is not None:
-                report_payload["summary"].append({"label":{"kk":"Маржиналды нәтиже, тг/га","ru":"Маржинальный результат, тг/га","en":"Contribution margin, KZT/ha"}[lang],"value":f"{_margin:,.0f}"})
+                report_payload["summary"].append({"label":{"kk":"Маржиналды нәтиже, тг/га","ru":"Отдельная маржа по введённому водопотреблению, тг/га","en":"Contribution margin, KZT/ha"}[lang],"value":f"{_margin:,.0f}"})
             else:
                 st.info({"kk":"Маржаны есептеу үшін басқа айнымалы шығындарды енгізіңіз.","ru":"Для расчета маржинального результата введите прочие переменные затраты.","en":"Enter other variable costs to calculate the contribution margin."}[lang])
         else:
@@ -2567,7 +2567,13 @@ if submitted:
                 "effect_label":{"kk":"Күтілетін әсер","ru":"Ожидаемый эффект","en":"Expected effect"}[lang],
             })
         if "_irrigation_recommendation" in locals() and irrigation_compare_enabled:
-            report_payload["recommendations"].insert(0, _irrigation_recommendation)
+            # In a focused irrigation report generic crop/water observations can
+            # contradict the district-specific irrigation water balance.
+            report_payload["recommendations"] = [
+                _irrigation_recommendation,
+                *[r for r in report_payload["recommendations"]
+                  if r.get("title") == {"kk":"Экономикалық және климаттық басымдық", "ru":"Экономико-климатический приоритет", "en":"Economic and climate priority"}[lang]]
+            ]
         if "econ" in locals():
             cats=[]; vals=[]
             if econ.get("energy_saving_kzt") is not None:
