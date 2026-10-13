@@ -34,7 +34,7 @@ from core.location import browser_geolocation, reverse_geocode
 from core.admin_boundaries import detect_point, detect_polygon, boundary_geojson
 from core.optimizer import optimize_structure
 from core.optimization_guard import validate_allocation
-from core.clrem import check_crop_codes, label as extended_crop_label, method as crop_method, scenario_for_crop, scenario_for_district, observed_for_crop, observed_extra_for_district, decision_table, registry as clrem_registry
+from core.clrem import check_crop_codes, label as _original_crop_label, method as crop_method, scenario_for_crop, scenario_for_district, observed_for_crop, observed_extra_for_district, decision_table, registry as clrem_registry
 from core.reporting import build_excel_report, build_pdf_report, build_word_report, build_combined_excel_report, build_combined_pdf_report, build_combined_word_report
 from core.environment import environmental_diagnostics, diversification_metrics
 from core.livestock import (
@@ -42,6 +42,29 @@ from core.livestock import (
     livestock_resource_metrics, district_livestock_profile, district_species_history,
     district_species_benchmark, regional_productivity_benchmarks,
 )
+
+
+def extended_crop_label(code, lang='ru'):
+    """Resolve both crop codes and internal product IDs in the selected language."""
+    key = str(code)
+    reg = clrem_registry()
+    col = {'kk': 'KK', 'ru': 'RU', 'en': 'EN'}[lang]
+    matches = reg[reg['Code'].astype(str).eq(key) | reg['CLREM_product'].astype(str).eq(key)]
+    if not matches.empty:
+        value = matches.iloc[0][col]
+        if pd.notna(value) and str(value).strip():
+            return str(value)
+    return {'kk': 'Атауы қолжетімсіз', 'ru': 'Название недоступно', 'en': 'Name unavailable'}[lang]
+
+
+def localized_solver_status(status, lang):
+    labels = {
+        'infeasible_under_hard_constraints': ('Қатаң шектеулерге сәйкес шешім жоқ', 'Нет решения при заданных жестких ограничениях', 'No feasible allocation under the hard constraints'),
+        'infeasible_crop_count_or_cap': ('Дақыл саны немесе үлес шегі орындалмайды', 'Невыполнимые ограничения числа или доли культур', 'Infeasible crop-count or crop-share constraints'),
+        'unknown': ('Белгісіз', 'Неизвестно', 'Unknown'),
+    }
+    return labels.get(str(status), labels['unknown'])[{'kk': 0, 'ru': 1, 'en': 2}[lang]]
+
 
 GA_MEASUREMENT_ID = "G-B2WV23W45Y"
 GA_PAGE_LOCATION = "https://qunar-turkestan.streamlit.app"
@@ -171,10 +194,26 @@ def _default_widget_help(label):
         (("максимальн", "maximum share"), "Ограничивает долю одной культуры в оптимизированной структуре, снижая чрезмерную концентрацию.", "Caps the share of any one crop in the optimized structure to limit excessive concentration."),
         (("количество культур", "number of crops"), "Число культур, между которыми оптимизатор распределяет доступную площадь.", "Number of crops among which the optimizer allocates the available area."),
     ]
-    for keys, ru, en in rules:
+    kk_help = [
+        '1 кВт·сағ электр энергиясына сәйкес келетін CO₂e мөлшері. Операциялық көміртек жүктемесін есептеуге қолданылады.',
+        'Есеп жүргізілетін алқаптың немесе өндірістік аумақтың ауданы.',
+        'Бағаланатын өндірістік маусымға қолжетімді судың жалпы көлемі. Оңтайландыру кезінде модель осы су бюджетін дақылдар арасында бөледі.',
+        'Дақылдың толық өндірістік циклі бойынша нақты немесе күтілетін су тұтынуы. Белгісіз болса, 0 қалдырыңыз: нормативтік қажеттілік бөлек есептеледі.',
+        'Дақылдың толық өндірістік цикліне жұмсалатын энергия: топырақ дайындау, себу, суару, күтім және жинау. Белгісіз болса, 0 қалдырыңыз.',
+        'Шығындар мен ықтимал үнемді есептеуге арналған ресурс бірлігінің бағасы.',
+        'Сценарийдегі жаңартылатын көздерден алынатын электр энергиясының үлесі.',
+        'Өндірістік циклде қайта пайдаланылатын судың үлесі. Белгісіз 0 мәні қайта пайдаланудың нақты жоқтығын растамайды.',
+        'Ресурс үнемдейтін шешімнің өтелу мерзімін бағалауға арналған қосымша инвестиция.',
+        'Пестицидтердің нақты жүктемесі. Белгісіз дерек нөлмен алмастырылмайды.',
+        'Нақты бақылаумен немесе пайдаланушы дерегімен расталған топырақтың тұздану көрсеткіші.',
+        'Тозған жер немесе жайылым үлесі. Экологиялық диагностикада қолданылады.',
+        'Бір дақылдың оңтайландырылған құрылымдағы ең жоғары үлесін шектейді.',
+        'Қолжетімді аудан бөлінетін дақылдар саны.',
+    ]
+    for i, (keys, ru, en) in enumerate(rules):
         if any(k in text for k in keys):
-            return ru if lang_hint in ("ru", "kk") else en
-    return "Краткое пояснение параметра: выберите или введите значение, соответствующее вашему хозяйству или сценарию." if lang_hint in ("ru", "kk") else "Parameter help: choose or enter the value that best matches the farm or scenario."
+            return {"ru": ru, "kk": kk_help[i], "en": en}[lang_hint]
+    return {"kk": "Шаруашылыққа немесе сценарийге сәйкес мәнді таңдаңыз немесе енгізіңіз.", "ru": "Выберите или введите значение, соответствующее хозяйству или сценарию.", "en": "Choose or enter the value that best matches the farm or scenario."}[lang_hint]
 
 
 def q_number_input(label, *args, **kwargs):
@@ -1149,7 +1188,7 @@ with st.container():
             if irrigation_compare_enabled:
                 irrigation_target = st.selectbox({"kk":"Ұсынылатын суару","ru":"Предлагаемый тип орошения","en":"Proposed irrigation type"}[lang], ["furrow", "sprinkler", "drip", "mixed"], format_func=lambda x: {"furrow":"Бороздовой / Furrow", "sprinkler":"Дождевальный / Sprinkler", "drip":"Капельный / Drip", "mixed":"Смешанный / Mixed"}[x])
                 irrigation_yield_change_pct = st.number_input({"kk":"Суарудан өнімділік өзгерісі, %","ru":"Изменение урожайности от орошения, %","en":"Irrigation yield change, %"}[lang], min_value=-100.0, max_value=200.0, value=0.0, step=1.0)
-                irrigation_evidence = st.text_input({"kk":"Өнімділік әсерінің дереккөзі немесе жорамал","ru":"Источник или допущение для изменения урожайности","en":"Source or assumption for yield change"}[lang], value="", help="Specify study/experimental estimate, farm records, or explicitly label as an assumption")
+                irrigation_evidence = st.text_input({"kk":"Өнімділік әсерінің дереккөзі немесе жорамал","ru":"Источник или допущение для изменения урожайности","en":"Source or assumption for yield change"}[lang], value="", help={"kk":"Зерттеу, тәжірибе немесе шаруашылық дерегін көрсетіңіз; жорамал болса, оны нақты белгілеңіз.","ru":"Укажите исследование, эксперимент или данные хозяйства; явно обозначьте допущение.","en":"Specify study/experimental estimate, farm records, or explicitly label as an assumption"}[lang])
                 irrigation_extra_cost = st.number_input({"kk":"Жаңа технологияның қосымша маусымдық шығындары, тг/га","ru":"Дополнительные сезонные расходы на технологию, тг/га","en":"Extra seasonal technology costs, KZT/ha"}[lang], min_value=0.0, value=0.0, step=1000.0)
                 irrigation_extra_energy = st.number_input({"kk":"Энергия өзгерісі, кВт·сағ/га (+/-)","ru":"Изменение потребления энергии, кВт·ч/га (+/-)","en":"Change in energy use, kWh/ha (+/-)"}[lang], value=0.0, step=10.0)
                 st.caption({"kk":"Бұл ML болжамы емес: өнімділік өзгерісі тек құжатталған сценарий. Инвестиция және амортизация қосымша маусымдық шығындарда есептелмесе, маржаға кірмейді.","ru":"Это отдельный сценарий, не прогноз ML. Без указанного источника расчёт не выполняется. Капвложения и амортизация учитываются только если включены в дополнительные сезонные расходы.","en":"A separate what-if, not an ML prediction. Source/assumption is required. Capital costs and depreciation are included only if entered as seasonal costs."}[lang])
@@ -1227,13 +1266,13 @@ with st.container():
                 _reg = clrem_registry()[['CLREM_product', {'kk':'KK','ru':'RU','en':'EN'}[lang]]].dropna().drop_duplicates('CLREM_product')
                 _reg.columns=['product','display']
                 _econ_rows = _sc[['product']].drop_duplicates().merge(_reg,on='product',how='left')
-                _econ_rows['display']=_econ_rows['display'].fillna(_econ_rows['product'])
+                _econ_rows['display']=_econ_rows['product'].map(lambda x: extended_crop_label(x, lang))
                 # Blank is unreported; an explicitly entered zero is break-even.
                 _econ_rows['margin_kzt_ha']=float('nan')
                 _econ_rows['current_share_pct']=0.0
                 _edited = st.data_editor(_econ_rows[['product','display','margin_kzt_ha','current_share_pct']], hide_index=True, use_container_width=True,
                     disabled=['product','display'], column_config={
-                        'product': st.column_config.TextColumn('ID'),
+                        'product': None,
                         'display': st.column_config.TextColumn({"kk":"Дақыл","ru":"Культура","en":"Crop"}[lang]),
                         'margin_kzt_ha': st.column_config.NumberColumn({"kk":"Маржа, тг/га","ru":"Маржа, тг/га","en":"Contribution margin, KZT/ha"}[lang], min_value=-1000000000.0, step=10000.0, format='%.0f'),
                         'current_share_pct': st.column_config.NumberColumn({"kk":"Ағымдағы үлес, %","ru":"Текущая доля, %","en":"Current share, %"}[lang], min_value=0.0, max_value=100.0, step=1.0, format='%.1f')
@@ -1263,8 +1302,8 @@ if submitted:
         effective_water_used = float(water_default_info.m3_ha) * float(area_ha)
         water_input_source = "official_default"
         st.caption({
-            "kk":f"Су шығыны енгізілмегендіктен, есепте {water_default_info.m3_ha:,.0f} м³/га әдепкі мәні қолданылды. Дереккөзі: {water_source_label(water_default_info)}. Оны өз дерегіңізбен ауыстыруға болады.",
-            "ru":f"Расход воды не введен, поэтому используется редактируемое значение по умолчанию {water_default_info.m3_ha:,.0f} м³/га. Источник: {water_source_label(water_default_info)}.",
+            "kk":f"Су шығыны енгізілмегендіктен, есепте {water_default_info.m3_ha:,.0f} {UNITS['m3']}/га әдепкі мәні қолданылды. Дереккөзі: {water_source_label(water_default_info)}. Оны өз дерегіңізбен ауыстыруға болады.",
+            "ru":f"Расход воды не введен, поэтому используется редактируемое значение по умолчанию {water_default_info.m3_ha:,.0f} {UNITS['m3']}/га. Источник: {water_source_label(water_default_info)}.",
             "en":f"No farm water use was entered, so the editable default {water_default_info.m3_ha:,.0f} m³/ha is used. Source: {water_source_label(water_default_info)}."
         }[lang])
     else:
@@ -1745,7 +1784,7 @@ if submitted:
         if "energy_kwh_per_ha" in resource:
             st.metric(t["energy_use"], f"{resource['energy_kwh_per_ha']:,.0f} {UNITS['kwh_ha']}")
         elif "reference_pumping_energy_kwh_per_ha" in resource:
-            st.caption({"kk":f"Егер осы су көлемі сорғымен берілсе, анықтамалық энергия сценарийі ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} кВт·сағ/га (0,70509 кВт·сағ/м³). Бұл нақты тұтыну емес.","ru":f"Если весь этот объем подается насосом, справочный энергетический сценарий ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} кВт·ч/га (0,70509 кВт·ч/м³). Это не фактическое энергопотребление хозяйства.","en":f"If the full water volume is pumped, the reference energy scenario is ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} kWh/ha (0.70509 kWh/m³). This is not observed farm energy use."}[lang])
+            st.caption({"kk":f"Егер осы су көлемі сорғымен берілсе, анықтамалық энергия сценарийі ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} кВт·сағ/га (0,70509 кВт·сағ/{UNITS['m3']}). Бұл нақты тұтыну емес.","ru":f"Если весь этот объем подается насосом, справочный энергетический сценарий ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} кВт·ч/га (0,70509 кВт·ч/{UNITS['m3']}). Это не фактическое энергопотребление хозяйства.","en":f"If the full water volume is pumped, the reference energy scenario is ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} kWh/ha (0.70509 kWh/m³). This is not observed farm energy use."}[lang])
         if "operational_co2e_kg_per_ha" in resource: st.metric(t["co2"], f"{resource['operational_co2e_kg_per_ha']:,.1f} {UNITS['co2_kg_ha']}")
         econ = economic_climate_effect(energy_kwh=energy, freshwater_m3=resource.get("farm_freshwater_m3"), electricity_tariff=electricity_tariff, water_tariff=water_tariff, emission_factor=ef, current_solar_share=current_solar, target_solar_share=target_solar, water_saving_target=water_saving_target)
         if user_level != "farmer":
@@ -1842,8 +1881,8 @@ if submitted:
 
         if "farm_water_m3_per_ha" in resource:
             x1, x2 = st.columns(2)
-            x1.metric(t["water_use"], f"{resource['farm_water_m3_per_ha']:,.0f} м³/га" if lang != "en" else f"{resource['farm_water_m3_per_ha']:,.0f} m³/ha")
-            x2.metric(t["freshwater"], f"{resource['farm_freshwater_m3']:,.0f} м³" if lang != "en" else f"{resource['farm_freshwater_m3']:,.0f} {UNITS['m3']}")
+            x1.metric(t["water_use"], f"{resource['farm_water_m3_per_ha']:,.0f} {UNITS['m3']}/га" if lang != "en" else f"{resource['farm_water_m3_per_ha']:,.0f} m³/ha")
+            x2.metric(t["freshwater"], f"{resource['farm_freshwater_m3']:,.0f} {UNITS['m3']}" if lang != "en" else f"{resource['farm_freshwater_m3']:,.0f} {UNITS['m3']}")
 
         if "energy_kwh_per_ha" in resource:
             st.metric(t["energy_use"], f"{resource['energy_kwh_per_ha']:,.0f} кВт·ч/га" if lang != "en" else f"{resource['energy_kwh_per_ha']:,.0f} kWh/ha")
@@ -1868,11 +1907,11 @@ if submitted:
             ec1, ec2, ec3, ec4 = st.columns(4)
             ec1.metric(t["grid_energy"], f"{econ['current_grid_energy_kwh']:,.0f} кВт·ч" if lang != "en" else f"{econ['current_grid_energy_kwh']:,.0f} kWh")
             ec2.metric(t["co2_calc"], f"{econ['current_co2_kg']/1000:,.2f} т CO₂" if lang != "en" else f"{econ['current_co2_kg']/1000:,.2f} t CO₂")
-            ec3.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['current_energy_cost_kzt']:,.0f} KZT")
-            ec4.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['current_water_cost_kzt']:,.0f} KZT")
+            ec3.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}")
+            ec4.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}")
             wc1, wc2, wc3, wc4 = st.columns(4)
-            wc1.metric(t["green_saving"], f"{econ['energy_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['energy_saving_kzt']:,.0f} KZT")
-            wc2.metric(t["water_saving"], f"{econ['water_saving_m3']:,.0f} м³ / {econ['water_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['water_saving_m3']:,.0f} m³ / {econ['water_saving_kzt']:,.0f} KZT")
+            wc1.metric(t["green_saving"], f"{econ['energy_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['energy_saving_kzt']:,.0f} {UNITS['currency']}")
+            wc2.metric(t["water_saving"], f"{econ['water_saving_m3']:,.0f} {UNITS['m3']} / {econ['water_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['water_saving_m3']:,.0f} m³ / {econ['water_saving_kzt']:,.0f} {UNITS['currency']}")
             wc3.metric(t["co2_reduction"], f"{econ['co2_reduction_kg']/1000:,.2f} т CO₂" if lang != "en" else f"{econ['co2_reduction_kg']/1000:,.2f} t CO₂")
             wc4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}")
             pb = payback_years(investment, econ["total_saving_kzt"], seasons_per_year)
@@ -1901,8 +1940,8 @@ if submitted:
         if wapor_water:
             wc1, wc2, wc3 = st.columns(3)
             wc1.metric(t["wapor_aeti"], f"{wapor_result['aeti_mm']:.1f} мм" if lang != "en" else f"{wapor_result['aeti_mm']:.1f} mm")
-            wc2.metric(t["wapor_consumptive"], f"{wapor_water['consumptive_water_m3_per_ha']:,.0f} м³/га" if lang != "en" else f"{wapor_water['consumptive_water_m3_per_ha']:,.0f} m³/ha")
-            wc3.metric(t["wapor_wp"], f"{wapor_water['modelled_water_productivity_kg_m3']:.2f} кг/м³" if lang != "en" else f"{wapor_water['modelled_water_productivity_kg_m3']:.2f} kg/m³")
+            wc2.metric(t["wapor_consumptive"], f"{wapor_water['consumptive_water_m3_per_ha']:,.0f} {UNITS['m3']}/га" if lang != "en" else f"{wapor_water['consumptive_water_m3_per_ha']:,.0f} m³/ha")
+            wc3.metric(t["wapor_wp"], f"{wapor_water['modelled_water_productivity_kg_m3']:.2f} кг/{UNITS['m3']}" if lang != "en" else f"{wapor_water['modelled_water_productivity_kg_m3']:.2f} kg/m³")
             st.caption(t["wapor_note"])
             if wapor_pixels is not None and wapor_pixels <= 3:
                 st.warning(t["small_field_warning"])
@@ -1910,8 +1949,8 @@ if submitted:
         if mode_key == "mode1" and user_level == "farmer":
             st.markdown("### " + {"kk":"Ақша және климат әсері","ru":"Деньги и климатический эффект","en":"Money and climate effect"}[lang])
             c1,c2,c3=st.columns(3)
-            c1.metric({"kk":"Электр шығыны","ru":"Расходы на электроэнергию","en":"Electricity cost"}[lang],f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['current_energy_cost_kzt']:,.0f} KZT")
-            c2.metric({"kk":"Су шығыны","ru":"Стоимость воды","en":"Water cost"}[lang],f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['current_water_cost_kzt']:,.0f} KZT")
+            c1.metric({"kk":"Электр шығыны","ru":"Расходы на электроэнергию","en":"Electricity cost"}[lang],f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}")
+            c2.metric({"kk":"Су шығыны","ru":"Стоимость воды","en":"Water cost"}[lang],f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}")
             c3.metric({"kk":"Сценарийлік үнем","ru":"Потенциальная экономия","en":"Potential saving"}[lang],f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}")
 
         if mode_key == "mode1":
@@ -1932,21 +1971,21 @@ if submitted:
             sc1.metric({"kk":"Бастапқы су","ru":"Исходная вода","en":"Baseline water"}[lang], f"{smart['before_water_m3']:,.0f} {UNITS['m3']}")
             sc2.metric({"kk":"Сценарийден кейін","ru":"После сценария","en":"After scenario"}[lang], f"{smart['after_water_m3']:,.0f} {UNITS['m3']}")
             sc3.metric({"kk":"Су үнемі","ru":"Экономия воды","en":"Water saving"}[lang], f"{smart['saved_water_m3']:,.0f} {UNITS['m3']} ({smart['saving_target_pct']:.0f}%)")
-            sc4.metric({"kk":"Ресурстық шығын үнемі","ru":"Экономия ресурсных затрат","en":"Resource-cost saving"}[lang], f"{smart['total_saving_kzt']:,.0f} KZT")
+            sc4.metric({"kk":"Ресурстық шығын үнемі","ru":"Экономия ресурсных затрат","en":"Resource-cost saving"}[lang], f"{smart['total_saving_kzt']:,.0f} {UNITS['currency']}")
             st.caption({"kk":f"Дереккөздер: су - {smart['water_source']}; энергия - {smart['energy_source']}; тариф - {smart['tariff_source']}.","ru":f"Источники: вода - {smart['water_source']}; энергия - {smart['energy_source']}; тариф - {smart['tariff_source']}.","en":f"Sources: water - {smart['water_source']}; energy - {smart['energy_source']}; tariff - {smart['tariff_source']}."}[lang])
             e1,e2=st.columns(2)
             e1.metric({"kk":"Энергия, бастапқы","ru":"Энергия, исходно","en":"Energy, baseline"}[lang], f"{smart['before_energy_kwh']:,.0f} kWh")
             e2.metric({"kk":"Энергия, сценарий","ru":"Энергия, сценарий","en":"Energy, scenario"}[lang], f"{smart['after_energy_kwh']:,.0f} kWh")
             if smart['investment_used_kzt'] > 0:
                 i1,i2=st.columns(2)
-                i1.metric({"kk":"Сценарийлік инвестиция","ru":"Сценарная инвестиция","en":"Scenario investment"}[lang], f"{smart['investment_used_kzt']:,.0f} KZT")
+                i1.metric({"kk":"Сценарийлік инвестиция","ru":"Сценарная инвестиция","en":"Scenario investment"}[lang], f"{smart['investment_used_kzt']:,.0f} {UNITS['currency']}")
                 if smart.get("payback_years") is not None:
                     i2.metric({"kk":"Өтелу мерзімі","ru":"Окупаемость","en":"Payback"}[lang], f"{smart['payback_years']:.1f} " + {"kk":"жыл","ru":"года","en":"years"}[lang])
             else:
                 st.caption({"kk":"Технология құны енгізілмеген: инвестиция мен өтелу мерзімі автоматты түрде ойдан шығарылмайды.","ru":"Стоимость технологии не введена: инвестиция и срок окупаемости автоматически не подставляются.","en":"Technology cost was not entered: investment and payback are not auto-filled."}[lang])
             report_payload["summary"].extend([
                 {"label":{"kk":"Бөлек ресурс үнемдеу сценарийі: су","ru":"Отдельный сценарий ресурсосбережения: вода","en":"Separate resource-saving scenario: water"}[lang],"value":f"{smart['saved_water_m3']:,.0f} m³"},
-                {"label":{"kk":"Бөлек ресурс үнемдеу сценарийі: шығын үнемі","ru":"Отдельный сценарий ресурсосбережения: экономия затрат","en":"Separate resource-saving scenario: cost savings"}[lang],"value":f"{smart['total_saving_kzt']:,.0f} KZT"},
+                {"label":{"kk":"Бөлек ресурс үнемдеу сценарийі: шығын үнемі","ru":"Отдельный сценарий ресурсосбережения: экономия затрат","en":"Separate resource-saving scenario: cost savings"}[lang],"value":f"{smart['total_saving_kzt']:,.0f} {UNITS['currency']}"},
             ])
 
         analysis = build_analysis(
@@ -2092,8 +2131,8 @@ if submitted:
                     st.write("• "+{"kk":"Ағымдағы климат: ","ru":"Текущий климат: ","en":"Current climate: "}[lang]+"; ".join(climate_bits)+".")
             if user_level != "farmer":
                 st.caption({
-                    "kk":f"Су нормасы: {float(scenario['official_water_default_m3_ha']):,.0f} м³/га. Дерек сенімділігі: {float(scenario['Data_reliability_0_100']):.1f}/100.",
-                    "ru":f"Норматив воды: {float(scenario['official_water_default_m3_ha']):,.0f} м³/га. Надежность данных: {float(scenario['Data_reliability_0_100']):.1f}/100.",
+                    "kk":f"Су нормасы: {float(scenario['official_water_default_m3_ha']):,.0f} {UNITS['m3']}/га. Дерек сенімділігі: {float(scenario['Data_reliability_0_100']):.1f}/100.",
+                    "ru":f"Норматив воды: {float(scenario['official_water_default_m3_ha']):,.0f} {UNITS['m3']}/га. Надежность данных: {float(scenario['Data_reliability_0_100']):.1f}/100.",
                     "en":f"Water norm: {float(scenario['official_water_default_m3_ha']):,.0f} m³/ha. Data reliability: {float(scenario['Data_reliability_0_100']):.1f}/100."
                 }[lang])
         else:
@@ -2145,7 +2184,7 @@ if submitted:
         if not obs_ev.empty:
             st.markdown("#### " + {"kk":"2023 жылғы байқалған нарықтық дәлел","ru":"Наблюдаемое рыночное свидетельство 2023","en":"Observed 2023 market evidence"}[lang])
             r=obs_ev.iloc[0]
-            st.write({"kk":f"Ауыл шаруашылығы кооперативтері бойынша іске асыру: {r['volume_t']:,.1f} т; құны {r['value_thousand_kzt']:,.0f} мың тг. Бұл дерек QŪNAR рейтингіне тікелей кірмейді.","ru":f"По сельхозкооперативам: реализация {r['volume_t']:,.1f} т; стоимость {r['value_thousand_kzt']:,.0f} тыс. тг. Эти данные показаны как контекст и напрямую не входят в рейтинг QŪNAR.","en":f"Agricultural cooperatives: {r['volume_t']:,.1f} t realized; value {r['value_thousand_kzt']:,.0f} thousand KZT. This evidence is contextual and does not directly enter the QŪNAR ranking."}[lang])
+            st.write({"kk":f"Ауыл шаруашылығы кооперативтері бойынша іске асыру: {r['volume_t']:,.1f} т; құны {r['value_thousand_kzt']:,.0f} мың тг. Бұл дерек QŪNAR рейтингіне тікелей кірмейді.","ru":f"По сельхозкооперативам: реализация {r['volume_t']:,.1f} т; стоимость {r['value_thousand_kzt']:,.0f} тыс. тг. Эти данные показаны как контекст и напрямую не входят в рейтинг QŪNAR.","en":f"Agricultural cooperatives: {r['volume_t']:,.1f} t realized; value {r['value_thousand_kzt']:,.0f} thousand {UNITS['currency']}. This evidence is contextual and does not directly enter the QŪNAR ranking."}[lang])
 
         if user_level == "researcher":
             with st.expander({"kk":"Әдістеме және дереккөздер","ru":"Методика и источники","en":"Method and sources"}[lang]):
@@ -2303,7 +2342,11 @@ if submitted:
                         'en':'Crop count and maximum share are incompatible: capped shares cannot sum to 100%.'
                     }[lang])
             if opt:
-                st.caption(f"Solver: {opt.get('solver_status', 'unknown')}; minimum theoretical water for a single crop: {opt.get('minimum_uniform_water_m3','unknown')} m³")
+                st.caption({
+                    'kk': f"Шешім күйі: {localized_solver_status(opt.get('solver_status', 'unknown'), lang)}; бір дақыл үшін теориялық ең аз су: {opt.get('minimum_uniform_water_m3', '—')} {UNITS['m3']}",
+                    'ru': f"Статус решения: {localized_solver_status(opt.get('solver_status', 'unknown'), lang)}; минимальный теоретический объем воды для одной культуры: {opt.get('minimum_uniform_water_m3', '—')} {UNITS['m3']}",
+                    'en': f"Solver: {localized_solver_status(opt.get('solver_status', 'unknown'), lang)}; minimum theoretical water for a single crop: {opt.get('minimum_uniform_water_m3', '—')} m³",
+                }[lang])
         else:
             name_col={"kk":"KK","ru":"RU","en":"EN"}[lang]
             out=alloc[[name_col,"share","area_ha","QUNAR_score_0_100","Climate_score_0_100","Resource_efficiency_0_100","Data_reliability_0_100","official_water_default_m3_ha","modelled_water_m3"]].copy()
@@ -2340,9 +2383,9 @@ if submitted:
                 st.info(_structure_msg)
             if opt.get("economic_objective_active"):
                 em1,em2,em3=st.columns(3)
-                em1.metric({"kk":"Орташа экономикалық маржа","ru":"Средняя экономическая маржа","en":"Weighted economic margin"}[lang], f"{opt.get('weighted_economic_margin_kzt_ha',0):,.0f} KZT/ha")
+                em1.metric({"kk":"Орташа экономикалық маржа","ru":"Средняя экономическая маржа","en":"Weighted economic margin"}[lang], f"{opt.get('weighted_economic_margin_kzt_ha',0):,.0f} {UNITS['currency']}/{UNITS['ha']}")
                 em2.metric({"kk":"Экономикалық критерий салмағы","ru":"Вес экономического критерия","en":"Economic-objective weight"}[lang], f"{opt.get('economic_weight',0)*100:.0f}%")
-                em3.metric({"kk":"Оңтайландырылған маржа","ru":"Оптимизированная маржа","en":"Optimized contribution margin"}[lang], f"{opt.get('optimized_contribution_margin_kzt',0):,.0f} KZT")
+                em3.metric({"kk":"Оңтайландырылған маржа","ru":"Оптимизированная маржа","en":"Optimized contribution margin"}[lang], f"{opt.get('optimized_contribution_margin_kzt',0):,.0f} {UNITS['currency']}")
                 st.caption({"kk":"Экономикалық критерий оң және теріс енгізілген маржаларды салыстырады; жоқ деректерді толтырмайды.","ru":"Экономический критерий учитывает введённую положительную и отрицательную маржу; недостающие данные не подставляются.","en":"The economic criterion uses both positive and negative user-entered margins, without imputing missing data."}[lang])
                 st.warning({"kk":"Көрсетілген маржа - болжамды сценарийлік көрсеткіш, нақты таза пайда емес. Ол әр дақыл бойынша шаруашылықтың нақты өнімділігіне, сату бағасына, өндірістік және суару шығындарына тәуелді. Расталмаған деректер болса, нәтижені кепілдендірілген табыс ретінде пайдаланбаңыз.","ru":"Маржа - ориентировочная сценарная оценка, не фактическая чистая прибыль. Она зависит от урожайности, цены реализации и производственных затрат конкретного хозяйства по каждой культуре, включая орошение. При неподтверждённых данных нельзя считать её гарантированным доходом.","en":"Contribution margin is an indicative scenario estimate, not observed net profit. It depends on farm-specific yields, selling prices and crop-level production costs, including irrigation. Unverified inputs cannot support guaranteed-income claims."}[lang])
                 if opt.get('baseline_status') == 'shares_do_not_sum_to_100':
@@ -2354,15 +2397,15 @@ if submitted:
                 if opt.get('baseline_available'):
                     st.markdown("#### " + {"kk":"Құрылымның тиімділігі: дейін / кейін","ru":"Эффект структуры: до / после","en":"Structure effect: before / after"}[lang])
                     _b1,_b2,_b3,_b4=st.columns(4)
-                    _b1.metric({"kk":"Маржа - дейін","ru":"Маржа - до","en":"Margin - before"}[lang], f"{opt.get('baseline_contribution_margin_kzt',0):,.0f} KZT" if opt.get('baseline_contribution_margin_kzt') is not None else "—")
-                    _b2.metric({"kk":"Маржа - кейін","ru":"Маржа - после","en":"Margin - after"}[lang], f"{opt.get('optimized_contribution_margin_kzt',0):,.0f} KZT")
+                    _b1.metric({"kk":"Маржа - дейін","ru":"Маржа - до","en":"Margin - before"}[lang], f"{opt.get('baseline_contribution_margin_kzt',0):,.0f} {UNITS['currency']}" if opt.get('baseline_contribution_margin_kzt') is not None else "—")
+                    _b2.metric({"kk":"Маржа - кейін","ru":"Маржа - после","en":"Margin - after"}[lang], f"{opt.get('optimized_contribution_margin_kzt',0):,.0f} {UNITS['currency']}")
                     _gain=opt.get('economic_gain_kzt')
                     _gain_pct=opt.get('economic_gain_pct')
-                    _b3.metric({"kk":"Экономикалық өзгеріс","ru":"Экономический эффект","en":"Economic change"}[lang], f"{_gain:,.0f} KZT" if _gain is not None else "—", f"{_gain_pct:+.1f}%" if _gain_pct is not None else None)
+                    _b3.metric({"kk":"Экономикалық өзгеріс","ru":"Экономический эффект","en":"Economic change"}[lang], f"{_gain:,.0f} {UNITS['currency']}" if _gain is not None else "—", f"{_gain_pct:+.1f}%" if _gain_pct is not None else None)
                     _wch=opt.get('water_change_m3'); _wchp=opt.get('water_change_pct')
                     _b4.metric({"kk":"Су қажеттілігінің өзгеруі","ru":"Изменение потребности в воде","en":"Water-demand change"}[lang], f"{_wch:,.0f} m³" if _wch is not None else "—", f"{_wchp:+.1f}%" if _wchp is not None else None)
                     if opt.get('baseline_margin_per_m3_kzt') is not None and opt.get('optimized_margin_per_m3_kzt') is not None:
-                        st.caption({"kk":f"1 м³ суға маржа: дейін {opt['baseline_margin_per_m3_kzt']:.2f} тг/м³, кейін {opt['optimized_margin_per_m3_kzt']:.2f} тг/м³.","ru":f"Маржа на 1 м³ воды: до {opt['baseline_margin_per_m3_kzt']:.2f} тг/м³, после {opt['optimized_margin_per_m3_kzt']:.2f} тг/м³.","en":f"Contribution margin per 1 m³ of water: before {opt['baseline_margin_per_m3_kzt']:.2f} KZT/m³, after {opt['optimized_margin_per_m3_kzt']:.2f} KZT/m³."}[lang])
+                        st.caption({"kk":f"1 {UNITS['m3']} суға маржа: дейін {opt['baseline_margin_per_m3_kzt']:.2f} тг/{UNITS['m3']}, кейін {opt['optimized_margin_per_m3_kzt']:.2f} тг/{UNITS['m3']}.","ru":f"Маржа на 1 {UNITS['m3']} воды: до {opt['baseline_margin_per_m3_kzt']:.2f} тг/{UNITS['m3']}, после {opt['optimized_margin_per_m3_kzt']:.2f} тг/{UNITS['m3']}.","en":f"Contribution margin per 1 m³ of water: before {opt['baseline_margin_per_m3_kzt']:.2f} {UNITS['currency']}/m³, after {opt['optimized_margin_per_m3_kzt']:.2f} {UNITS['currency']}/m³."}[lang])
             elif opt.get('economic_objective_requested') in ('balanced','economic'):
                 st.warning({"kk":"Экономикалық режим сұралды, бірақ кемінде екі дақыл бойынша маржа енгізілмеген. Сондықтан QŪNAR ресурс-климаттық мақсатқа қауіпсіз түрде қайтты.","ru":"Экономический режим выбран, но маржа введена менее чем для двух культур. QŪNAR безопасно вернулся к ресурсно-климатической целевой функции.","en":"An economic mode was requested, but margins were supplied for fewer than two crops. QŪNAR safely fell back to the resource-climate objective."}[lang])
 
@@ -2374,13 +2417,13 @@ if submitted:
                 }[lang])
             st.markdown("#### " + {"kk":"Сценарийді түсіндіру","ru":"Интерпретация сценария","en":"Scenario interpretation"}[lang])
             st.write({
-                "kk":f"Ұсынылған құрылымның орташа су нормасы {opt['weighted_water_m3_ha']:,.0f} м³/га, жалпы есептік қажеттілік {opt['modelled_total_water_m3']:,.0f} м³.",
-                "ru":f"Средняя норма воды в рекомендуемой структуре {opt['weighted_water_m3_ha']:,.0f} м³/га, общая расчетная потребность {opt['modelled_total_water_m3']:,.0f} м³.",
+                "kk":f"Ұсынылған құрылымның орташа су нормасы {opt['weighted_water_m3_ha']:,.0f} {UNITS['m3']}/га, жалпы есептік қажеттілік {opt['modelled_total_water_m3']:,.0f} {UNITS['m3']}.",
+                "ru":f"Средняя норма воды в рекомендуемой структуре {opt['weighted_water_m3_ha']:,.0f} {UNITS['m3']}/га, общая расчетная потребность {opt['modelled_total_water_m3']:,.0f} {UNITS['m3']}.",
                 "en":f"The recommended structure averages {opt['weighted_water_m3_ha']:,.0f} m³/ha, with total modelled demand of {opt['modelled_total_water_m3']:,.0f} m³."
             }[lang])
             if _scenario_available_water > 0:
                 if opt.get("water_feasible"):
-                    st.success({"kk":f"Су шектеуі орындалды: {opt['modelled_total_water_m3']:,.0f} м³ ≤ {_scenario_available_water:,.0f} м³.","ru":f"Ограничение по воде соблюдено: {opt['modelled_total_water_m3']:,.0f} м³ ≤ {_scenario_available_water:,.0f} м³.","en":f"Water constraint satisfied: {opt['modelled_total_water_m3']:,.0f} m³ ≤ {_scenario_available_water:,.0f} m³."}[lang])
+                    st.success({"kk":f"Су шектеуі орындалды: {opt['modelled_total_water_m3']:,.0f} {UNITS['m3']} ≤ {_scenario_available_water:,.0f} {UNITS['m3']}.","ru":f"Ограничение по воде соблюдено: {opt['modelled_total_water_m3']:,.0f} {UNITS['m3']} ≤ {_scenario_available_water:,.0f} {UNITS['m3']}.","en":f"Water constraint satisfied: {opt['modelled_total_water_m3']:,.0f} m³ ≤ {_scenario_available_water:,.0f} m³."}[lang])
                 else:
                     st.error({"kk":"Берілген су көлемімен таңдалған дақыл саны/үлес шектеулері шеңберінде толық орындалатын құрылым табылмады.","ru":"При указанном объеме воды не найдено полностью выполнимой структуры при текущем числе культур и ограничениях долей.","en":"No fully feasible structure was found under the entered water volume and current crop/share constraints."}[lang])
             else:
@@ -2388,7 +2431,7 @@ if submitted:
             if user_level == "researcher":
                 with st.expander({"kk":"Оңтайландыру әдістемесі","ru":"Методика оптимизации","en":"Optimization method"}[lang]):
                     st.write({
-                        "kk":f"Алдымен климат пен су жүктемесі бойынша Парето басымдығына түспейтін нұсқалар анықталады. Одан кейін таңдалған басымдық салмақтары бойынша жиынтық пайдалылық есептеліп, бір дақыл үлесі {optimization_max_share*100:.0f}% шегінен аспайтындай етіп аудан бөлінеді. Су жүктемесі ресми немесе дерек болмаған жағдайда ашық белгіленген есептік м³/га нормаларына негізделеді; нарықтық бағаның жанама көрсеткіші қолданылмайды.",
+                        "kk":f"Алдымен климат пен су жүктемесі бойынша Парето басымдығына түспейтін нұсқалар анықталады. Одан кейін таңдалған басымдық салмақтары бойынша жиынтық пайдалылық есептеліп, бір дақыл үлесі {optimization_max_share*100:.0f}% шегінен аспайтындай етіп аудан бөлінеді. Су жүктемесі ресми немесе дерек болмаған жағдайда ашық белгіленген есептік {UNITS['m3']}/га нормаларына негізделеді; нарықтық бағаның жанама көрсеткіші қолданылмайды.",
                         "ru":f"Структура решается как задача линейного программирования: максимизируется ресурсно-климатическая полезность при равенстве суммарной площади, ограничении доли одной культуры не выше {optimization_max_share*100:.0f}% и, при заданном объеме воды, жестком водном ограничении. Уверенность в данных не входит в целевую функцию. Косвенный рыночный показатель цены исключен. Если включена экономическая цель и пользователь ввел маржу по культурам, ресурсно-климатическая полезность объединяется с нормированным экономическим критерием; при отсутствии таких данных экономическая часть не подставляется.",
                         "en":f"First, Pareto non-dominated options are identified across climate, water efficiency and evidence reliability. Utility is then computed with the selected weights and land is allocated with a single-crop cap of {optimization_max_share*100:.0f}%. Water pressure uses official/explicitly labelled fallback m³/ha norms; the market-price proxy is excluded. If the economic objective is enabled and user-entered crop margins are available, resource-climate utility is combined with a normalized economic criterion; otherwise no economic values are imputed."
                     }[lang])
@@ -2605,8 +2648,8 @@ if submitted:
             report_payload["recommendations"].insert(0, {
                 "title":{"kk":"Экономикалық және климаттық басымдық","ru":"Экономико-климатический приоритет","en":"Economic and climate priority"}[lang],
                 "text":{"kk":"Суару өзгерісінен бөлек жасыл энергия мен жалпы ресурс үнемдеу сценарийін қарастыруға болады. Екі нәтиженің үнемін қосуға болмайды.","ru":"Отдельно от смены полива можно рассмотреть сценарий зелёной энергии и общего ресурсосбережения. Его экономию нельзя прибавлять к результату смены полива.","en":"Separately from the irrigation switch, consider the green-energy and general resource-saving scenario. Do not add its savings to the irrigation outcome."}[lang],
-                "evidence":{"kk":f"Ағымдағы параметрлерде маусымдық әлеуетті үнем шамамен {econ['total_saving_kzt']:,.0f} тг: электр энергиясынан {econ.get('energy_saving_kzt',0):,.0f} тг және судан {econ.get('water_saving_kzt',0):,.0f} тг.","ru":f"При текущих параметрах потенциальная сезонная экономия составляет около {econ['total_saving_kzt']:,.0f} тг: {econ.get('energy_saving_kzt',0):,.0f} тг по электроэнергии и {econ.get('water_saving_kzt',0):,.0f} тг по воде.","en":f"Under the current inputs, potential seasonal savings are about {econ['total_saving_kzt']:,.0f} KZT: {econ.get('energy_saving_kzt',0):,.0f} KZT from electricity and {econ.get('water_saving_kzt',0):,.0f} KZT from water."}[lang],
-                "effect":{"kk":f"Электр энергиясынан CO₂ төмендеуі шамамен {econ.get('co2_reduction_kg',0)/1000:.2f} т CO₂e және су үнемі {econ.get('water_saving_m3',0):,.0f} м³ болуы мүмкін. Бұл сценарийлік бағалау, нақты инвестициялық шешім алдында тарифтер мен жабдық құнын нақтылау керек.","ru":f"Потенциальное снижение выбросов от электроэнергии - около {econ.get('co2_reduction_kg',0)/1000:.2f} т CO₂e, экономия воды - {econ.get('water_saving_m3',0):,.0f} м³. Это сценарная оценка, поэтому перед инвестиционным решением следует уточнить тарифы и стоимость оборудования.","en":f"Potential electricity-related reduction is about {econ.get('co2_reduction_kg',0)/1000:.2f} t CO₂e and water saving {econ.get('water_saving_m3',0):,.0f} m³. This is a scenario estimate, so tariffs and equipment costs should be verified before investment."}[lang],
+                "evidence":{"kk":f"Ағымдағы параметрлерде маусымдық әлеуетті үнем шамамен {econ['total_saving_kzt']:,.0f} тг: электр энергиясынан {econ.get('energy_saving_kzt',0):,.0f} тг және судан {econ.get('water_saving_kzt',0):,.0f} тг.","ru":f"При текущих параметрах потенциальная сезонная экономия составляет около {econ['total_saving_kzt']:,.0f} тг: {econ.get('energy_saving_kzt',0):,.0f} тг по электроэнергии и {econ.get('water_saving_kzt',0):,.0f} тг по воде.","en":f"Under the current inputs, potential seasonal savings are about {econ['total_saving_kzt']:,.0f} {UNITS['currency']}: {econ.get('energy_saving_kzt',0):,.0f} {UNITS['currency']} from electricity and {econ.get('water_saving_kzt',0):,.0f} {UNITS['currency']} from water."}[lang],
+                "effect":{"kk":f"Электр энергиясынан CO₂ төмендеуі шамамен {econ.get('co2_reduction_kg',0)/1000:.2f} т CO₂e және су үнемі {econ.get('water_saving_m3',0):,.0f} {UNITS['m3']} болуы мүмкін. Бұл сценарийлік бағалау, нақты инвестициялық шешім алдында тарифтер мен жабдық құнын нақтылау керек.","ru":f"Потенциальное снижение выбросов от электроэнергии - около {econ.get('co2_reduction_kg',0)/1000:.2f} т CO₂e, экономия воды - {econ.get('water_saving_m3',0):,.0f} {UNITS['m3']}. Это сценарная оценка, поэтому перед инвестиционным решением следует уточнить тарифы и стоимость оборудования.","en":f"Potential electricity-related reduction is about {econ.get('co2_reduction_kg',0)/1000:.2f} t CO₂e and water saving {econ.get('water_saving_m3',0):,.0f} m³. This is a scenario estimate, so tariffs and equipment costs should be verified before investment."}[lang],
                 "evidence_label":{"kk":"Сандық негіздеме","ru":"Количественное основание","en":"Quantitative evidence"}[lang],
                 "effect_label":{"kk":"Күтілетін әсер","ru":"Ожидаемый эффект","en":"Expected effect"}[lang],
             })
@@ -2669,10 +2712,24 @@ if submitted:
             'kk': ('Ресурс-климаттық басымдық', 'Экономикалық мақсат режимі', 'Экономикалық критерий салмағы, %', 'Дақыл үлесінің шегі, %', 'Дақыл саны', 'Қолжетімді судың өзгерісі, %'),
             'en': ('Resource-climate priority', 'Economic objective mode', 'Economic objective weight, %', 'Maximum crop share, %', 'Number of crops', 'Available-water scenario change, %'),
         }[lang]
-        _params = [optimization_profile, optimization_objective_mode,
-                   f'{opt.get("economic_weight", 0)*100:.0f}' if opt.get('economic_objective_active') else '0',
+        _profile_label = {
+            'balanced': {'kk':'Теңгерімді','ru':'Сбалансированный','en':'Balanced'},
+            'climate': {'kk':'Климаттық тұрақтылық','ru':'Климатическая устойчивость','en':'Climate resilience'},
+            'resource': {'kk':'Ресурс үнемдеу','ru':'Ресурсосбережение','en':'Resource saving'},
+        }[optimization_profile][lang]
+        _objective_label = {
+            'resource': {'kk':'Ресурс-климаттық тиімділік','ru':'Ресурсно-климатическая эффективность','en':'Resource-climate efficiency'},
+            'balanced': {'kk':'Теңгерімді: ресурс + экономика','ru':'Сбалансированный: ресурсы + экономика','en':'Balanced: resources + economics'},
+            'economic': {'kk':'Экономикалық нәтиже басымдығы','ru':'Приоритет экономического результата','en':'Economic-return priority'},
+        }[optimization_objective_mode][lang]
+        _params = [_profile_label, _objective_label,
+                   f'{optimization_economic_weight*100:.0f}' if optimization_use_economics else '0',
                    f'{optimization_max_share*100:.1f}',str(optimization_n_crops),f'{optimization_water_budget_change_pct:.1f}']
         report_payload['inputs'].extend([[name, val, t['source_user']] for name, val in zip(_opt_names, _params)])
+        report_payload['inputs'].extend([
+            [{'kk':'Температура өзгерісі, °C','ru':'Изменение температуры, °C','en':'Temperature change, °C'}[lang], f'{optimization_temp_delta_c:.1f}', t['source_user']],
+            [{'kk':'Жауын-шашын өзгерісі, %','ru':'Изменение осадков, %','en':'Precipitation change, %'}[lang], f'{optimization_precip_change_pct:.1f}', t['source_user']],
+        ])
         report_payload['inputs'].append([
             {'ru':'Проверка водного ограничения','kk':'Су лимитін тексеру','en':'Water constraint verification'}[lang],
             {'ru':'Проверено' if opt.get('water_feasible') is True else 'Не выполнено: лимит не введён' if opt.get('water_feasible') is None else 'Не соблюдено',
@@ -2699,7 +2756,7 @@ if submitted:
                 {"label":{"kk":"Климаттық тұрақтылық","ru":"Климатическая устойчивость","en":"Climate resilience"}[lang],"value":f"{opt['weighted_climate']:.1f}/100"},
                 {"label":{"kk":"Ресурс тиімділігі","ru":"Ресурсоэффективность","en":"Resource efficiency"}[lang],"value":f"{opt['weighted_resource']:.1f}/100"},
                 {"label":{"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang],"value":f"{opt['weighted_reliability']:.1f}/100"},
-                {"label":{"kk":"Есептік су қажеттілігі","ru":"Расчетная потребность в воде","en":"Modelled water demand"}[lang],"value":f"{opt['modelled_total_water_m3']:,.0f} м³"},
+                {"label":{"kk":"Есептік су қажеттілігі","ru":"Расчетная потребность в воде","en":"Modelled water demand"}[lang],"value":f"{opt['modelled_total_water_m3']:,.0f} {UNITS['m3']}"},
             ]
             _top_ix = pd.to_numeric(out.iloc[:,1], errors='coerce').idxmax()
             first_crop=str(out.loc[_top_ix, out.columns[0]]); first_share=float(out.loc[_top_ix, out.columns[1]])
@@ -2727,8 +2784,8 @@ if submitted:
                 _area = float(getattr(_r, 'area_ha'))
                 _water = float(getattr(_r, 'modelled_water_m3'))
                 _plan_lines.append({
-                    'ru':f'{_name}: {_area:.1f} га, {_water:,.0f} м³ воды',
-                    'kk':f'{_name}: {_area:.1f} га, {_water:,.0f} м³ су',
+                    'ru':f'{_name}: {_area:.1f} га, {_water:,.0f} {UNITS["m3"]} воды',
+                    'kk':f'{_name}: {_area:.1f} га, {_water:,.0f} {UNITS["m3"]} су',
                     'en':f'{_name}: {_area:.1f} ha, {_water:,.0f} m³ water',
                 }[lang])
             _gain = opt.get('economic_gain_kzt')
@@ -2742,15 +2799,15 @@ if submitted:
                 'title': ({'ru':'Предварительные расчётные доли (без водного лимита)','kk':'Алдын ала үлестер (су лимиті жоқ)','en':'Provisional allocation (no water budget)'} if _water_provisional else {'ru':'Практический план посевов','kk':'Егіс бойынша нақты жоспар','en':'Quantified crop allocation'})[lang],
                 'text': '; '.join(_plan_lines),
                 'evidence': {
-                    'ru': (f"Водопотребление: {opt['modelled_total_water_m3']:,.0f} из {opt['available_water_m3']:,.0f} м³. " if not _water_provisional else f"Потребность в воде: {opt['modelled_total_water_m3']:,.0f} м³; лимит не введён, обеспеченность не проверена. ")
+                    'ru': (f"Водопотребление: {opt['modelled_total_water_m3']:,.0f} из {opt['available_water_m3']:,.0f} {UNITS['m3']}. " if not _water_provisional else f"Потребность в воде: {opt['modelled_total_water_m3']:,.0f} {UNITS['m3']}; лимит не введён, обеспеченность не проверена. ")
                           + (f"Сценарная маржа: {_margin_after:,.0f} тг. " if _margin_after is not None else '')
                           + (f"Изменение относительно исходной структуры: {_gain:,.0f} тг." if _gain is not None else ''),
-                    'kk': (f"Су тұтынуы: {opt['modelled_total_water_m3']:,.0f} / {opt['available_water_m3']:,.0f} м³. " if not _water_provisional else f"Су қажеттілігі: {opt['modelled_total_water_m3']:,.0f} м³; қолжетімді су көлемі тексерілмеді. ")
+                    'kk': (f"Су тұтынуы: {opt['modelled_total_water_m3']:,.0f} / {opt['available_water_m3']:,.0f} {UNITS['m3']}. " if not _water_provisional else f"Су қажеттілігі: {opt['modelled_total_water_m3']:,.0f} {UNITS['m3']}; қолжетімді су көлемі тексерілмеді. ")
                           + (f"Сценарийлік маржа: {_margin_after:,.0f} тг. " if _margin_after is not None else '')
                           + (f"Бастапқы құрылыммен салыстырғандағы өзгеріс: {_gain:,.0f} тг." if _gain is not None else ''),
                     'en': (f"Water demand: {opt['modelled_total_water_m3']:,.0f} / {opt['available_water_m3']:,.0f} m³. " if not _water_provisional else f"Modelled water demand: {opt['modelled_total_water_m3']:,.0f} m³; budget not entered and feasibility unverified. ")
-                          + (f"Scenario margin: {_margin_after:,.0f} KZT. " if _margin_after is not None else '')
-                          + (f"Change relative to baseline: {_gain:,.0f} KZT." if _gain is not None else ''),
+                          + (f"Scenario margin: {_margin_after:,.0f} {UNITS['currency']}. " if _margin_after is not None else '')
+                          + (f"Change relative to baseline: {_gain:,.0f} {UNITS['currency']}." if _gain is not None else ''),
                 }[lang],
                 'effect': _source_remark,
                 'evidence_label': {'ru':'Основание','kk':'Негіздеме','en':'Evidence'}[lang],
@@ -2790,17 +2847,17 @@ if submitted:
             if _available > 0:
                 report_payload['summary'].append({
                     'label': {'ru':'Доступный водный лимит','kk':'Қолжетімді су лимиті','en':'Available water budget'}[lang],
-                    'value': f'{_available:,.0f} м³',
+                    'value': f'{_available:,.0f} {UNITS["m3"]}',
                 })
             if _candidate_water is not None:
                 report_payload['summary'].append({
                     'label': {'ru':'Потребность отклонённого варианта','kk':'Қабылданбаған нұсқаның су қажеттілігі','en':'Water required by rejected allocation'}[lang],
-                    'value': f'{_candidate_water:,.0f} м³',
+                    'value': f'{_candidate_water:,.0f} {UNITS["m3"]}',
                 })
             if _deficit is not None and _deficit > 0:
                 report_payload['summary'].append({
                     'label': {'ru':'Превышение водного лимита','kk':'Су лимитінің артуы','en':'Water-budget excess'}[lang],
-                    'value': f'{_deficit:,.0f} м³',
+                    'value': f'{_deficit:,.0f} {UNITS["m3"]}',
                 })
             if opt.get('solver_status') == 'infeasible_crop_count_or_cap' and opt.get('economic_objective_active') and int(opt.get('eligible_crop_count', 0)) < optimization_n_crops:
                 report_payload['summary'].append({
@@ -2817,9 +2874,9 @@ if submitted:
                     'en':'No allocation satisfies the current constraints. Do not implement this crop plan.',
                 }[lang],
                 'evidence': ({
-                    'ru':f'Водный лимит {_available:,.0f} м³; недопустимый кандидат требовал {_candidate_water:,.0f} м³.' if _candidate_water is not None else f'Водный лимит {_available:,.0f} м³. Решатель: {opt.get("solver_status","unknown")}.',
-                    'kk':f'Су лимиті {_available:,.0f} м³; қабылданбаған нұсқаға {_candidate_water:,.0f} м³ қажет.' if _candidate_water is not None else f'Су лимиті {_available:,.0f} м³. Есептеу мәртебесі: {opt.get("solver_status","unknown")}.',
-                    'en':f'Water budget {_available:,.0f} m³; rejected candidate required {_candidate_water:,.0f} m³.' if _candidate_water is not None else f'Water budget {_available:,.0f} m³. Solver: {opt.get("solver_status","unknown")}.',
+                    'ru':f'Водный лимит {_available:,.0f} {UNITS["m3"]}; недопустимый кандидат требовал {_candidate_water:,.0f} {UNITS["m3"]}.' if _candidate_water is not None else f'Водный лимит {_available:,.0f} {UNITS["m3"]}. Решатель: {localized_solver_status(opt.get("solver_status","unknown"), lang)}.',
+                    'kk':f'Су лимиті {_available:,.0f} {UNITS["m3"]}; қабылданбаған нұсқаға {_candidate_water:,.0f} {UNITS["m3"]} қажет.' if _candidate_water is not None else f'Су лимиті {_available:,.0f} {UNITS["m3"]}. Есептеу мәртебесі: {localized_solver_status(opt.get("solver_status","unknown"), lang)}.',
+                    'en':f'Water budget {_available:,.0f} m³; rejected candidate required {_candidate_water:,.0f} m³.' if _candidate_water is not None else f'Water budget {_available:,.0f} m³. Solver: {localized_solver_status(opt.get("solver_status","unknown"), lang)}.',
                 }[lang]),
                 'effect': {
                     'ru':'Сценарное изменение маржи не рассчитано: допустимое решение не найдено при заданных условиях.',
