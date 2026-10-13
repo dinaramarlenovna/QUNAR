@@ -3,6 +3,7 @@ from __future__ import annotations
 import numpy as np
 import pandas as pd
 from scipy.optimize import linprog
+from itertools import combinations
 
 from .clrem import scenario_for_district, registry
 
@@ -96,52 +97,49 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
         ew = 0.0
         effective_mode = 'resource'
 
-    cand = pool.sort_values('objective_utility', ascending=False).head(
-        max(2, min(int(n_crops), len(pool)))
-    ).copy()
-    if cand.empty:
-        return pd.DataFrame(), {}
-
-    n = len(cand)
-    requested = float(np.clip(max_share, .20, .80))
-    cap = max(requested, 1.0 / n)
-    min_share = min(0.03, 1.0 / n)
-    c = -cand['objective_utility'].to_numpy(float)
-    A_ub, b_ub = [], []
-    if available_water_m3 and area_ha > 0:
-        A_ub.append(cand['official_water_default_m3_ha'].to_numpy(float))
-        b_ub.append(float(available_water_m3) / float(area_ha))
-
-    bounds = [(min_share, cap) for _ in range(n)]
-    res = linprog(
-        c,
-        A_ub=np.asarray(A_ub) if A_ub else None,
-        b_ub=np.asarray(b_ub) if A_ub else None,
-        A_eq=np.ones((1, n)), b_eq=np.array([1.0]),
-        bounds=bounds, method='highs'
-    )
-    if res.success:
-        shares = np.asarray(res.x, float)
-        feasible = True
-        solver_status = 'optimal'
-    else:
-        bounds2 = [(0.0, cap) for _ in range(n)]
-        res2 = linprog(
-            c,
-            A_ub=np.asarray(A_ub) if A_ub else None,
-            b_ub=np.asarray(b_ub) if A_ub else None,
-            A_eq=np.ones((1, n)), b_eq=np.array([1.0]),
-            bounds=bounds2, method='highs'
-        )
-        if res2.success:
-            shares = np.asarray(res2.x, float)
-            feasible = True
-            solver_status = 'optimal_relaxed_min_share'
-        else:
-            shares = np.repeat(1.0 / n, n)
-            feasible = False
-            solver_status = 'infeasible_fallback_equal_shares'
-
+    # Search combinations rather than choosing the top-ranked crops first: a top-N
+    # prefilter can make a feasible water-constrained problem look infeasible.
+    target_n = max(2, int(n_crops))
+    requested = float(max_share)
+    if not (0 < requested <= 1):
+        return pd.DataFrame(), {'solver_status':'invalid_max_share', 'water_feasible':False}
+    if target_n > len(pool) or requested * target_n < 1 - 1e-9:
+        return pd.DataFrame(), {'solver_status':'infeasible_crop_count_or_cap', 'water_feasible':False,
+                                'required_max_share':1.0/target_n}
+    if area_ha <= 0 or available_water_m3 < 0:
+        return pd.DataFrame(), {'solver_status':'invalid_area_or_water', 'water_feasible':False}
+    # Only evaluated alternatives participate. Exact N means every selected crop
+    # receives at least 3%, and maximum crop share is never silently increased.
+    min_share = min(.03, 1.0 / target_n)
+    ranked = pool.sort_values('objective_utility', ascending=False)
+    # Bound runtime for very large registries; enumerate all alternatives if <= 18.
+    search_pool = ranked.head(18).copy()
+    best = None
+    for ids in combinations(range(len(search_pool)), target_n):
+        trial = search_pool.iloc[list(ids)].copy()
+        bounds = [(min_share, requested)] * target_n
+        water = trial['official_water_default_m3_ha'].to_numpy(float)
+        res = linprog(-trial['objective_utility'].to_numpy(float),
+                      A_ub=water.reshape(1,-1) if available_water_m3 else None,
+                      b_ub=[float(available_water_m3)/float(area_ha)] if available_water_m3 else None,
+                      A_eq=np.ones((1,target_n)), b_eq=[1.], bounds=bounds, method='highs')
+        if res.success:
+            score = float(np.dot(res.x, trial['objective_utility'].to_numpy(float)))
+            if best is None or score > best[0]:
+                best = (score, trial, np.asarray(res.x,float))
+    if best is None:
+        return pd.DataFrame(), {
+            'solver_status':'infeasible_under_hard_constraints',
+            'water_feasible':False, 'available_water_m3':float(available_water_m3),
+            'requested_max_share':requested, 'n_crops':target_n,
+            'tested_candidate_crops':len(search_pool),
+            'minimum_uniform_water_m3':float(area_ha * ranked['official_water_default_m3_ha'].min()),
+        }
+    _, cand, shares = best
+    cand = cand.copy()
+    feasible = True
+    solver_status = 'optimal_enumerated_candidates'
+    cap = requested
     cand['share'] = shares
     cand['area_ha'] = shares * float(area_ha)
     cand['modelled_water_m3'] = cand['official_water_default_m3_ha'] * cand['area_ha']
