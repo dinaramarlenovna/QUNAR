@@ -8,14 +8,16 @@ from itertools import combinations
 from .clrem import scenario_for_district, registry
 
 
-def _normalize_positive_mapping(values: dict | None) -> dict[str, float]:
+def _normalize_positive_mapping(values: dict | None, *, allow_negative: bool = False) -> dict[str, float]:
     out = {}
     for k, v in (values or {}).items():
         try:
             fv = float(v)
         except Exception:
             continue
-        if fv > 0:
+        # A negative margin is a legitimate loss, not a missing observation.
+        # For historical shares only strictly positive values are meaningful.
+        if np.isfinite(fv) and (allow_negative or fv > 0):
             out[str(k)] = fv
     return out
 
@@ -59,9 +61,9 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
     wc, ww = weights
     df['utility'] = wc * df['Climate_score_0_100'] + ww * df['Water_pressure_score_0_100']
 
-    margins = _normalize_positive_mapping(economic_margin_by_product)
+    margins = _normalize_positive_mapping(economic_margin_by_product, allow_negative=True)
     df['economic_margin_kzt_ha'] = df['product'].astype(str).map(margins).fillna(0.0)
-    df['economic_data_available'] = df['economic_margin_kzt_ha'] > 0
+    df['economic_data_available'] = df['product'].astype(str).isin(margins)
 
     requested_mode = str(objective_mode or 'resource').lower()
     if requested_mode not in {'resource', 'balanced', 'economic'}:
@@ -74,8 +76,8 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
         fallback_reason = 'insufficient_user_economic_data'
 
     if economic_active:
-        # Fair economic comparison requires economics for every alternative in the
-        # economic candidate set; missing alternatives are not assigned proxy prices.
+        # Compare all crops with explicitly supplied margins, including zero
+        # (break-even) and negative (loss); blanks alone mean unknown.
         pool = df[df['economic_data_available']].copy()
         vals = pool['economic_margin_kzt_ha'].to_numpy(float)
         lo, hi = float(vals.min()), float(vals.max())
@@ -105,7 +107,11 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
         return pd.DataFrame(), {'solver_status':'invalid_max_share', 'water_feasible':False}
     if target_n > len(pool) or requested * target_n < 1 - 1e-9:
         return pd.DataFrame(), {'solver_status':'infeasible_crop_count_or_cap', 'water_feasible':False,
-                                'required_max_share':1.0/target_n}
+                                'required_max_share':1.0/target_n,
+                                'economic_objective_requested':requested_mode,
+                                'economic_objective_active':economic_active,
+                                'economic_candidates_n':economic_candidates,
+                                'eligible_crop_count':len(pool),'requested_crop_count':target_n}
     if area_ha <= 0 or available_water_m3 < 0:
         return pd.DataFrame(), {'solver_status':'invalid_area_or_water', 'water_feasible':False}
     # Only evaluated alternatives participate. Exact N means every selected crop
@@ -157,6 +163,7 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
 
     # Optional before/after comparison based only on a user-entered current crop structure.
     baseline_map = _normalize_positive_mapping(baseline_share_by_product)
+    baseline_status = 'not_entered'
     baseline_available = False
     baseline_margin_total = None
     baseline_water_m3 = None
@@ -168,28 +175,38 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
     water_change_pct = None
     if baseline_map:
         total_input = sum(baseline_map.values())
-        if total_input > 0:
-            # Accept either fractions or percentages; normalize in all cases.
+        # A partial entry (e.g. 25%) is not silently reinterpreted as 100%.
+        # Accept percentages summing to 100, or fractions summing to one.
+        valid_total = abs(total_input - 100.0) <= 0.5 or abs(total_input - 1.0) <= 0.005
+        if not valid_total:
+            baseline_status = 'shares_do_not_sum_to_100'
+        else:
             norm = {k: v / total_input for k, v in baseline_map.items()}
             b = df[df['product'].astype(str).isin(norm)].copy()
-            if not b.empty:
-                b['baseline_share'] = b['product'].astype(str).map(norm).fillna(0.0)
-                coverage = float(b['baseline_share'].sum())
-                if coverage > 0.999:
-                    baseline_available = True
-                    baseline_water_m3 = float((b['baseline_share'] * float(area_ha) * b['official_water_default_m3_ha']).sum())
-                    # Comparison of an achievable optimized plan against a baseline
-                    # that breaches the SAME water budget is not an achievable gain.
-                    baseline_water_feasible = (not available_water_m3 or baseline_water_m3 <= float(available_water_m3) + 1e-6)
-                    if (baseline_water_feasible and (b.loc[b['baseline_share'] > 0, 'economic_margin_kzt_ha'] > 0).all()
-                            and optimized_margin_total is not None):
-                        baseline_margin_total = float((b['baseline_share'] * float(area_ha) * b['economic_margin_kzt_ha']).sum())
-                        baseline_margin_per_m3 = baseline_margin_total / baseline_water_m3 if baseline_water_m3 > 0 else None
-                        economic_gain_kzt = optimized_margin_total - baseline_margin_total
-                        economic_gain_pct = (economic_gain_kzt / abs(baseline_margin_total) * 100.0) if baseline_margin_total not in (0, None) else None
-                    optimized_water = float(cand['modelled_water_m3'].sum())
-                    water_change_m3 = optimized_water - baseline_water_m3
-                    water_change_pct = (water_change_m3 / baseline_water_m3 * 100.0) if baseline_water_m3 > 0 else None
+            b['baseline_share'] = b['product'].astype(str).map(norm).fillna(0.0)
+            coverage = float(b['baseline_share'].sum())
+            if coverage < 0.999:
+                baseline_status = 'unrecognized_baseline_crops'
+            else:
+                baseline_available = True
+                baseline_water_m3 = float((b['baseline_share'] * float(area_ha) * b['official_water_default_m3_ha']).sum())
+                budget_known = float(available_water_m3) > 0
+                baseline_water_feasible = (baseline_water_m3 <= float(available_water_m3) + 1e-6) if budget_known else None
+                if baseline_water_feasible is False:
+                    baseline_status = 'baseline_exceeds_water_limit'
+                elif baseline_water_feasible is None:
+                    baseline_status = 'water_budget_not_entered'
+                elif optimized_margin_total is None or not b['product'].astype(str).isin(margins).all():
+                    baseline_status = 'missing_baseline_crop_margins'
+                else:
+                    baseline_status = 'valid_comparison'
+                    baseline_margin_total = float((b['baseline_share'] * float(area_ha) * b['economic_margin_kzt_ha']).sum())
+                    baseline_margin_per_m3 = baseline_margin_total / baseline_water_m3 if baseline_water_m3 > 0 else None
+                    economic_gain_kzt = optimized_margin_total - baseline_margin_total
+                    economic_gain_pct = (economic_gain_kzt / abs(baseline_margin_total) * 100.0) if baseline_margin_total else None
+                optimized_water = float(cand['modelled_water_m3'].sum())
+                water_change_m3 = optimized_water - baseline_water_m3
+                water_change_pct = (water_change_m3 / baseline_water_m3 * 100.0) if baseline_water_m3 > 0 else None
 
     summary = {
         'weighted_qunar': float(np.average(cand['QUNAR_score_0_100'], weights=shares)),
@@ -199,7 +216,9 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
         'weighted_water_m3_ha': float(np.average(cand['official_water_default_m3_ha'], weights=shares)),
         'modelled_total_water_m3': float(cand['modelled_water_m3'].sum()),
         'available_water_m3': float(available_water_m3 or 0.0),
-        'water_feasible': bool(feasible and (not available_water_m3 or cand['modelled_water_m3'].sum() <= float(available_water_m3) + 1e-6)),
+        # None denotes unverified compliance when the water budget was not supplied.
+        'water_feasible': bool(feasible and cand['modelled_water_m3'].sum() <= float(available_water_m3) + 1e-6) if available_water_m3 > 0 else None,
+        'water_budget_verified': bool(available_water_m3 > 0),
         'profile': profile,
         'requested_max_share': requested,
         'effective_max_share': cap,
@@ -214,6 +233,7 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
         'optimized_contribution_margin_kzt': optimized_margin_total,
         'optimized_margin_per_m3_kzt': optimized_margin_per_m3,
         'baseline_available': baseline_available,
+        'baseline_status': baseline_status,
         'baseline_water_feasible': baseline_water_feasible,
         'baseline_contribution_margin_kzt': baseline_margin_total,
         'baseline_water_m3': baseline_water_m3,

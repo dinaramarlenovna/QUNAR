@@ -1228,20 +1228,22 @@ with st.container():
                 _reg.columns=['product','display']
                 _econ_rows = _sc[['product']].drop_duplicates().merge(_reg,on='product',how='left')
                 _econ_rows['display']=_econ_rows['display'].fillna(_econ_rows['product'])
-                _econ_rows['margin_kzt_ha']=0.0
+                # Blank is unreported; an explicitly entered zero is break-even.
+                _econ_rows['margin_kzt_ha']=float('nan')
                 _econ_rows['current_share_pct']=0.0
                 _edited = st.data_editor(_econ_rows[['product','display','margin_kzt_ha','current_share_pct']], hide_index=True, use_container_width=True,
                     disabled=['product','display'], column_config={
                         'product': st.column_config.TextColumn('ID'),
                         'display': st.column_config.TextColumn({"kk":"Дақыл","ru":"Культура","en":"Crop"}[lang]),
-                        'margin_kzt_ha': st.column_config.NumberColumn({"kk":"Маржа, тг/га","ru":"Маржа, тг/га","en":"Contribution margin, KZT/ha"}[lang], min_value=0.0, step=10000.0, format='%.0f'),
+                        'margin_kzt_ha': st.column_config.NumberColumn({"kk":"Маржа, тг/га","ru":"Маржа, тг/га","en":"Contribution margin, KZT/ha"}[lang], min_value=-1000000000.0, step=10000.0, format='%.0f'),
                         'current_share_pct': st.column_config.NumberColumn({"kk":"Ағымдағы үлес, %","ru":"Текущая доля, %","en":"Current share, %"}[lang], min_value=0.0, max_value=100.0, step=1.0, format='%.1f')
                     })
-                optimization_economic_margins={str(r['product']):float(r['margin_kzt_ha']) for _,r in _edited.iterrows() if float(r['margin_kzt_ha'] or 0)>0}
+                optimization_economic_margins={str(r['product']):float(r['margin_kzt_ha']) for _,r in _edited.iterrows() if pd.notna(r['margin_kzt_ha'])}
                 optimization_baseline_shares={str(r['product']):float(r['current_share_pct']) for _,r in _edited.iterrows() if float(r['current_share_pct'] or 0)>0}
                 _share_sum=sum(optimization_baseline_shares.values())
                 if _share_sum>0 and abs(_share_sum-100.0)>0.5:
-                    st.caption({"kk":f"Ағымдағы үлестердің қосындысы {_share_sum:.1f}%. Салыстыру үшін олар 100%-ға автоматты түрде нормаланады.","ru":f"Сумма текущих долей составляет {_share_sum:.1f}%. Для сравнения QŪNAR автоматически нормализует их до 100%.","en":f"Current shares sum to {_share_sum:.1f}%. QŪNAR normalizes them to 100% for the before/after comparison."}[lang])
+                    st.warning({"kk":f"Ағымдағы үлестердің қосындысы {_share_sum:.1f}%. «Дейін/кейін» салыстыру үшін барлық үлестердің қосындысы 100% болуға тиіс; есеп автоматты түрде толтырылмайды.","ru":f"Сумма текущих долей {_share_sum:.1f}%. Для корректного сравнения «до/после» введите все культуры, чтобы получилось 100%. Частичная структура не будет автоматически нормализована.","en":f"Current shares sum to {_share_sum:.1f}%. Enter a complete baseline adding to 100%; an incomplete structure will not be automatically normalized."}[lang])
+                st.caption({"kk":"Бос ұяшық - дерек жоқ, 0 - залалсыздық, теріс сан - залал.","ru":"Пустая ячейка - данные отсутствуют; 0 - безубыточность; отрицательная маржа - убыток.","en":"Blank cell means missing data; 0 means break-even; negative margin represents a loss."}[lang])
             except Exception as _econ_exc:
                 st.caption(str(_econ_exc))
 
@@ -2286,6 +2288,20 @@ if submitted:
             alloc = alloc.iloc[0:0].copy()
         if alloc.empty:
             st.error({"kk":"Берілген су, дақыл саны және үлес шектеулері бойынша іске асатын жоспар табылмады. Су лимитін немесе параметрлерді тексеріңіз.","ru":"Допустимый план не найден. Проверьте водный лимит, число культур и максимальную долю. Маржа и эффект оптимизации не рассчитаны.","en":"No feasible plan under the water budget, crop count and share cap. No optimized margin or gain is reported."}[lang])
+            if opt.get('solver_status') == 'infeasible_crop_count_or_cap':
+                _eligible = int(opt.get('eligible_crop_count', 0))
+                if _eligible < optimization_n_crops and opt.get('economic_objective_active'):
+                    st.warning({
+                        'ru':f'Экономические показатели введены только для {_eligible} культур при запрошенных {optimization_n_crops}. Заполните маржу ещё для {optimization_n_crops-_eligible} культур или уменьшите их число.',
+                        'kk':f'Экономикалық деректер {_eligible} дақыл үшін ғана енгізілген, ал {optimization_n_crops} қажет. Маржа деректерін толықтырыңыз немесе дақыл санын азайтыңыз.',
+                        'en':f'Margins are available for {_eligible} crops, but {optimization_n_crops} were requested. Supply the missing margins or reduce the number of crops.'
+                    }[lang])
+                elif optimization_max_share*optimization_n_crops < 1-1e-9:
+                    st.warning({
+                        'ru':'Количество культур и максимальная доля несовместимы: сумма допустимых долей меньше 100%.',
+                        'kk':'Дақыл саны мен үлес шегі сәйкес емес: мүмкін болатын үлестер қосындысы 100%-ға жетпейді.',
+                        'en':'Crop count and maximum share are incompatible: capped shares cannot sum to 100%.'
+                    }[lang])
             if opt:
                 st.caption(f"Solver: {opt.get('solver_status', 'unknown')}; minimum theoretical water for a single crop: {opt.get('minimum_uniform_water_m3','unknown')} m³")
         else:
@@ -2313,18 +2329,24 @@ if submitted:
             s2.metric({"kk":"Климаттық тұрақтылық","ru":"Климатическая устойчивость","en":"Climate resilience"}[lang],f"{opt['weighted_climate']:.1f}/100")
             s3.metric({"kk":"Ресурс тиімділігі","ru":"Ресурсоэффективность","en":"Resource efficiency"}[lang],f"{opt['weighted_resource']:.1f}/100")
             s4.metric({"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang],f"{opt['weighted_reliability']:.1f}/100")
-            st.success({
-                "kk":f"Ұсынылған құрылым {area_ha:.1f} га аумақты {len(out)} дақыл арасында бөледі. Ең ірі үлес {out.iloc[0,1]:.1f}% деңгейінде.",
-                "ru":f"Предлагаемая структура распределяет {area_ha:.1f} га между {len(out)} культурами. Наибольшая доля составляет {out.iloc[0,1]:.1f}%.",
-                "en":f"The proposed structure allocates {area_ha:.1f} ha across {len(out)} crops. The largest share is {out.iloc[0,1]:.1f}%."
-            }[lang])
+            _structure_msg = {
+                "kk":f"Есептік құрылым {area_ha:.1f} га аумақты {len(out)} дақылға бөледі; ең ірі үлес {out.iloc[:,1].max():.1f}%.",
+                "ru":f"Расчётная структура распределяет {area_ha:.1f} га между {len(out)} культурами. Максимальная доля {out.iloc[:,1].max():.1f}%.",
+                "en":f"Calculated allocation covers {area_ha:.1f} ha and {len(out)} crops. Largest share {out.iloc[:,1].max():.1f}%."
+            }[lang]
+            if _scenario_available_water > 0:
+                st.success(_structure_msg)
+            else:
+                st.info(_structure_msg)
             if opt.get("economic_objective_active"):
                 em1,em2,em3=st.columns(3)
                 em1.metric({"kk":"Орташа экономикалық маржа","ru":"Средняя экономическая маржа","en":"Weighted economic margin"}[lang], f"{opt.get('weighted_economic_margin_kzt_ha',0):,.0f} KZT/ha")
                 em2.metric({"kk":"Экономикалық критерий салмағы","ru":"Вес экономического критерия","en":"Economic-objective weight"}[lang], f"{opt.get('economic_weight',0)*100:.0f}%")
                 em3.metric({"kk":"Оңтайландырылған маржа","ru":"Оптимизированная маржа","en":"Optimized contribution margin"}[lang], f"{opt.get('optimized_contribution_margin_kzt',0):,.0f} KZT")
-                st.caption({"kk":"Экономикалық критерий тек пайдаланушы енгізген оң маржа мәндері бар дақылдарға қолданылады; QŪNAR жетіспейтін нарықтық деректерді автоматты түрде толтырмайды.","ru":"Экономический критерий используется только для культур с введенной пользователем положительной маржой; QŪNAR не заполняет отсутствующие рыночные данные автоматически.","en":"The economic criterion is used only for crops with positive user-entered margins; QŪNAR does not fill missing market data automatically."}[lang])
+                st.caption({"kk":"Экономикалық критерий оң және теріс енгізілген маржаларды салыстырады; жоқ деректерді толтырмайды.","ru":"Экономический критерий учитывает введённую положительную и отрицательную маржу; недостающие данные не подставляются.","en":"The economic criterion uses both positive and negative user-entered margins, without imputing missing data."}[lang])
                 st.warning({"kk":"Көрсетілген маржа - болжамды сценарийлік көрсеткіш, нақты таза пайда емес. Ол әр дақыл бойынша шаруашылықтың нақты өнімділігіне, сату бағасына, өндірістік және суару шығындарына тәуелді. Расталмаған деректер болса, нәтижені кепілдендірілген табыс ретінде пайдаланбаңыз.","ru":"Маржа - ориентировочная сценарная оценка, не фактическая чистая прибыль. Она зависит от урожайности, цены реализации и производственных затрат конкретного хозяйства по каждой культуре, включая орошение. При неподтверждённых данных нельзя считать её гарантированным доходом.","en":"Contribution margin is an indicative scenario estimate, not observed net profit. It depends on farm-specific yields, selling prices and crop-level production costs, including irrigation. Unverified inputs cannot support guaranteed-income claims."}[lang])
+                if opt.get('baseline_status') == 'shares_do_not_sum_to_100':
+                    st.warning({'ru':'Сравнение «до/после» не рассчитано: текущие доли посевов не составляют 100%.','kk':'«Дейін/кейін» салыстыруы есептелмеді: бастапқы үлестердің қосындысы 100% емес.','en':'Before/after comparison omitted: baseline shares do not sum to 100%.'}[lang])
                 if opt.get('baseline_water_feasible') is False:
                     st.warning({'ru':'Исходная структура превышает тот же водный лимит. Её нельзя использовать как реализуемую базу для сравнения финансового эффекта.',
                                 'kk':'Бастапқы құрылым да су лимитінен асады. Оны іске асатын экономикалық база ретінде салыстыруға болмайды.',
@@ -2356,11 +2378,13 @@ if submitted:
                 "ru":f"Средняя норма воды в рекомендуемой структуре {opt['weighted_water_m3_ha']:,.0f} м³/га, общая расчетная потребность {opt['modelled_total_water_m3']:,.0f} м³.",
                 "en":f"The recommended structure averages {opt['weighted_water_m3_ha']:,.0f} m³/ha, with total modelled demand of {opt['modelled_total_water_m3']:,.0f} m³."
             }[lang])
-            if available_water > 0:
+            if _scenario_available_water > 0:
                 if opt.get("water_feasible"):
                     st.success({"kk":f"Су шектеуі орындалды: {opt['modelled_total_water_m3']:,.0f} м³ ≤ {_scenario_available_water:,.0f} м³.","ru":f"Ограничение по воде соблюдено: {opt['modelled_total_water_m3']:,.0f} м³ ≤ {_scenario_available_water:,.0f} м³.","en":f"Water constraint satisfied: {opt['modelled_total_water_m3']:,.0f} m³ ≤ {_scenario_available_water:,.0f} m³."}[lang])
                 else:
                     st.error({"kk":"Берілген су көлемімен таңдалған дақыл саны/үлес шектеулері шеңберінде толық орындалатын құрылым табылмады.","ru":"При указанном объеме воды не найдено полностью выполнимой структуры при текущем числе культур и ограничениях долей.","en":"No fully feasible structure was found under the entered water volume and current crop/share constraints."}[lang])
+            else:
+                st.warning({"kk":"Су лимиті енгізілмеді: құрылым алдын ала есептелді, судың жеткіліктілігі тексерілген жоқ.","ru":"Водный лимит не указан: структура предварительная, обеспеченность водой не проверена.","en":"Water budget not entered: allocation is provisional and water feasibility has not been checked."}[lang])
             if user_level == "researcher":
                 with st.expander({"kk":"Оңтайландыру әдістемесі","ru":"Методика оптимизации","en":"Optimization method"}[lang]):
                     st.write({
@@ -2441,6 +2465,26 @@ if submitted:
                     evidence=irrigation_evidence,
                     lang=lang, available_water_m3=available_water, reuse_pct=reuse)
                 report_payload["summary"].extend(_irrigation_rows)
+                # Keep the on-screen feasibility conclusion identical to the
+                # report instead of relying on the generic farm water balance.
+                st.info(_irrigation_recommendation["text"])
+                st.caption({
+                    "ru":"В сравнении технологий применяется районная норма воды для каждого вида полива; общий расчёт маржи выше использует введённое водопотребление. Сценарии зелёной энергии и смены полива независимы.",
+                    "kk":"Суару технологияларын салыстыруда әр тәсілдің аудандық су нормасы қолданылады; жоғарыдағы жалпы маржа енгізілген су шығыны бойынша есептеледі. Жасыл энергия мен суару сценарийлері бөлек.",
+                    "en":"Irrigation uses the district water norm for each method; the generic margin above uses entered farm water use. Green-energy and irrigation scenarios are separate."
+                }[lang])
+                _irrigation_names = {
+                    "unknown":t["irrigation_unknown"], "furrow":t["irrigation_furrow"],
+                    "sprinkler":t["irrigation_sprinkler"], "drip":t["irrigation_drip"],
+                    "mixed":t["irrigation_mixed"]
+                }
+                report_payload["inputs"].extend([
+                    [{"ru":"Исходная технология полива","kk":"Бастапқы суару тәсілі","en":"Baseline irrigation method"}[lang], _irrigation_names[irrigation_type], t["source_user"]],
+                    [{"ru":"Сравниваемая технология полива","kk":"Салыстырылатын суару тәсілі","en":"Proposed irrigation method"}[lang], _irrigation_names[irrigation_target], t["source_user"]],
+                    [{"ru":"Тариф воды, тг/м³","kk":"Су тарифі, тг/м³","en":"Water tariff, KZT/m³"}[lang], f"{water_tariff:.4f}", t["source_user"]],
+                    [{"ru":"Тариф электроэнергии, тг/кВт·ч","kk":"Электр тарифі, тг/кВт·сағ","en":"Electricity tariff, KZT/kWh"}[lang], f"{electricity_tariff:.4f}", t["source_user"]],
+                    [{"ru":"Сценарий смены полива: эффект урожайности, %","kk":"Суару сценарийі: өнімділік әсері, %","en":"Irrigation scenario: yield change, %"}[lang], f"{irrigation_yield_change_pct:.2f}", irrigation_evidence],
+                ])
             if _margin is not None:
                 report_payload["summary"].append({"label":{"kk":"Маржиналды нәтиже, тг/га","ru":"Отдельная маржа по введённому водопотреблению, тг/га","en":"Contribution margin, KZT/ha"}[lang],"value":f"{_margin:,.0f}"})
             else:
@@ -2560,7 +2604,7 @@ if submitted:
         if "econ" in locals() and float(econ.get("total_saving_kzt", 0) or 0) > 0:
             report_payload["recommendations"].insert(0, {
                 "title":{"kk":"Экономикалық және климаттық басымдық","ru":"Экономико-климатический приоритет","en":"Economic and climate priority"}[lang],
-                "text":{"kk":"Жасыл энергия мен су үнемдеу сценарийін кезең-кезеңімен қарастыру ұсынылады.","ru":"Рекомендуется поэтапно рассмотреть сценарий зеленой энергии и водосбережения.","en":"Consider a phased green-energy and water-saving scenario."}[lang],
+                "text":{"kk":"Суару өзгерісінен бөлек жасыл энергия мен жалпы ресурс үнемдеу сценарийін қарастыруға болады. Екі нәтиженің үнемін қосуға болмайды.","ru":"Отдельно от смены полива можно рассмотреть сценарий зелёной энергии и общего ресурсосбережения. Его экономию нельзя прибавлять к результату смены полива.","en":"Separately from the irrigation switch, consider the green-energy and general resource-saving scenario. Do not add its savings to the irrigation outcome."}[lang],
                 "evidence":{"kk":f"Ағымдағы параметрлерде маусымдық әлеуетті үнем шамамен {econ['total_saving_kzt']:,.0f} тг: электр энергиясынан {econ.get('energy_saving_kzt',0):,.0f} тг және судан {econ.get('water_saving_kzt',0):,.0f} тг.","ru":f"При текущих параметрах потенциальная сезонная экономия составляет около {econ['total_saving_kzt']:,.0f} тг: {econ.get('energy_saving_kzt',0):,.0f} тг по электроэнергии и {econ.get('water_saving_kzt',0):,.0f} тг по воде.","en":f"Under the current inputs, potential seasonal savings are about {econ['total_saving_kzt']:,.0f} KZT: {econ.get('energy_saving_kzt',0):,.0f} KZT from electricity and {econ.get('water_saving_kzt',0):,.0f} KZT from water."}[lang],
                 "effect":{"kk":f"Электр энергиясынан CO₂ төмендеуі шамамен {econ.get('co2_reduction_kg',0)/1000:.2f} т CO₂e және су үнемі {econ.get('water_saving_m3',0):,.0f} м³ болуы мүмкін. Бұл сценарийлік бағалау, нақты инвестициялық шешім алдында тарифтер мен жабдық құнын нақтылау керек.","ru":f"Потенциальное снижение выбросов от электроэнергии - около {econ.get('co2_reduction_kg',0)/1000:.2f} т CO₂e, экономия воды - {econ.get('water_saving_m3',0):,.0f} м³. Это сценарная оценка, поэтому перед инвестиционным решением следует уточнить тарифы и стоимость оборудования.","en":f"Potential electricity-related reduction is about {econ.get('co2_reduction_kg',0)/1000:.2f} t CO₂e and water saving {econ.get('water_saving_m3',0):,.0f} m³. This is a scenario estimate, so tariffs and equipment costs should be verified before investment."}[lang],
                 "evidence_label":{"kk":"Сандық негіздеме","ru":"Количественное основание","en":"Quantitative evidence"}[lang],
@@ -2618,8 +2662,38 @@ if submitted:
         top5=ranking.head(5)
         report_payload["chart"]={"title":{"kk":"QŪNAR бойынша үздік 5 дақыл","ru":"5 лучших культур по QŪNAR","en":"QŪNAR top 5 crops"}[lang],"section_title":{"kk":"Салыстырмалы рейтинг","ru":"Сравнительный рейтинг","en":"Comparative ranking"}[lang],"categories":top5[crop_col].astype(str).tolist(),"values":pd.to_numeric(top5[score_col],errors='coerce').fillna(0).astype(float).tolist(),"value_label":"0-100","axis_label":"0-100"}
     elif mode_key == "mode4" and "opt" in locals():
+        # Reproducibility: the chosen objective, weights, crop cap and scenario
+        # inputs must travel with the PDF/Word/Excel instead of relying on memory.
+        _opt_names = {
+            'ru': ('Приоритет ресурсно-климатической оценки', 'Режим экономической цели', 'Вес экономического критерия, %', 'Максимальная доля культуры, %', 'Число культур', 'Изменение доступной воды, %'),
+            'kk': ('Ресурс-климаттық басымдық', 'Экономикалық мақсат режимі', 'Экономикалық критерий салмағы, %', 'Дақыл үлесінің шегі, %', 'Дақыл саны', 'Қолжетімді судың өзгерісі, %'),
+            'en': ('Resource-climate priority', 'Economic objective mode', 'Economic objective weight, %', 'Maximum crop share, %', 'Number of crops', 'Available-water scenario change, %'),
+        }[lang]
+        _params = [optimization_profile, optimization_objective_mode,
+                   f'{opt.get("economic_weight", 0)*100:.0f}' if opt.get('economic_objective_active') else '0',
+                   f'{optimization_max_share*100:.1f}',str(optimization_n_crops),f'{optimization_water_budget_change_pct:.1f}']
+        report_payload['inputs'].extend([[name, val, t['source_user']] for name, val in zip(_opt_names, _params)])
+        report_payload['inputs'].append([
+            {'ru':'Проверка водного ограничения','kk':'Су лимитін тексеру','en':'Water constraint verification'}[lang],
+            {'ru':'Проверено' if opt.get('water_feasible') is True else 'Не выполнено: лимит не введён' if opt.get('water_feasible') is None else 'Не соблюдено',
+             'kk':'Тексерілді' if opt.get('water_feasible') is True else 'Тексерілмеді: су лимиті жоқ' if opt.get('water_feasible') is None else 'Орындалмады',
+             'en':'Verified' if opt.get('water_feasible') is True else 'Not checked: budget not entered' if opt.get('water_feasible') is None else 'Not satisfied'}[lang],
+            {'ru':'Ограничение оптимизатора','kk':'Оңтайландырғыш шектеуі','en':'Optimizer constraint'}[lang],
+        ])
+        if optimization_use_economics:
+            report_payload['inputs'].append([
+                {'ru':'Маржа по культурам','kk':'Дақылдар маржасы','en':'Crop contribution margins'}[lang],
+                '; '.join(f'{extended_crop_label(str(_k),lang)}: {_v:,.0f} ' + {'ru':'тг/га','kk':'тг/га','en':'KZT/ha'}[lang] for _k,_v in optimization_economic_margins.items()) or {'ru':'Не введена','kk':'Енгізілмеген','en':'Not supplied'}[lang],
+                {'ru':'Сценарный ввод пользователя','kk':'Пайдаланушы сценарийі','en':'User scenario inputs'}[lang]
+            ])
+        if optimization_baseline_shares:
+            report_payload['inputs'].append([
+                {'ru':'Текущая структура посевов, %','kk':'Ағымдағы егіс құрылымы, %','en':'Baseline crop shares, %'}[lang],
+                '; '.join(f'{extended_crop_label(str(_k),lang)}: {_v:.1f}%' for _k,_v in optimization_baseline_shares.items()),
+                t['source_user']
+            ])
         report_payload['table'] = out.to_dict(orient="records") if 'out' in locals() and not alloc.empty else []
-        if 'out' in locals() and not alloc.empty and opt.get('water_feasible', False):
+        if 'out' in locals() and not alloc.empty and opt.get('water_feasible') is not False:
             report_payload["summary"] = [
                 {"label":{"kk":"Құрылымның QŪNAR бағасы","ru":"Оценка структуры QŪNAR","en":"Structure QŪNAR score"}[lang],"value":f"{opt['weighted_qunar']:.1f}/100"},
                 {"label":{"kk":"Климаттық тұрақтылық","ru":"Климатическая устойчивость","en":"Climate resilience"}[lang],"value":f"{opt['weighted_climate']:.1f}/100"},
@@ -2627,7 +2701,14 @@ if submitted:
                 {"label":{"kk":"Бағалау сенімділігі","ru":"Уверенность в оценке","en":"Assessment confidence"}[lang],"value":f"{opt['weighted_reliability']:.1f}/100"},
                 {"label":{"kk":"Есептік су қажеттілігі","ru":"Расчетная потребность в воде","en":"Modelled water demand"}[lang],"value":f"{opt['modelled_total_water_m3']:,.0f} м³"},
             ]
-            first_crop=str(out.iloc[0,0]); first_share=float(out.iloc[0,1])
+            _top_ix = pd.to_numeric(out.iloc[:,1], errors='coerce').idxmax()
+            first_crop=str(out.loc[_top_ix, out.columns[0]]); first_share=float(out.loc[_top_ix, out.columns[1]])
+            _water_provisional = opt.get('water_feasible') is None
+            if _water_provisional:
+                report_payload['summary'].append({
+                    'label': {'ru':'Проверка водного лимита','kk':'Су лимитін тексеру','en':'Water-budget verification'}[lang],
+                    'value': {'ru':'Не выполнена: лимит воды не введён. Структура предварительная.','kk':'Орындалмады: су лимиті енгізілмеген. Құрылым алдын ала берілген.','en':'Not performed: water budget missing. Allocation is provisional.'}[lang],
+                })
             report_payload["recommendations"]=[{
                 "title":{"kk":"Ұсынылатын құрылым","ru":"Рекомендуемая структура","en":"Recommended structure"}[lang],
                 "text":{"kk":f"Егістік ауданды {len(out)} дақыл арасында бөлу ұсынылады; ең ірі үлес {first_crop} үшін {first_share:.1f}%.","ru":f"Рекомендуется распределить посевную площадь между {len(out)} культурами; наибольшая доля {first_share:.1f}% приходится на {first_crop}.","en":f"Allocate the cultivated area across {len(out)} crops; the largest share is {first_share:.1f}% for {first_crop}."}[lang],
@@ -2636,7 +2717,10 @@ if submitted:
                 "evidence_label":{"kk":"Негіздеме","ru":"Основание","en":"Evidence"}[lang],
                 "effect_label":{"kk":"Күтілетін әсер","ru":"Ожидаемый эффект","en":"Expected effect"}[lang],
             }]
-            # Actionable, quantified recommendations: only for a feasible allocation.
+            if _water_provisional:
+                report_payload['recommendations'][0]['title'] = {'ru':'Предварительная структура, водный лимит не проверен','kk':'Алдын ала құрылым, су лимиті тексерілмеді','en':'Provisional allocation, water budget unverified'}[lang]
+                report_payload['recommendations'][0]['text'] = {'ru':'Рассчитаны только доли и модельное водопотребление. До подтверждения доступной воды применять структуру нельзя.','kk':'Тек үлестер мен есептік су қажеттілігі анықталды. Су көлемі расталғанша құрылымды енгізуге болмайды.','en':'Only shares and modelled water demand are estimated. Do not implement before checking water availability.'}[lang]
+            # Actionable, quantified recommendations: water feasibility status must be explicit.
             _plan_lines = []
             for _r in alloc.itertuples(index=False):
                 _name = extended_crop_label(str(getattr(_r, 'product', '')), lang)
@@ -2655,16 +2739,16 @@ if submitted:
                 'en': 'This is a user-input scenario estimate; prices and costs must be independently verified.'
             }[lang]
             report_payload['recommendations'].append({
-                'title': {'ru':'Практический план посевов','kk':'Егіс бойынша нақты жоспар','en':'Quantified crop allocation'}[lang],
+                'title': ({'ru':'Предварительные расчётные доли (без водного лимита)','kk':'Алдын ала үлестер (су лимиті жоқ)','en':'Provisional allocation (no water budget)'} if _water_provisional else {'ru':'Практический план посевов','kk':'Егіс бойынша нақты жоспар','en':'Quantified crop allocation'})[lang],
                 'text': '; '.join(_plan_lines),
                 'evidence': {
-                    'ru': f"Водопотребление: {opt['modelled_total_water_m3']:,.0f} из {opt['available_water_m3']:,.0f} м³. "
+                    'ru': (f"Водопотребление: {opt['modelled_total_water_m3']:,.0f} из {opt['available_water_m3']:,.0f} м³. " if not _water_provisional else f"Потребность в воде: {opt['modelled_total_water_m3']:,.0f} м³; лимит не введён, обеспеченность не проверена. ")
                           + (f"Сценарная маржа: {_margin_after:,.0f} тг. " if _margin_after is not None else '')
                           + (f"Изменение относительно исходной структуры: {_gain:,.0f} тг." if _gain is not None else ''),
-                    'kk': f"Су тұтынуы: {opt['modelled_total_water_m3']:,.0f} / {opt['available_water_m3']:,.0f} м³. "
+                    'kk': (f"Су тұтынуы: {opt['modelled_total_water_m3']:,.0f} / {opt['available_water_m3']:,.0f} м³. " if not _water_provisional else f"Су қажеттілігі: {opt['modelled_total_water_m3']:,.0f} м³; қолжетімді су көлемі тексерілмеді. ")
                           + (f"Сценарийлік маржа: {_margin_after:,.0f} тг. " if _margin_after is not None else '')
                           + (f"Бастапқы құрылыммен салыстырғандағы өзгеріс: {_gain:,.0f} тг." if _gain is not None else ''),
-                    'en': f"Water demand: {opt['modelled_total_water_m3']:,.0f} / {opt['available_water_m3']:,.0f} m³. "
+                    'en': (f"Water demand: {opt['modelled_total_water_m3']:,.0f} / {opt['available_water_m3']:,.0f} m³. " if not _water_provisional else f"Modelled water demand: {opt['modelled_total_water_m3']:,.0f} m³; budget not entered and feasibility unverified. ")
                           + (f"Scenario margin: {_margin_after:,.0f} KZT. " if _margin_after is not None else '')
                           + (f"Change relative to baseline: {_gain:,.0f} KZT." if _gain is not None else ''),
                 }[lang],
@@ -2677,8 +2761,18 @@ if submitted:
                     'value': {'ru':'Маржа является приблизительной сценарной оценкой; зависит от фактических производственных затрат, урожайности, цены и технологии полива хозяйства. Не является подтверждённой прибылью.', 'kk':'Маржа болжамды сценарийлік баға; ол шаруашылықтың нақты шығындарына, өнімділігіне, бағасына және суару тәсіліне тәуелді. Расталған пайда емес.', 'en':'Indicative scenario margin depends on actual farm production costs, yield, prices and irrigation method. It is not verified profit.'}[lang]})
                 report_payload['summary'].append({'label': {'ru':'Потенциальная сценарная маржа, тг','kk':'Сценарийлік ықтимал маржа, тг','en':'Potential scenario margin, KZT'}[lang],
                                                   'value':f"{_margin_after:,.0f}"})
+            if opt.get('baseline_status') not in ('not_entered', 'valid_comparison'):
+                _bl_reason = {
+                    'shares_do_not_sum_to_100': {'ru':'Сумма текущих долей не равна 100%.','kk':'Бастапқы үлестердің қосындысы 100% емес.','en':'Baseline shares do not total 100%.'},
+                    'unrecognized_baseline_crops': {'ru':'Есть нераспознанные культуры в исходной структуре.','kk':'Бастапқы құрылымда танылмаған дақылдар бар.','en':'Baseline contains unknown crops.'},
+                    'baseline_exceeds_water_limit': {'ru':'Исходная структура превышает доступную воду.','kk':'Бастапқы құрылым су лимитінен асады.','en':'Baseline exceeds water budget.'},
+                    'water_budget_not_entered': {'ru':'Водный лимит не введён.','kk':'Су лимиті енгізілмеген.','en':'Water budget not entered.'},
+                    'missing_baseline_crop_margins': {'ru':'Не для всех исходных культур введена маржа.','kk':'Бастапқы дақылдардың маржасы толық енгізілмеген.','en':'Baseline crop margins are incomplete.'},
+                }.get(opt.get('baseline_status'), {}).get(lang)
+                if _bl_reason:
+                    report_payload['summary'].append({'label': {'ru':'Сравнение «до/после»','kk':'«Дейін/кейін» салыстыру','en':'Before/after comparison'}[lang], 'value': _bl_reason + ' ' + {'ru':'Прирост маржи не рассчитывается.','kk':'Маржа өзгерісі есептелмейді.','en':'No margin gain is reported.'}[lang]})
             if _gain is not None:
-                report_payload['summary'].append({'label': {'ru':'Сценарный прирост маржи, тг','kk':'Сценарийлік маржа өсімі, тг','en':'Scenario margin gain, KZT'}[lang],
+                report_payload['summary'].append({'label': {'ru':'Сценарное изменение маржи, тг','kk':'Сценарийлік маржаның өзгерісі, тг','en':'Scenario margin change, KZT'}[lang],
                                                   'value':f"{_gain:+,.0f}"})
             report_payload["chart"]={"title":{"kk":"Ұсынылатын егіс құрылымы","ru":"Рекомендуемая структура посевов","en":"Recommended cropping structure"}[lang],"section_title":{"kk":"Ауданның бөлінуі","ru":"Распределение площади","en":"Land allocation"}[lang],"categories":out.iloc[:,0].astype(str).tolist(),"values":pd.to_numeric(out.iloc[:,1],errors='coerce').fillna(0).astype(float).tolist(),"value_label":"%","axis_label":"%"}
 
@@ -2708,6 +2802,13 @@ if submitted:
                     'label': {'ru':'Превышение водного лимита','kk':'Су лимитінің артуы','en':'Water-budget excess'}[lang],
                     'value': f'{_deficit:,.0f} м³',
                 })
+            if opt.get('solver_status') == 'infeasible_crop_count_or_cap' and opt.get('economic_objective_active') and int(opt.get('eligible_crop_count', 0)) < optimization_n_crops:
+                report_payload['summary'].append({
+                    'label': {'ru':'Недостаточно экономических данных','kk':'Экономикалық деректер жеткіліксіз','en':'Insufficient crop margin inputs'}[lang],
+                    'value': {'ru':f'Введена маржа для {opt.get("eligible_crop_count",0)} культур из {optimization_n_crops}.',
+                              'kk':f'{optimization_n_crops} дақылдың {opt.get("eligible_crop_count",0)} үшін маржа енгізілген.',
+                              'en':f'Margins provided for {opt.get("eligible_crop_count",0)} of {optimization_n_crops} requested crops.'}[lang],
+                })
             report_payload['recommendations'] = [{
                 'title': {'ru':'План отклонён','kk':'Жоспар қабылданбады','en':'Allocation rejected'}[lang],
                 'text': {
@@ -2721,9 +2822,9 @@ if submitted:
                     'en':f'Water budget {_available:,.0f} m³; rejected candidate required {_candidate_water:,.0f} m³.' if _candidate_water is not None else f'Water budget {_available:,.0f} m³. Solver: {opt.get("solver_status","unknown")}.',
                 }[lang]),
                 'effect': {
-                    'ru':'Достижимый прирост маржи не рассчитан: водное ограничение нарушено или допустимое решение отсутствует.',
-                    'kk':'Іске асатын маржа өсімі есептелген жоқ: су шектеуі орындалмаған немесе шешім табылмаған.',
-                    'en':'No achievable margin gain is reported because water feasibility has not been established.',
+                    'ru':'Сценарное изменение маржи не рассчитано: допустимое решение не найдено при заданных условиях.',
+                    'kk':'Сценарийлік маржа өзгерісі есептелмеді: берілген шарттарда рұқсат етілген шешім табылмады.',
+                    'en':'No scenario margin change is reported because no admissible allocation was found.',
                 }[lang],
                 'evidence_label': {'kk':'Негіздеме','ru':'Основание','en':'Evidence'}[lang],
                 'effect_label': {'kk':'Салдары','ru':'Следствие','en':'Consequence'}[lang],
