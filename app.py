@@ -26,6 +26,7 @@ from core.water_norms import default_water_requirement, PUMPING_REFERENCE_KWH_PE
 from core.economics import DEFAULT_EF_KZ_KGCO2_PER_KWH, DEFAULT_ELECTRICITY_TARIFF_KZT_KWH, DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3, DEFAULT_GREEN_SHARE_TARGET, DEFAULT_WATER_SAVING_TARGET, economic_climate_effect, payback_years
 from core.economic_feasibility import economic_feasibility
 from core.irrigation_economics import irrigation_comparison
+from core.irrigation_report import irrigation_export
 from core.uncertainty import support_score
 from core.analysis_engine import build_analysis, build_recommendations
 from core.wapor import seasonal_aeti, consumptive_water_metrics, WaPORError
@@ -1942,8 +1943,8 @@ if submitted:
             else:
                 st.caption({"kk":"Технология құны енгізілмеген: инвестиция мен өтелу мерзімі автоматты түрде ойдан шығарылмайды.","ru":"Стоимость технологии не введена: инвестиция и срок окупаемости автоматически не подставляются.","en":"Technology cost was not entered: investment and payback are not auto-filled."}[lang])
             report_payload["summary"].extend([
-                {"label":{"kk":"Сценарийлік су үнемі","ru":"Сценарная экономия воды","en":"Scenario water saving"}[lang],"value":f"{smart['saved_water_m3']:,.0f} m³"},
-                {"label":{"kk":"Сценарийлік ресурс шығынының үнемі","ru":"Сценарная экономия ресурсных затрат","en":"Scenario resource-cost saving"}[lang],"value":f"{smart['total_saving_kzt']:,.0f} KZT"},
+                {"label":{"kk":"Бөлек ресурс үнемдеу сценарийі: су","ru":"Отдельный сценарий ресурсосбережения: вода","en":"Separate resource-saving scenario: water"}[lang],"value":f"{smart['saved_water_m3']:,.0f} m³"},
+                {"label":{"kk":"Бөлек ресурс үнемдеу сценарийі: шығын үнемі","ru":"Отдельный сценарий ресурсосбережения: экономия затрат","en":"Separate resource-saving scenario: cost savings"}[lang],"value":f"{smart['total_saving_kzt']:,.0f} KZT"},
             ])
 
         analysis = build_analysis(
@@ -2428,6 +2429,18 @@ if submitted:
                             st.caption({"kk":"Стресс: баға -10%, өнімділік -10%, шығын +10%. Екі технологияға бірдей қолданылады. Су нормалары технологиялық сценарий, тәжірибелік дәлел емес.","ru":"Стресс-тест: цена -10%, урожайность -10%, расходы +10% для обеих технологий. Водные нормы содержат сценарные технологические коэффициенты. Результат не является подтверждённым полевым эффектом.","en":"Stress test: price -10%, yield -10%, costs +10% for both technologies. Water norms include technology scenario factors, not a measured treatment effect."}[lang])
                             report_payload["summary"].append({"label":{"ru":"Изменение маржи при смене полива, тг/га","kk":"Суару өзгергендегі маржа айырмасы, тг/га","en":"Irrigation-switch margin change, KZT/ha"}[lang], "value":f"{comp['margin_change_kzt_ha']:,.0f}", "note":irrigation_evidence})
                             report_payload["summary"].append({"label":{"ru":"Изменение маржи в стресс-тесте, тг/га","kk":"Стресс-тесттегі маржа айырмасы, тг/га","en":"Stress-test margin change, KZT/ha"}[lang], "value":f"{comp['stress_margin_change_kzt_ha']:,.0f}", "note":{"ru":"Цена -10%, урожайность -10%, затраты +10%","kk":"Баға -10%, өнімділік -10%, шығындар +10%","en":"Price -10%, yield -10%, costs +10%"}[lang]})
+            if "comp" in locals() and irrigation_compare_enabled:
+                _irrigation_rows, _irrigation_recommendation = irrigation_export(
+                    comp, area_ha=area_ha,
+                    input_yield_centners_ha=econ_yield,
+                    ml_yield_centners_ha=pred if "pred" in locals() else None,
+                    selling_price_kzt_t=selling_price_kzt_t,
+                    other_variable_cost_kzt_ha=variable_cost_kzt_ha,
+                    extra_technology_cost_kzt_ha=irrigation_extra_cost,
+                    yield_change_pct=irrigation_yield_change_pct,
+                    evidence=irrigation_evidence,
+                    lang=lang)
+                report_payload["summary"].extend(_irrigation_rows)
             if _margin is not None:
                 report_payload["summary"].append({"label":{"kk":"Маржиналды нәтиже, тг/га","ru":"Маржинальный результат, тг/га","en":"Contribution margin, KZT/ha"}[lang],"value":f"{_margin:,.0f}"})
             else:
@@ -2541,7 +2554,7 @@ if submitted:
             if resource.get("energy_kwh") is not None: report_payload["summary"].append({"label":t["energy_use"],"value":f"{resource['energy_kwh']:,.0f} {UNITS['kwh']}"})
             if resource.get("operational_co2e_kg") is not None: report_payload["summary"].append({"label":t["co2"],"value":f"{resource['operational_co2e_kg']:,.0f} {UNITS['kg']} CO₂e"})
         if "econ" in locals():
-            report_payload["summary"].append({"label":t["total_saving"],"value":f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}"})
+            report_payload["summary"].append({"label":{"kk":"Жасыл энергия және таза су бойынша бөлек сценарий, тг","ru":"Отдельный сценарий зелёной энергии и пресной воды, тг","en":"Separate green-energy and freshwater scenario, KZT"}[lang],"value":f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}"})
         report_payload["analysis"] = list(locals().get("analysis", []) or [])
         report_payload["recommendations"] = structured_recommendations(locals().get("recs", []) or [], report_payload["analysis"], lang)
         if "econ" in locals() and float(econ.get("total_saving_kzt", 0) or 0) > 0:
@@ -2553,6 +2566,8 @@ if submitted:
                 "evidence_label":{"kk":"Сандық негіздеме","ru":"Количественное основание","en":"Quantitative evidence"}[lang],
                 "effect_label":{"kk":"Күтілетін әсер","ru":"Ожидаемый эффект","en":"Expected effect"}[lang],
             })
+        if "_irrigation_recommendation" in locals() and irrigation_compare_enabled:
+            report_payload["recommendations"].insert(0, _irrigation_recommendation)
         if "econ" in locals():
             cats=[]; vals=[]
             if econ.get("energy_saving_kzt") is not None:
