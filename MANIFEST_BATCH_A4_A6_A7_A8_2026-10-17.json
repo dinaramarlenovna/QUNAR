@@ -1,0 +1,26 @@
+{
+  "version": "v0.8.1",
+  "type": "multi-remark scientific QA patch",
+  "updated_files": [
+    "core/cmip6_scenarios.py",
+    "core/survey_weights.py",
+    "core/forecast_reliability.py",
+    "scripts/audit_remarks_batch_2026_10_17.py",
+    "tests/test_batch_open_remarks.py",
+    "examples/release_evidence/BATCH_A4_A6_A7_A8_AUDIT_2026-10-17.json",
+    "examples/release_evidence/BATCH_A4_A6_A7_A8_AUDIT_2026-10-17.md",
+    "README_BATCH_A4_A6_A7_A8_2026-10-17_RU.md"
+  ],
+  "verified_test_result": "254 passed, 1 deselected (slow test)",
+  "source_full_archive": "QUNAR_v0.8.1_FULL_MERGED_NORMS_2026-10-17.zip",
+  "sha256_changed_files": {
+    "core/cmip6_scenarios.py": "60ec5e13b67781055de934f8f1955361315c130bc90b98c044f19c30032d8c93",
+    "core/survey_weights.py": "0c1f5de93dce8da3b358ea88416c4981abc443674ea5be5422912137312d896a",
+    "core/forecast_reliability.py": "dfcc3480f4df06fed52d8e0959c17222d62bc735704750d27a10f37892aca8f1",
+    "scripts/audit_remarks_batch_2026_10_17.py": "0d65b0811b22da5899d6ff6f34fa268e25f63f1c833fc0cc015d9bbe960aac11",
+    "tests/test_batch_open_remarks.py": "594ff8db2fd54a62f69c2cdc5fde947db736666459baa063342ac8f816fc31df",
+    "examples/release_evidence/BATCH_A4_A6_A7_A8_AUDIT_2026-10-17.json": "fd7e992e5be2b9d9bc7f77097d679833a4c14ff7fe08ae51b6f9c953767a439e",
+    "examples/release_evidence/BATCH_A4_A6_A7_A8_AUDIT_2026-10-17.md": "0e6e11ad3a9ba1f7a67fdcf0f36e084bf305c0e06e1536d050908649e6ef9dd9",
+    "README_BATCH_A4_A6_A7_A8_2026-10-17_RU.md": "b9060644cbc8432b5dd87bf664e7d87f21fa61fff398c56e2bf3a23ef459b33c"
+  }
+}

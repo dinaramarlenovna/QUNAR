@@ -40,6 +40,8 @@ def evaluate_forecast_support(data_dir,district,crop,*,min_district_n=20,
         reasons.append('district validation unavailable')
     else:
         dn=int(float(dr['N']));dr2=float(dr['R2'])
+        if dn <= 0 or not isfinite(dr2) or float(dr['N']) != dn:
+            reasons.append('district validation metric invalid or undefined')
         if dn<min_district_n:
             reasons.append(f'district transfer test uses only {dn} records (<{min_district_n})')
         if not isfinite(dr2) or dr2<district_r2_threshold:
@@ -48,6 +50,8 @@ def evaluate_forecast_support(data_dir,district,crop,*,min_district_n=20,
         reasons.append('crop validation unavailable')
     else:
         cn=int(float(cr['N']));cr2=float(cr['R2'])
+        if cn <= 0 or not isfinite(cr2) or float(cr['N']) != cn:
+            reasons.append('crop validation metric invalid or undefined')
         if cn<min_crop_n:
             reasons.append(f'crop validation uses only {cn} records (<{min_crop_n})')
         if not isfinite(cr2) or cr2<crop_r2_threshold:

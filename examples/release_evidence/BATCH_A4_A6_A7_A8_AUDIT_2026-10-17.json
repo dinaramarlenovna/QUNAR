@@ -1,0 +1,1138 @@
+{
+  "model_version": "v0.8.1",
+  "subject": "Batch A4/A6/A7/A8 consistency audit",
+  "CMIP6": {
+    "models": [
+      {
+        "scenario": "SSP2-4.5",
+        "delta_temperature_c": 2.0107,
+        "exported_precip_anomaly_mm": 1.59,
+        "exported_precip_anomaly_pct_of_baseline": 1.309,
+        "implied_difference_of_climatology_mm": 2.31,
+        "discrepancy_mm": 0.72,
+        "monthly_comparison": [
+          {
+            "month": "Apr",
+            "exported_anomaly_mm": 2.76,
+            "climatology_difference_mm": 3.49,
+            "difference_mm": 0.73
+          },
+          {
+            "month": "May",
+            "exported_anomaly_mm": -1.11,
+            "climatology_difference_mm": -0.02,
+            "difference_mm": 1.09
+          },
+          {
+            "month": "Jun",
+            "exported_anomaly_mm": 1.43,
+            "climatology_difference_mm": 0.45,
+            "difference_mm": -0.98
+          },
+          {
+            "month": "Jul",
+            "exported_anomaly_mm": 0.09,
+            "climatology_difference_mm": -0.34,
+            "difference_mm": -0.43
+          },
+          {
+            "month": "Aug",
+            "exported_anomaly_mm": -0.94,
+            "climatology_difference_mm": -0.94,
+            "difference_mm": 0.0
+          },
+          {
+            "month": "Sep",
+            "exported_anomaly_mm": -0.64,
+            "climatology_difference_mm": -0.33,
+            "difference_mm": 0.31
+          }
+        ],
+        "projected_days_gt35": 63.04,
+        "projected_days_gt40": 16.55,
+        "projected_days_gt45": 0.54,
+        "validity": "The exported anomaly is the scenario input. Difference-of-climatologies is only a cross-check; do not interchange or sum them."
+      },
+      {
+        "scenario": "SSP5-8.5",
+        "delta_temperature_c": 2.6796,
+        "exported_precip_anomaly_mm": 1.03,
+        "exported_precip_anomaly_pct_of_baseline": 0.8479,
+        "implied_difference_of_climatology_mm": 2.2,
+        "discrepancy_mm": 1.17,
+        "monthly_comparison": [
+          {
+            "month": "Apr",
+            "exported_anomaly_mm": 3.47,
+            "climatology_difference_mm": 2.77,
+            "difference_mm": -0.7
+          },
+          {
+            "month": "May",
+            "exported_anomaly_mm": -1.07,
+            "climatology_difference_mm": -0.17,
+            "difference_mm": 0.9
+          },
+          {
+            "month": "Jun",
+            "exported_anomaly_mm": -0.33,
+            "climatology_difference_mm": -0.65,
+            "difference_mm": -0.32
+          },
+          {
+            "month": "Jul",
+            "exported_anomaly_mm": -0.24,
+            "climatology_difference_mm": 0.35,
+            "difference_mm": 0.59
+          },
+          {
+            "month": "Aug",
+            "exported_anomaly_mm": -0.47,
+            "climatology_difference_mm": -0.24,
+            "difference_mm": 0.23
+          },
+          {
+            "month": "Sep",
+            "exported_anomaly_mm": -0.33,
+            "climatology_difference_mm": 0.14,
+            "difference_mm": 0.47
+          }
+        ],
+        "projected_days_gt35": 70.41,
+        "projected_days_gt40": 21.45,
+        "projected_days_gt45": 1.01,
+        "validity": "The exported anomaly is the scenario input. Difference-of-climatologies is only a cross-check; do not interchange or sum them."
+      }
+    ],
+    "geographical_limit": "CCKP source label Yujno-kazachstanskaya; correspondence to current 17-district Turkestan boundary not independently established.",
+    "source": "https://climateknowledgeportal.worldbank.org/index.php/metadata",
+    "raw_file_sha256": {
+      "temperature_anomaly.csv": "a59e5adf18481d55339752200c2fea35f3a6682e015cad50a08537d18854a288",
+      "days_over_40_mean.csv": "f0ae6cdaf0d2c1f933b7420a320b679f7364ba28a0d9bdb853f86eb015d3c543",
+      "precipitation_anomaly.csv": "6c1f6e4dc6feeaaeffa3f27d04a8009de4a70d6246c2d07a92ca5590c69d7b43",
+      "precipitation_mean.csv": "184ba853ebfb3fe953db0656a18206118847a2eeebc74f6a51a1f05125ea94b0",
+      "days_over_35_mean.csv": "50878b3cb63b3a8bc542687380ceb9e1f74148180b9e244e75dda605ccd4b605",
+      "days_over_45_mean.csv": "0b752ed9a94b0f4281c089b1f19848384a277145961e6fff65830c3461eb06c6"
+    }
+  },
+  "survey": {
+    "question_arithmetic": {
+      "n_responses": 208,
+      "questions_checked": 10,
+      "question_checks": [
+        {
+          "question": "Q1",
+          "type": "single",
+          "sum_of_category_mentions": 208,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Exclusive responses; must equal sample"
+        },
+        {
+          "question": "Q2",
+          "type": "multiple",
+          "sum_of_category_mentions": 364,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Multiple selections; sum may exceed sample"
+        },
+        {
+          "question": "Q3",
+          "type": "multiple",
+          "sum_of_category_mentions": 390,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Multiple selections; sum may exceed sample"
+        },
+        {
+          "question": "Q4",
+          "type": "single",
+          "sum_of_category_mentions": 208,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Exclusive responses; must equal sample"
+        },
+        {
+          "question": "Q5",
+          "type": "multiple",
+          "sum_of_category_mentions": 383,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Multiple selections; sum may exceed sample"
+        },
+        {
+          "question": "Q6",
+          "type": "single",
+          "sum_of_category_mentions": 208,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Exclusive responses; must equal sample"
+        },
+        {
+          "question": "Q7",
+          "type": "multiple",
+          "sum_of_category_mentions": 379,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Multiple selections; sum may exceed sample"
+        },
+        {
+          "question": "Q8",
+          "type": "single",
+          "sum_of_category_mentions": 208,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Exclusive responses; must equal sample"
+        },
+        {
+          "question": "Q9",
+          "type": "multiple",
+          "sum_of_category_mentions": 351,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Multiple selections; sum may exceed sample"
+        },
+        {
+          "question": "Q10",
+          "type": "multiple",
+          "sum_of_category_mentions": 380,
+          "respondents": 208,
+          "arithmetic_status": "checked",
+          "interpretation": "Multiple selections; sum may exceed sample"
+        }
+      ],
+      "limitation": "Aggregates alone cannot establish territorial representativeness, pairwise preferences or respondent-level uncertainty."
+    },
+    "respondents": 208,
+    "survey_profile": {
+      "climate_weight": 0.43661971830985913,
+      "water_weight": 0.5633802816901409,
+      "numerators": {
+        "water_Q3": 120,
+        "climate_Q7": 93
+      }
+    },
+    "baseline_profile": {
+      "climate_weight": 0.6,
+      "water_weight": 0.4
+    },
+    "district_comparison": {
+      "territories": 17,
+      "top1_unchanged": 17,
+      "top3_sets_unchanged": 15,
+      "changed_top3_territories": [
+        "Zhetysay District",
+        "Arys City"
+      ]
+    },
+    "limitation": "Exploratory cross-question frequency ratio; not respondent-level AHP, population preference estimate, or district-wise sample distribution."
+  },
+  "validation": {
+    "crop_r2_below_0_5": [
+      {
+        "crop": "Corn",
+        "n": 289,
+        "R2": 0.4576
+      },
+      {
+        "crop": "Cotton",
+        "n": 181,
+        "R2": 0.287
+      },
+      {
+        "crop": "Potato",
+        "n": 290,
+        "R2": 0.4125
+      },
+      {
+        "crop": "Rice",
+        "n": 53,
+        "R2": 0.2192
+      },
+      {
+        "crop": "Sunflower",
+        "n": 255,
+        "R2": 0.3545
+      }
+    ],
+    "district_n_below_20": [
+      {
+        "district": "Otyrar District",
+        "n": 11,
+        "R2": -0.9874
+      }
+    ],
+    "district_r2_below_0_5": [
+      "Otyrar District"
+    ],
+    "district_crop_pairs_checked": 102,
+    "cautioned_pairs": 86,
+    "district_crop_cautions": [
+      {
+        "district": "Arys City",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Arys City",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Arys City",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Arys City",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Arys City",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Arys City",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Baydibek District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Baydibek District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Baydibek District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Baydibek District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Baydibek District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Baydibek District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Kazygurt District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kazygurt District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kazygurt District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kazygurt District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kazygurt District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kazygurt District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Keles District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Keles District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Keles District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Keles District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Keles District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Keles District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Kentau City",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kentau City",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kentau City",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kentau City",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kentau City",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Kentau City",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Maktaaral District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Maktaaral District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Maktaaral District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Maktaaral District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Maktaaral District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Maktaaral District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Ordabasy District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Ordabasy District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Ordabasy District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Ordabasy District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Ordabasy District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Ordabasy District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Otyrar District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "district transfer test uses only 11 records (<20)",
+          "district transfer R2 < 0.50 or undefined",
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Otyrar District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "district transfer test uses only 11 records (<20)",
+          "district transfer R2 < 0.50 or undefined",
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Otyrar District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "district transfer test uses only 11 records (<20)",
+          "district transfer R2 < 0.50 or undefined",
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Otyrar District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "district transfer test uses only 11 records (<20)",
+          "district transfer R2 < 0.50 or undefined",
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Otyrar District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "district transfer test uses only 11 records (<20)",
+          "district transfer R2 < 0.50 or undefined",
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Otyrar District",
+        "crop": "Wheat",
+        "warning": true,
+        "reasons": [
+          "district transfer test uses only 11 records (<20)",
+          "district transfer R2 < 0.50 or undefined"
+        ]
+      },
+      {
+        "district": "Sairam District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sairam District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sairam District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sairam District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sairam District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sairam District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Saryagash District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Saryagash District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Saryagash District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Saryagash District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Saryagash District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Saryagash District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Sauran District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sauran District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sauran District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sauran District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sauran District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Sauran District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Shardara District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Shardara District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Shardara District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Shardara District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Shardara District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Shardara District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Suzak District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Suzak District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Suzak District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Suzak District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Suzak District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Suzak District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Tolebi District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tolebi District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tolebi District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tolebi District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tolebi District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tolebi District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Tulkibas District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tulkibas District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tulkibas District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tulkibas District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tulkibas District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Tulkibas District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Turkestan City",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Turkestan City",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Turkestan City",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Turkestan City",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Turkestan City",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Turkestan City",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      },
+      {
+        "district": "Zhetysay District",
+        "crop": "Corn",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Zhetysay District",
+        "crop": "Cotton",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Zhetysay District",
+        "crop": "Potato",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Zhetysay District",
+        "crop": "Rice",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Zhetysay District",
+        "crop": "Sunflower",
+        "warning": true,
+        "reasons": [
+          "crop time-block R2 < 0.50"
+        ]
+      },
+      {
+        "district": "Zhetysay District",
+        "crop": "Wheat",
+        "warning": false,
+        "reasons": []
+      }
+    ],
+    "baseline_comparisons": [
+      {
+        "test": "GroupKFold-by-year RF",
+        "reference": "GroupKFold median baseline",
+        "rf_MAE": 8.8399,
+        "baseline_MAE": 8.6637,
+        "rf_MAE_lower": false,
+        "rf_RMSE": 16.1981,
+        "baseline_RMSE": 17.4728,
+        "rf_RMSE_lower": true
+      },
+      {
+        "test": "Expanding RF train 2004-2010 test 2011-2015",
+        "reference": "Expanding median baseline train 2004-2010 test 2011-2015",
+        "rf_MAE": 7.1413,
+        "baseline_MAE": 7.7455,
+        "rf_MAE_lower": true,
+        "rf_RMSE": 12.2764,
+        "baseline_RMSE": 13.1606,
+        "rf_RMSE_lower": true
+      },
+      {
+        "test": "Expanding RF train 2004-2015 test 2016-2020",
+        "reference": "Expanding median baseline train 2004-2015 test 2016-2020",
+        "rf_MAE": 11.9423,
+        "baseline_MAE": 13.3135,
+        "rf_MAE_lower": true,
+        "rf_RMSE": 20.7937,
+        "baseline_RMSE": 24.1076,
+        "rf_RMSE_lower": true
+      },
+      {
+        "test": "Expanding RF train 2004-2020 test 2021-2025",
+        "reference": "Expanding median baseline train 2004-2020 test 2021-2025",
+        "rf_MAE": 16.6992,
+        "baseline_MAE": 16.8799,
+        "rf_MAE_lower": true,
+        "rf_RMSE": 30.5382,
+        "baseline_RMSE": 32.1117,
+        "rf_RMSE_lower": true
+      },
+      {
+        "test": "10-year stress RF train 2004-2013 test 2014-2023",
+        "reference": "10-year stress median baseline train 2004-2013 test 2014-2023",
+        "rf_MAE": 13.2221,
+        "baseline_MAE": 14.5885,
+        "rf_MAE_lower": true,
+        "rf_RMSE": 24.3376,
+        "baseline_RMSE": 26.5482,
+        "rf_RMSE_lower": true
+      }
+    ],
+    "limitation": "Validation metrics cover historical groups, not independent observed farm outcomes or a promise of forecast precision; R² threshold is a reporting rule."
+  },
+  "farm_scenario": {
+    "input_sha256": "fffd384358faaeaf3dcc4ae3099f20fb004a421f3b55a4d8d68c0820fa884f9a",
+    "normal": {
+      "margin_change_kzt": 908724.69,
+      "field_water_change_m3": 24500.0,
+      "partial_ghg_change_kgco2e": 12338.51
+    },
+    "stress": {
+      "water_budget_m3": 600000.0,
+      "baseline_feasible": false,
+      "optimized_feasible": true,
+      "optimized_margin_kzt": -3188622.57,
+      "water_shortfall_in_infeasible_baseline_m3": 125500.0
+    },
+    "source_type": "Example using BNS references plus hypothetical costs, activity and budget; NOT actual farm efficiency observed or implementation impact.",
+    "implementation_act_note": "An implementation certificate does not supply a before-after measured effect; do not label a counterfactual as realized impact."
+  }
+}
