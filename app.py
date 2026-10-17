@@ -21,10 +21,18 @@ from core.config import (
 )
 from core.data import load_centroids, district_climate, district_crop_context
 from core.nasa import fetch_growing_season
-from core.ml import predict_yield, rank_crops, validation_summary, validation_for_crop, spatial_validation_summary, prediction_interval_for_crop
+from core.ml import predict_yield, rank_crops, validation_summary, validation_for_crop, spatial_validation_summary, prediction_interval_for_crop, forward_holdout_for_crop
 from core.resources import calculate_resources
 from core.reference_fallbacks import (optional_observation, irrigation_water_fallback,
                                       livestock_drinking_fallback, conditional_pumping_energy)
+from core.regional_tariffs import REGIONAL_TARIFF_REFERENCES, supplier_tariff
+from core.historical_crop_costs import historic_cost_mix, SOURCE_URL as HISTORIC_SOUTH_CROP_COST_SOURCE
+from core.evidence_registry import (ENERGY_SOURCES, SOURCE_LABELS,
+    validate_energy_sources, source_disclaimer, SOURCES, diesel_combustion_factor,
+    ENTERIC_CH4_ASIA_KG_HEAD_YEAR, N2O_EF1_GENERAL, N2O_EF1_DRY_CLIMATE,
+    EMBer_KZ_GRID_GENERATION_CO2_KG_PER_KWH,
+    FERTILIZER_GOST_MIN_N_FRACTION, FERTILIZER_GOST_SOURCES,
+    fertilizer_nitrogen_kg)
 from core.water_norms import default_water_requirement, PUMPING_REFERENCE_KWH_PER_M3
 from core.economics import DEFAULT_EF_KZ_KGCO2_PER_KWH, DEFAULT_ELECTRICITY_TARIFF_KZT_KWH, DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3, DEFAULT_GREEN_SHARE_TARGET, DEFAULT_WATER_SAVING_TARGET, economic_climate_effect, payback_years
 from core.economic_feasibility import economic_feasibility
@@ -62,7 +70,6 @@ from core.location import browser_geolocation, reverse_geocode
 from core.admin_boundaries import detect_point, detect_polygon, boundary_geojson
 from core.optimizer import optimize_structure
 from core.optimization_guard import validate_allocation
-from core.green_guard import evaluate_green_guard, alert_text
 from core.clrem import check_crop_codes, label as _original_crop_label, method as crop_method, scenario_for_crop, scenario_for_district, observed_for_crop, observed_extra_for_district, decision_table, registry as clrem_registry
 from core.reporting import build_excel_report, build_pdf_report, build_word_report, build_combined_excel_report, build_combined_pdf_report, build_combined_word_report
 from core.environment import environmental_diagnostics, diversification_metrics
@@ -1063,6 +1070,11 @@ with st.container():
     water_used = 0.0
     reuse = 0.0
     energy = 0.0
+    grid_energy_input_label = {
+        'ru':'Потребление электричества из сети, кВт·ч (0 = неизвестно)',
+        'kk':'Желілік электр энергиясын тұтыну, кВт·сағ (0 = белгісіз)',
+        'en':'Purchased grid electricity, kWh (0 = unknown)',
+    }[lang]
     ef = float(DEFAULT_EF_KZ_KGCO2_PER_KWH)
     irrigation_type = "unknown"
     water_meter = False
@@ -1071,7 +1083,12 @@ with st.container():
     current_solar = 0.0
     target_solar = float(DEFAULT_GREEN_SHARE_TARGET)
     electricity_tariff = float(DEFAULT_ELECTRICITY_TARIFF_KZT_KWH)
-    water_tariff = float(DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3)
+    # Historical QUNAR 0.845 KZT/m³ applied only to Arys operator in a prior period.
+    # Use the published 2026 national supplier gravity price strictly as a
+    # labelled ILLUSTRATIVE scenario unless the user confirms a contract/provider.
+    water_tariff = REGIONAL_TARIFF_REFERENCES['kazvodkhoz_irrigation_gravity_2026'].value_kzt_unit
+    electricity_tariff_doc = None
+    water_tariff_doc = None
     water_saving_target = float(DEFAULT_WATER_SAVING_TARGET)
     investment = 0.0
     seasons_per_year = 1.0
@@ -1102,7 +1119,7 @@ with st.container():
             )
         with lr2:
             energy = q_number_input(
-                {"kk":"Нақты жылдық энергия тұтынуы, кВт·сағ","ru":"Фактическое годовое энергопотребление, кВт·ч","en":"Observed annual energy use, kWh"}[lang],
+                {"kk":"Желіден алынған электр энергиясы, кВт·сағ/жыл (0 = белгісіз)","ru":"Электроэнергия из сети, кВт·ч/год (0 = неизвестно)","en":"Purchased grid electricity, kWh/year (0 = unknown)"}[lang],
                 min_value=0.0, value=0.0, step=100.0,
             )
         if user_level == "researcher":
@@ -1121,7 +1138,7 @@ with st.container():
         with b1:
             water_used = q_number_input(t["water_used"], min_value=0.0, value=0.0, step=1000.0)
         with b2:
-            energy = q_number_input(t["energy"], min_value=0.0, value=0.0, step=100.0)
+            energy = q_number_input(grid_energy_input_label, min_value=0.0, value=0.0, step=100.0)
         with b3:
             irrigation_type = q_selectbox(
                 t["irrigation_type"], ["unknown","furrow","sprinkler","drip","mixed"],
@@ -1139,7 +1156,7 @@ with st.container():
                 water_meter=st.checkbox(t["has_water_meter"],value=False)
                 soil_sensors=st.checkbox(t["has_soil_sensors"],value=False)
             with b:
-                energy=q_number_input(t["energy"],min_value=0.0,value=0.0,step=100.0)
+                energy=q_number_input(grid_energy_input_label,min_value=0.0,value=0.0,step=100.0)
                 efficient_pump=st.checkbox(t["has_efficient_pump"],value=False)
                 current_solar=q_number_input(t["current_solar"],min_value=0.0,max_value=100.0,value=0.0,step=0.1)
                 target_solar=q_number_input(t["target_solar"],min_value=0.0,max_value=100.0,value=float(DEFAULT_GREEN_SHARE_TARGET),step=0.5)
@@ -1150,7 +1167,43 @@ with st.container():
             with p1:
                 electricity_tariff=q_number_input(t["electricity_tariff"],min_value=0.0,value=float(DEFAULT_ELECTRICITY_TARIFF_KZT_KWH),step=0.1)
             with p2:
-                water_tariff=q_number_input(t["water_tariff"],min_value=0.0,value=float(DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3),step=0.01)
+                water_tariff=q_number_input(t["water_tariff"],min_value=0.0,value=REGIONAL_TARIFF_REFERENCES['kazvodkhoz_irrigation_gravity_2026'].value_kzt_unit,step=0.01)
+            _tariff_energy_ref=st.selectbox(
+                {'ru':'Основание тарифа на электроэнергию', 'kk':'Электр энергиясы тарифінің негізі',
+                 'en':'Electricity tariff basis'}[lang],
+                ['custom','electric_retail_commercial_2025_11_exvat','electric_retail_commercial_2025_11_invat','electric_retail_commercial_2025_vat','electric_retail_food_manufacturer_2025_vat'],
+                format_func=lambda k: {
+                    'custom':{'ru':'Собственный тариф / сценарий', 'kk':'Өз тарифі / сценарий', 'en':'Own tariff / scenario'},
+                    'electric_retail_commercial_2025_11_exvat':{'ru':'Ноябрь 2025, бизнес, без НДС: 41,06 (справочно)', 'kk':'2025 қараша, бизнес, ҚҚС-сыз: 41,06 (анықтамалық)', 'en':'November 2025 business ex VAT: 41.06 (reference)'},
+                    'electric_retail_commercial_2025_11_invat':{'ru':'Ноябрь 2025, бизнес, с НДС: 45,9872 (справочно)', 'kk':'2025 қараша, бизнес, ҚҚС-пен: 45,9872 (анықтамалық)', 'en':'November 2025 business incl VAT: 45.9872 (reference)'},
+                    'electric_retail_commercial_2025_vat':{'ru':'Архивный тариф до ноября 2025', 'kk':'2025 қарашаға дейінгі тарихи тариф', 'en':'Historical pre-November 2025 tariff'},
+                    'electric_retail_food_manufacturer_2025_vat':{'ru':'Туркестанская область: льготная категория производителя пищевых товаров, 2025', 'kk':'Түркістан: азық-түлік өндіруші санаты, 2025', 'en':'Turkestan: eligible food producer, 2025'},
+                }[k][lang], key='tariff_basis_electricity')
+            if _tariff_energy_ref != 'custom':
+                electricity_tariff_doc = supplier_tariff(_tariff_energy_ref, provider_confirmed=True)
+                electricity_tariff = electricity_tariff_doc.value_kzt_unit
+                st.metric({'ru':'Расчётный тариф электроэнергии, тг/кВт·ч',
+                           'kk':'Есептік электр тарифі, тг/кВт·сағ','en':'Reference electricity tariff, KZT/kWh'}[lang],
+                          f'{electricity_tariff:.4f}')
+            _water_tariff_options=['custom','kazvodkhoz_irrigation_gravity_2026',
+                   'kazvodkhoz_irrigation_pumped_2026','saryagash_canal_2026',
+                   'ordabasy_canal_2026','kazygurt_canal_2026',
+                   'tolebi_canal_2026','kentau_canal_2026','turkestan_canal_2026']
+            _tariff_water_ref=st.selectbox(
+                {'ru':'Основание платы за подачу оросительной воды',
+                 'kk':'Суармалы суды жеткізу ақысының негізі',
+                 'en':'Irrigation water delivery tariff basis'}[lang],
+                _water_tariff_options,
+                format_func=lambda k: ({'ru':'Собственный тариф / сценарий','kk':'Өз тарифі / сценарий',
+                    'en':'Own tariff / scenario'}[lang] if k=='custom'
+                    else REGIONAL_TARIFF_REFERENCES[k].provider+' ('+k.split('_')[-2]+')'),
+                key='tariff_basis_water')
+            if _tariff_water_ref != 'custom':
+                water_tariff_doc = supplier_tariff(_tariff_water_ref,provider_confirmed=True)
+                water_tariff = water_tariff_doc.value_kzt_unit
+                st.metric({'ru':'Расчётная плата за воду, тг/м³',
+                           'kk':'Судың есептік ақысы, тг/м³', 'en':'Reference water tariff, KZT/m³'}[lang],
+                          f'{water_tariff:.5f}')
             with p3:
                 water_saving_target=q_number_input(t["water_saving_target"],min_value=0.0,max_value=100.0,value=float(DEFAULT_WATER_SAVING_TARGET),step=0.1)
             with p4:
@@ -1168,6 +1221,26 @@ with st.container():
 
         st.caption(t["api_offline"])
 
+    _grid_ef_source = st.selectbox(
+        {'ru':'Основание коэффициента сетевых выбросов (справочный расчёт)',
+         'kk':'Желілік шығарындылар коэффициентінің негізі (анықтамалық есеп)',
+         'en':'Grid emission factor basis (reference scenario)'}[lang],
+        ['ember2025','ember2024','model_scenario'],
+        format_func=lambda code: {'ember2025':{
+            'ru':'Средняя генерация Казахстана, 2025 (Ember)',
+            'kk':'Қазақстандағы орташа электр өндіру, 2025 (Ember)',
+            'en':'Kazakhstan generation mix 2025 (Ember)'},
+            'ember2024':{
+            'ru':'Средняя генерация Казахстана, 2024 (Ember)',
+            'kk':'Қазақстандағы орташа электр өндіру, 2024 (Ember)',
+            'en':'Kazakhstan generation mix 2024 (Ember)'},
+            'model_scenario':{
+            'ru':'Сценарий QŪNAR / введённый коэффициент',
+            'kk':'QŪNAR сценарийі / енгізілген коэффициент',
+            'en':'QŪNAR assumption / user-entered factor'}}[code][lang],
+        key='grid_ef_method')
+    if _grid_ef_source in ('ember2025','ember2024'):
+        ef = EMBer_KZ_GRID_GENERATION_CO2_KG_PER_KWH[int(_grid_ef_source[-4:])]
     if mode_key == "mode5":
         with st.expander({"kk":"Жайылымның экологиялық диагностикасы (міндетті емес)","ru":"Экологическая диагностика пастбища (необязательно)","en":"Pasture environmental diagnostics (optional)"}[lang], expanded=False):
             pasture_source = q_selectbox(
@@ -1609,36 +1682,110 @@ with st.container():
                     'ru':'Для обоих вариантов введите азот, дизель и электроэнергию за один и тот же выбранный период. Годовой коэффициент метана животных для апреля-сентября пересчитывается пропорционально 183/365; это допущение.',
                     'en':'Enter nitrogen, diesel and electricity for the same selected period in both cases. Annual livestock methane is scaled by 183/365 for April-September; this is an assumption.'
                 }[lang])
+                _ghg_n_mode = st.selectbox(
+                    {'ru':'Основание массы азота', 'kk':'Азот массасының негізі',
+                     'en':'Nitrogen activity basis'}[lang],
+                    ['nutrient_n','fertilizer_product'],
+                    format_func=lambda code: {
+                        'nutrient_n':{'ru':'Известен действующий азот, кг N',
+                          'kk':'Әсер етуші азот белгілі, кг N', 'en':'Elemental nitrogen known, kg N'},
+                        'fertilizer_product':{'ru':'Известна масса удобрения и его вид, кг продукта',
+                          'kk':'Тыңайтқыш массасы мен түрі белгілі, кг өнім',
+                          'en':'Fertilizer product mass and type known, kg product'}
+                    }[code][lang], key='ghg_n_input_mode')
+                _ghg_product=None
+                _ghg_n_fraction=None
+                if _ghg_n_mode == 'fertilizer_product':
+                    _ghg_product = st.selectbox(
+                        {'ru':'Минеральное удобрение / гарантированный состав',
+                         'kk':'Минералды тыңайтқыш / кепілдік құрамы',
+                         'en':'Fertilizer product / guaranteed composition'}[lang],
+                        list(FERTILIZER_GOST_MIN_N_FRACTION)+['custom'],
+                        format_func=lambda c:{
+                            'urea_dry_B':{'ru':'Карбамид Б - ≥46,2% N (ГОСТ)',
+                              'kk':'Карбамид Б - ≥46,2% N (МЕМСТ)',
+                              'en':'Urea grade B - ≥46.2% N (GOST)'},
+                            'ammonium_nitrate_B_grade1_dry':{'ru':'Аммиачная селитра Б, 1 сорт - ≥34,4% N',
+                              'kk':'Аммоний селитрасы Б, 1 сұрып - ≥34,4% N',
+                              'en':'Ammonium nitrate B, 1st grade - ≥34.4% N'},
+                            'ammonium_nitrate_B_grade2_dry':{'ru':'Аммиачная селитра Б, 2 сорт - ≥34,0% N',
+                              'kk':'Аммоний селитрасы Б, 2 сұрып - ≥34,0% N',
+                              'en':'Ammonium nitrate B, 2nd grade - ≥34.0% N'},
+                            'custom':{'ru':'Состав с этикетки / другой вид удобрения',
+                              'kk':'Жапсырмадағы құрам / басқа тыңайтқыш',
+                              'en':'Label composition / another product'}
+                        }[c][lang], key='ghg_fertilizer_product')
+                    if _ghg_product == 'custom':
+                        _pct = q_number_input(
+                            {'ru':'Содержание N в продукте, % (с этикетки)',
+                             'kk':'Өнімдегі N үлесі, % (жапсырмадан)',
+                             'en':'Nitrogen fraction, % (from product label)'}[lang],
+                            min_value=0.0,max_value=100.0,value=0.0,step=0.1)
+                        _ghg_n_fraction=(_pct/100 if _pct>0 else None)
+                    else:
+                        _ghg_n_fraction=FERTILIZER_GOST_MIN_N_FRACTION[_ghg_product]
                 cba, cbb = st.columns(2)
                 for slot, (column, title) in enumerate(((cba,{"kk":"Ағымдағы нұсқа","ru":"Исходный вариант","en":"Baseline"}[lang]),
                                                         (cbb,{"kk":"Сценарий","ru":"Сценарный вариант","en":"Proposed scenario"}[lang]))):
                     case='baseline' if slot==0 else 'proposed'
                     with column:
                         st.markdown("**"+title+"**")
-                        cn = q_number_input({"kk":"Азот, кг N (барлық алаң)","ru":"Азот, кг N (вся площадь)","en":"Nitrogen, kg N (whole area)"}[lang] + " / " + title,
+                        cn = q_number_input(({
+                            'kk':'Тыңайтқыш өнімі, кг (бүкіл аумақ)',
+                            'ru':'Масса удобрения, кг (вся площадь)',
+                            'en':'Fertilizer product kg (whole area)'}[lang] if _ghg_n_mode == 'fertilizer_product'
+                            else {"kk":"Азот, кг N (барлық алаң)","ru":"Азот, кг N (вся площадь)",
+                                  "en":"Nitrogen, kg N (whole area)"}[lang]) + " / " + title,
                                             min_value=0.0,value=0.0,step=10.0,key="ghg_n_"+case)
                         cd = q_number_input({"kk":"Дизель, л","ru":"Дизель, л","en":"Diesel, litres"}[lang] + " / " + title,
                                             min_value=0.0,value=0.0,step=10.0,key="ghg_diesel_"+case)
                         ce = q_number_input({"kk":"Электр энергиясы, кВт·сағ","ru":"Электроэнергия, кВт·ч","en":"Electricity, kWh"}[lang] + " / " + title,
                                             min_value=0.0,value=0.0,step=100.0,key="ghg_electric_"+case)
-                        carbon_inputs[case]={'nitrogen_kg':cn,'diesel_litres':cd,'electricity_kwh':ce}
+                        carbon_inputs[case]={'nitrogen_kg':(fertilizer_nitrogen_kg(
+                            product_kg=cn,nitrogen_mass_fraction=_ghg_n_fraction)
+                            if _ghg_n_mode == 'fertilizer_product' else cn),
+                            'diesel_litres':cd,'electricity_kwh':ce}
                 carbon_activity_confirmed = st.checkbox({
                     "kk":"Екі сценарий бойынша барлық енгізілген мөлшер тексерілді, оның ішінде нөлдік мәндер",
                     "ru":"Подтверждаю все количества для обоих сценариев, включая действительно нулевые значения",
                     "en":"I confirm all activity amounts for both scenarios, including any verified zeros"}[lang],value=False)
+                carbon_n2o_climate = st.selectbox(
+                    {'ru':'Климатическая категория IPCC для прямого N₂O',
+                     'kk':'Тікелей N₂O үшін IPCC климаттық санаты',
+                     'en':'IPCC direct soil N2O climate class'}[lang],
+                    ['general','dry'],
+                    format_func=lambda item: {'general':{
+                        'ru':'Общий коэффициент EF1 = 0,01',
+                        'kk':'Жалпы коэффициент EF1 = 0,01',
+                        'en':'General EF1 = 0.01'},
+                        'dry':{
+                        'ru':'Сухой климат: EF1 = 0,005 (при подтверждении применимости)',
+                        'kk':'Құрғақ климат: EF1 = 0,005 (сәйкестігін тексеру қажет)',
+                        'en':'Dry-climate EF1 = 0.005 (when applicable)'}}[item][lang],
+                    key='ghg_n2o_climate_class')
                 carbon_diesel_factor=q_number_input(
                     {"kk":"Дизель үшін сценарийлік коэффициент, кг CO₂/л","ru":"Сценарный коэффициент дизеля, кг CO₂/л","en":"Diesel scenario factor, kg CO₂/litre"}[lang],
-                    min_value=0.0,value=float(DEFAULT_DIESEL_CO2_KG_L),step=0.01)
-                st.caption({"kk":"2,68 кг/л - өзгертілетін жану бағасы, Қазақстан бойынша расталған толық өмірлік цикл коэффициенті емес.",
-                            "ru":"2,68 кг/л - редактируемая оценка сгорания, не подтверждённый полный жизненный цикл топлива Казахстана.",
-                            "en":"2.68 kg/l is an editable combustion estimate, not a verified full Kazakhstan fuel lifecycle factor."}[lang])
+                    min_value=0.0,value=float(round(diesel_combustion_factor(),6)),step=0.001)
+                st.caption({"kk":"2,676492 кг/л - IPCC жану коэффициенті, үлгілік тығыздық пен жану жылуы бойынша есеп. Нақты отын көрсеткіштерін енгізуге болады.",
+                            "ru":"2,676492 кг/л - расчёт сгорания по IPCC при справочных плотности и теплоте сгорания. Это не полный жизненный цикл топлива; коэффициент редактируется.",
+                            "en":"2.676492 kg/l derives from the IPCC combustion factor and reference fuel density and heating value; editable and not full lifecycle emissions."}[lang])
                 if mode_key == 'mode5':
                     carbon_enteric = st.checkbox({"kk":"Асқорыту метанын қосу","ru":"Добавить метан пищеварения животных","en":"Include enteric methane"}[lang],value=False)
                     if carbon_enteric:
-                        carbon_enteric_factor=q_number_input({"kk":"CH₄ коэффициенті, кг/бас/жыл","ru":"Коэффициент CH₄, кг/голову/год","en":"CH4 factor, kg/head/year"}[lang],min_value=0.0,value=0.0,step=1.0)
-                        carbon_enteric_base=q_number_input({"kk":"Бастапқы мал саны","ru":"Исходное поголовье","en":"Baseline heads"}[lang],min_value=0.0,value=0.0,step=1.0)
-                        carbon_enteric_proposed=q_number_input({"kk":"Сценарий мал саны","ru":"Сценарное поголовье","en":"Proposed heads"}[lang],min_value=0.0,value=0.0,step=1.0)
-                        st.caption({"kk":"Коэффициент түрге сай сенімді дереккөзден алынуы керек; есептік кезең жоғарыда таңдалады.",
+                        if livestock_species in ('Poultry layers','Poultry broilers'):
+                            st.info({'ru':'Энтеральный CH₄ у птицы не рассчитывается. Метан навоза при этом не равен нулю.',
+                                     'kk':'Құстар үшін ішектік CH₄ есептелмейді. Бұл көң шығарындылары жоқ дегенді білдірмейді.',
+                                     'en':'Enteric CH4 is not calculated for poultry; manure emissions may still occur.'}[lang])
+                            carbon_enteric=False
+                        else:
+                            carbon_enteric_factor=q_number_input({"kk":"CH₄ коэффициенті, кг/бас/жыл","ru":"Коэффициент CH₄, кг/голову/год","en":"CH4 factor, kg/head/year"}[lang],
+                                min_value=0.0,value=float(ENTERIC_CH4_ASIA_KG_HEAD_YEAR.get(livestock_species, 0.0)),step=1.0)
+                            st.caption({'ru':'IPCC 2019, Tier 1, регион Азия: справочный коэффициент, а не измерение стада. ',
+                                        'kk':'IPCC 2019, 1-деңгей, Азия: анықтамалық коэффициент, нақты мал өлшемі емес. ',
+                                        'en':'IPCC 2019 Tier 1, Asia: reference factor, not a measured herd rate. '}[lang])
+                            carbon_enteric_base=q_number_input({"kk":"Бастапқы мал саны","ru":"Исходное поголовье","en":"Baseline heads"}[lang],min_value=0.0,value=0.0,step=1.0)
+                            carbon_enteric_proposed=q_number_input({"kk":"Сценарий мал саны","ru":"Сценарное поголовье","en":"Proposed heads"}[lang],min_value=0.0,value=0.0,step=1.0)
+                            st.caption({"kk":"Коэффициент түрге сай сенімді дереккөзден алынуы керек; есептік кезең жоғарыда таңдалады.",
                                     "ru":"Коэффициент должен иметь источник для выбранного вида животных; расчётный период выбирается выше.",
                                     "en":"Use a source-supported coefficient for the species; the accounting period is selected above."}[lang])
 
@@ -1800,9 +1947,63 @@ with st.container():
             'en':'Confirm measured electricity consumption is exactly 0 kWh',
         }[lang], value=False, key='confirm_observed_zero_energy')
 
+    # Mandatory energy-source *classification*, not mandatory fossil-fuel consumption.
+    # A rain-fed/manual/contractor-powered farm is allowed and is NOT assigned diesel.
+    selected_energy_sources = st.multiselect(
+        {'ru':'Источники энергии и выполнения работ (обязательно)',
+         'kk':'Энергия және жұмыс орындалуының көздері (міндетті)',
+         'en':'Operational energy/work sources (required)'}[lang],
+        options=list(ENERGY_SOURCES), default=[],
+        format_func=lambda code: SOURCE_LABELS[lang][code],
+        key='farm_operational_energy_sources',
+        help={'ru':'Выберите все применяемые источники. Подрядная техника и ручной труд допускаются. Выбор источника не означает известный расход топлива.',
+              'kk':'Қолданылатын барлық көздерді таңдаңыз. Мердігер техника мен қол еңбегі болуы мүмкін. Таңдау отын шығынын дәлелдемейді.',
+              'en':'Select all that apply. Contracted machinery and manual labour are valid. Selecting a fuel does not establish its consumption.'}[lang])
+    _fuel_observations = {}
+    for _src, _units in [('diesel','L'),('petrol','L'),('natural_gas','m³'),('coal','kg'),
+                         ('biomass','kg'),('solar_pv','kWh'),('wind','kWh')]:
+        if _src in selected_energy_sources:
+            _val = q_number_input(
+                SOURCE_LABELS[lang][_src] + ' (' + _units + '; '
+                + {'ru':'0 = неизвестно', 'kk':'0 = белгісіз', 'en':'0 = unknown'}[lang] + ')',
+                min_value=0.0, value=0.0, step=1.0,
+                key='resource_amount_'+_src)
+            _fuel_observations[_src] = float(_val) if float(_val) > 0 else None
+
+    pumping_confirmed = False
+    pump_head_m = None
+    pump_efficiency = None
+    if ('grid_electricity' in selected_energy_sources or 'solar_pv' in selected_energy_sources
+        or 'diesel' in selected_energy_sources):
+        with st.expander({'ru':'Параметры насоса для расчёта энергопотребления (при наличии)',
+                          'kk':'Энергияны есептеуге арналған сорғы параметрлері (бар болса)',
+                          'en':'Pumping energy inputs (if the farm uses a pump)'}[lang], expanded=False):
+            pumping_confirmed = st.checkbox({
+                'ru':'Вода действительно подаётся насосом',
+                'kk':'Су шынында да сорғымен беріледі',
+                'en':'The farm actually pumps this water'}[lang], value=False,
+                key='pumping_is_used')
+            if pumping_confirmed:
+                _h = q_number_input({'ru':'Суммарный напор насоса, м',
+                    'kk':'Сорғының жиынтық тегеуріні, м',
+                    'en':'Total dynamic pumping head, m'}[lang],
+                    min_value=0.0, value=0.0, step=1.0,key='farm_pump_head')
+                _eta = q_number_input({'ru':'Суммарный КПД насоса и двигателя, %',
+                    'kk':'Сорғы мен қозғалтқыштың жалпы ПӘК, %',
+                    'en':'Combined pump + motor efficiency, %'}[lang],
+                    min_value=0.0, max_value=100.0, value=0.0, step=1.0,
+                    key='farm_pump_efficiency')
+                if _h > 0 and _eta > 0:
+                    pump_head_m, pump_efficiency = float(_h), float(_eta)/100.0
     submitted = st.button(t["calculate"], type="primary", use_container_width=True, key="calculate_main")
 
 if submitted:
+    if not selected_energy_sources:
+        st.error({'ru':'Выберите хотя бы один источник энергии, работы техники или ручного труда.',
+                  'kk':'Энергия, техника немесе қол еңбегінің кемінде бір көзін таңдаңыз.',
+                  'en':'Select at least one energy source, machinery service or manual labour source.'}[lang])
+        st.stop()
+    validate_energy_sources(selected_energy_sources)
     ga_event("run_assessment", mode_key=mode_key, season_mode=season_mode, calculation_year=calculation_year, user_level=user_level)
     live_ok = False
 
@@ -1818,16 +2019,19 @@ if submitted:
         water_reference = irrigation_water_fallback(used_district,crop,area_ha,irrigation_type,
             observed=observed_water,measured_zero=water_zero_confirmed)
     effective_water_used = water_reference.value
+    if 'grid_electricity' not in selected_energy_sources and observed_energy is not None and observed_energy > 0:
+        st.error({'ru':'Указан расход сетевой электроэнергии, но сеть не выбрана среди источников.',
+                  'kk':'Желілік электр тұтынуы енгізілген, бірақ желі энергия көзі ретінде таңдалмады.',
+                  'en':'Positive grid-electricity consumption was entered without selecting grid electricity.'}[lang])
+        st.stop()
     water_input_source = 'user' if water_reference.source_tier == 'user_observed' else water_reference.source_tier
     energy_reference = conditional_pumping_energy(effective_water_used,
         observed=observed_energy, measured_zero=energy_zero_confirmed,
-        pumping_confirmed=False)  # No pump assumed from mere absence of inputs.
-    if water_reference.source_tier != 'user_observed' and effective_water_used is not None:
-        st.caption({
-            'ru':'Вода: справочный расчёт, не показание счётчика. Источник: ',
-            'kk':'Су: есептік анықтамалық мән, есептегіш дерегі емес. Дереккөз: ',
-            'en':'Water: reference estimate, not a meter observation. Source: ',
-        }[lang] + water_reference.source)
+        pumping_confirmed=(pumping_confirmed and 'grid_electricity' in selected_energy_sources),
+        head_m=pump_head_m, overall_efficiency=pump_efficiency)
+    _grid_known = energy_reference.value is not None
+    # Methodological references are not measurements; tariff and EF defaults
+    # remain labelled scenarios unless an actual bill/factor is entered.
 
     report_payload = {
         "mode_key": mode_key,
@@ -1864,6 +2068,63 @@ if submitted:
         ]
     }
     report_payload['inputs'].append([
+        {'ru':'Используемые источники энергии / труда', 'kk':'Энергия және еңбек көздері',
+         'en':'Operational energy and work sources'}[lang],
+        ', '.join(SOURCE_LABELS[lang][code] for code in selected_energy_sources),
+        {'ru':'Категории выбраны пользователем; объём ресурса не подтверждается выбором',
+         'kk':'Санаттарды пайдаланушы таңдады; мөлшер таңдау арқылы расталмайды',
+         'en':'Source categories are user-selected; fuel quantities require separate evidence'}[lang]
+    ])
+    for _src, _quantity in _fuel_observations.items():
+        _unit = {'diesel':'л', 'petrol':'л', 'natural_gas':'м³', 'coal':'кг',
+                 'biomass':'кг', 'solar_pv':'кВт·ч', 'wind':'кВт·ч'}[_src]
+        report_payload['inputs'].append([
+            SOURCE_LABELS[lang][_src],
+            f'{_quantity:,.2f} {_unit}' if _quantity is not None else
+                {'ru':'неизвестно','kk':'белгісіз','en':'unknown'}[lang],
+            {'ru':'Фактическое значение пользователя' if _quantity is not None else 'Не подставлен произвольный расход',
+             'kk':'Пайдаланушы енгізген нақты дерек' if _quantity is not None else 'Ерікті шығыс қосылмады',
+             'en':'User activity input' if _quantity is not None else 'No unjustified usage substituted'}[lang]
+        ])
+    if _fuel_observations.get('diesel') is not None:
+        report_payload['inputs'].append([
+            {'ru':'CO₂ от дизеля, расчётный фактор IPCC', 'kk':'Дизельден CO₂, IPCC факторы',
+             'en':'Diesel CO₂, IPCC derived combustion factor'}[lang],
+            f"{diesel_combustion_factor():.5f} кг CO₂/л; "
+            f"{_fuel_observations['diesel']*diesel_combustion_factor():.2f} кг CO₂",
+            SOURCES['ipcc_diesel'].url+'; '+SOURCES['gost_diesel'].url+
+            '; 0.84 кг/л, 43 МДж/кг (оценочные параметры); прямое сжигание, не жизненный цикл'
+        ])
+    for _cost_type,_rate,_doc in (
+        ('electricity',electricity_tariff,electricity_tariff_doc),
+        ('water',water_tariff,water_tariff_doc)):
+        report_payload['inputs'].append([
+            {'ru':'Тариф: ','kk':'Тариф: ','en':'Tariff: '}[lang]+_cost_type,
+            f'{_rate:.5f} '+('KZT/kWh' if _cost_type=='electricity' else 'KZT/m³'),
+            (_doc.provider+'; '+_doc.source+'; '+_doc.caveat if _doc is not None else
+             {'ru':'Введённое значение или сценарное значение QŪNAR. Не подтверждено как тариф этого хозяйства.',
+              'kk':'Пайдаланушы енгізген немесе QŪNAR сценарийлік мәні. Шаруашылықтың нақты тарифі екені расталмаған.',
+              'en':'User-entered or QŪNAR scenario value; not verified as the farm contract tariff.'}[lang])
+        ])
+    report_payload['inputs'].append([
+        {'ru':'Коэффициент выбросов сетевой электроэнергии', 'kk':'Желілік электр энергиясының эмиссия коэффициенті',
+         'en':'Grid electricity emission factor'}[lang],
+        f'{ef:.5f} кг CO₂/кВт·ч',
+        (SOURCES['ember_kazakhstan_'+_grid_ef_source[-4:]].name+'; '+SOURCES['ember_kazakhstan_'+_grid_ef_source[-4:]].url+
+         '; generation-average CO2 factor, not full CO2e or a contractual grid factor'
+         if _grid_ef_source.startswith('ember') else
+         {'ru':'Редактируемое допущение QŪNAR (национальный официальный фактор не подтверждён)',
+          'kk':'QŪNAR-дың өзгертілетін болжамы (ресми ұлттық коэффициент расталмаған)',
+          'en':'Editable QŪNAR scenario assumption (no verified official national factor)'}[lang])
+    ])
+    report_payload['inputs'].append([
+        {'ru':'Статус автоматических подстановок', 'kk':'Автоматты алмастыру мәртебесі',
+         'en':'Reference imputation status'}[lang],
+        {'ru':'Справочно-сценарный расчёт', 'kk':'Анықтамалық-сценарийлік есеп',
+         'en':'Reference-based scenario calculation'}[lang],
+        source_disclaimer(lang)
+    ])
+    report_payload['inputs'].append([
         {'ru':'Вода: фактическое значение или подстановка',
          'kk':'Су: нақты мән немесе алмастыру','en':'Water: observation or fallback'}[lang],
         'нет данных' if effective_water_used is None else f'{effective_water_used:,.2f} м³',
@@ -1878,6 +2139,21 @@ if submitted:
     ])
     if crop is not None:
         report_payload["inputs"].append([t["crop"], extended_crop_label(crop, lang), t["source_user"]])
+        if variable_cost_kzt_ha <= 0:
+            _hist_costs = historic_cost_mix(crop)
+            if _hist_costs:
+                _mix_min = min(row['historic_share_wages_fuel_seeds'] for row in _hist_costs)*100
+                _mix_max = max(row['historic_share_wages_fuel_seeds'] for row in _hist_costs)*100
+                report_payload['inputs'].append([
+                    {'ru':'Историческая структура затрат, доля зарплаты/ГСМ/семян',
+                     'kk':'Тарихи шығын құрылымы: еңбекақы/ЖЖМ/тұқым үлесі',
+                     'en':'Historical cost structure, wages/fuel/seeds share'}[lang],
+                    f'{_mix_min:.1f}%-{_mix_max:.1f}% (2004)',
+                    HISTORIC_SOUTH_CROP_COST_SOURCE + '; '+
+                    {'ru':'Исторические нормы бывшей Южно-Казахстанской области. Не являются себестоимостью 2026 года: современная маржа не рассчитывается без актуальных затрат.',
+                     'kk':'Бұрынғы Оңтүстік Қазақстан облысының тарихи нормалары. 2026 жылғы өзіндік құн емес; ағымдағы шығынсыз маржа есептелмейді.',
+                     'en':'Historical norms for former South Kazakhstan; NOT current KZT/ha costs. Margin is unavailable without current costs.'}[lang]
+                ])
     if mode_key == "mode5":
         livestock_head_source_label = (
             t["source_user"] if livestock_heads > 0
@@ -2387,6 +2663,11 @@ if submitted:
         st.warning({"kk":"GHG салыстыруы үшін бастапқы мөлшерлерді растаңыз.",
                     "ru":"Для расчёта выбросов подтвердите все исходные количества; неизвестные значения нельзя считать нулями.",
                     "en":"Confirm all activity amounts before calculating; unknown activity is not zero."}[lang])
+    if carbon_enabled and carbon_activity_confirmed and _ghg_n_mode == 'fertilizer_product' and _ghg_n_fraction is None:
+        st.error({'ru':'Для расчёта N₂O требуется доля действующего азота с этикетки удобрения.',
+                  'kk':'N₂O есебі үшін тыңайтқыш жапсырмасындағы азот үлесі қажет.',
+                  'en':'Product nitrogen fraction is required to calculate N2O.'}[lang])
+        st.stop()
     if carbon_enabled and carbon_activity_confirmed:
         try:
             _b = carbon_inputs['baseline']; _q = carbon_inputs['proposed']
@@ -2398,11 +2679,13 @@ if submitted:
             _cb=partial_inventory(**_b, grid_kg_co2e_kwh=ef,
                                   accounting_period=carbon_accounting_period,
                                   diesel_factor=carbon_diesel_factor,
+                                  n2o_factor=(N2O_EF1_DRY_CLIMATE if carbon_n2o_climate == 'dry' else N2O_EF1_GENERAL),
                                   **_methane_args,
                                   **({'enteric_heads':carbon_enteric_base} if carbon_enteric else {}))
             _cp=partial_inventory(**_q, grid_kg_co2e_kwh=ef,
                                   accounting_period=carbon_accounting_period,
                                   diesel_factor=carbon_diesel_factor,
+                                  n2o_factor=(N2O_EF1_DRY_CLIMATE if carbon_n2o_climate == 'dry' else N2O_EF1_GENERAL),
                                   **_methane_args,
                                   **({'enteric_heads':carbon_enteric_proposed} if carbon_enteric else {}))
             _cc=compare_partial_inventory(_cb,_cp)
@@ -2437,12 +2720,25 @@ if submitted:
             report_payload['inputs'].append([
                 {'kk':'GHG кіріс деректері мен коэффициенттері','ru':'Исходные данные и коэффициенты выбросов','en':'GHG activity and factor assumptions'}[lang],
                 f"N: {_b['nitrogen_kg']}/{_q['nitrogen_kg']} kg; diesel: {_b['diesel_litres']}/{_q['diesel_litres']} L; electricity: {_b['electricity_kwh']}/{_q['electricity_kwh']} kWh; diesel EF: {carbon_diesel_factor} kg/L; grid EF: {ef} kg/kWh",
-                _co2_boundary])
+                _co2_boundary + '; N₂O EF1 '+str(N2O_EF1_DRY_CLIMATE if carbon_n2o_climate == 'dry' else N2O_EF1_GENERAL)
+                + '; '+SOURCES['ipcc_soils'].url+'; diesel: '+SOURCES['ipcc_diesel'].url+'; density standard: '+SOURCES['gost_diesel'].url])
+            if _ghg_n_mode == 'fertilizer_product':
+                _n_source=(SOURCES[FERTILIZER_GOST_SOURCES[_ghg_product]].url
+                    if _ghg_product!='custom' else
+                    {'ru':'Состав по этикетке, введённый пользователем',
+                     'kk':'Пайдаланушы көрсеткен таңбалау құрамы',
+                     'en':'Product-label composition entered by user'}[lang])
+                report_payload['inputs'].append([
+                    {'ru':'Азот: перевод удобрения в кг N',
+                     'kk':'Азот: тыңайтқышты кг N-ге ауыстыру',
+                     'en':'Nitrogen conversion from fertilizer product to kg N'}[lang],
+                    f'N fraction={_ghg_n_fraction:.4f}; baseline={_b["nitrogen_kg"]:.2f} kg N; scenario={_q["nitrogen_kg"]:.2f} kg N',
+                    _n_source+'; minimum dry-matter guarantee if GOST option; reference scenario, not lab analysis'])
             if carbon_enteric:
                 report_payload['inputs'].append([
                     {'kk':'Мал метаны: коэффициент пен мал саны','ru':'Метан пищеварения: коэффициент и поголовье','en':'Enteric methane: factor and heads'}[lang],
                     f"{carbon_enteric_factor} kg CH4/head/year; {carbon_enteric_base}/{carbon_enteric_proposed} heads; {_period_display}; fraction={_methane_args['enteric_year_fraction']:.6f}",
-                    _co2_boundary])
+                    _co2_boundary + '; '+SOURCES['ipcc_livestock'].url])
         except (ValueError,KeyError) as _c_err:
             st.warning(str(_c_err))
 
@@ -2461,6 +2757,30 @@ if submitted:
                 'label': {'kk':'ML болжамының дәлелдік шектеуі','ru':'Статус надёжности ML-прогноза','en':'ML forecast validation caution'}[lang],
                 'value': {'kk':'Төмен/шектеулі сенімділік','ru':'Низкая/ограниченная уверенность','en':'Low/limited support'}[lang] if _fc.low_confidence else {'kk':'Айқын ескерту жоқ','ru':'Без специфического предупреждения','en':'No specific warning'}[lang],
                 'note':'; '.join(_fc.reasons) if _fc.reasons else f'Crop R²={_fc.crop_r2:.3f}; district leave-out R²={_fc.district_r2:.3f}; NOT a 2025 holdout test'})
+            _holdout_evidence = forward_holdout_for_crop(crop)
+            if _holdout_evidence:
+                _cross_module_summary_rows.append({
+                    'label': {'ru':'ML: R² при прогнозе 2021–2025',
+                              'kk':'ML: 2021–2025 жж. болжамының R² көрсеткіші',
+                              'en':'ML: forward R² for 2021–2025'}[lang],
+                    'value': f"{_holdout_evidence['r2']:.3f}",
+                    'note': {'ru':'Обучение 2004–2020, проверка 2021–2025. Отрицательный R² означает слабее прогноза среднего по контрольной выборке.',
+                             'kk':'2004–2020 жж. оқыту, 2021–2025 жж. тексеру. Теріс R² бақылау жиынының орташа мәнінен нашар нәтижені білдіреді.',
+                             'en':'Trained 2004–2020, tested 2021–2025. Negative R² means worse than the heldout-target mean.'}[lang]
+                            + f"; N={_holdout_evidence['n']}; MAE={_holdout_evidence['mae']:.2f} centners/ha"
+                })
+            _pi_evidence = prediction_interval_for_crop(crop)
+            if _pi_evidence and _pi_evidence.get('is_forward_backtest'):
+                _cross_module_summary_rows.append({
+                    'label': {'ru':'Историческое покрытие ML-интервала 2021–2025',
+                              'kk':'ML аралығының 2021–2025 жж. тарихи қамтуы',
+                              'en':'ML interval historical coverage 2021–2025'}[lang],
+                    'value': f"{100*_pi_evidence['empirical_coverage']:.1f}% / 90%",
+                    'note': {'ru':'Проверка будущего периода по более ранней калибровке; результат не гарантирует покрытие новых прогнозов.',
+                             'kk':'Ертеректегі калибрлеуге негізделген кейінгі кезеңнің тексерісі; жаңа болжамдарға кепілдік емес.',
+                             'en':'Forward-period backtest using prior calibration; no guarantee for new forecasts.'}[lang]
+                           + f"; N={_pi_evidence['n']}; ±{_pi_evidence['half_width_centners_ha']:.2f} centners/ha"
+                })
         except (OSError,ValueError) as _validation_error:
             st.caption({'ru':'Файл валидации не найден: ','kk':'Валидация файлы табылмады: ','en':'Validation unavailable: '}[lang]+str(_validation_error))
 
@@ -2858,16 +3178,16 @@ if submitted:
         if "energy_kwh_per_ha" in resource:
             st.metric(t["energy_use"], f"{resource['energy_kwh_per_ha']:,.0f} {UNITS['kwh_ha']}")
         elif "reference_pumping_energy_kwh_per_ha" in resource:
-            st.caption({"kk":f"Егер осы су көлемі сорғымен берілсе, анықтамалық энергия сценарийі ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} кВт·сағ/га (0,70509 кВт·сағ/{UNITS['m3']}). Бұл нақты тұтыну емес.","ru":f"Если весь этот объем подается насосом, справочный энергетический сценарий ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} кВт·ч/га (0,70509 кВт·ч/{UNITS['m3']}). Это не фактическое энергопотребление хозяйства.","en":f"If the full water volume is pumped, the reference energy scenario is ≈ {resource['reference_pumping_energy_kwh_per_ha']:,.0f} kWh/ha (0.70509 kWh/m³). This is not observed farm energy use."}[lang])
+            st.caption({"kk":"Сорғы электр энергиясын анықтау үшін нақты арыны мен жалпы КПД қажет. Әмбебап кВт·сағ/м³ нормативі қолданылмайды.","ru":"Для расчёта насосной электроэнергии нужны напор и общий КПД. Универсальная норма кВт·ч/м³ не подставляется.","en":"Pump electricity requires documented total head and overall efficiency. No universal kWh/m³ value is imputed."}[lang])
         if "operational_co2e_kg_per_ha" in resource: st.metric(t["co2"], f"{resource['operational_co2e_kg_per_ha']:,.1f} {UNITS['co2_kg_ha']}")
-        econ = economic_climate_effect(energy_kwh=energy, freshwater_m3=resource.get("farm_freshwater_m3"), electricity_tariff=electricity_tariff, water_tariff=water_tariff, emission_factor=ef, current_solar_share=current_solar, target_solar_share=target_solar, water_saving_target=water_saving_target)
+        econ = economic_climate_effect(energy_kwh=(energy_reference.value if _grid_known else None), freshwater_m3=resource.get("farm_freshwater_m3"), electricity_tariff=electricity_tariff, water_tariff=water_tariff, emission_factor=ef, current_solar_share=current_solar, target_solar_share=target_solar, water_saving_target=water_saving_target)
         if user_level != "farmer":
             st.markdown("### " + t["climate_cost_title"])
             e1,e2,e3,e4=st.columns(4)
-            e1.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}")
-            e2.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}")
-            e3.metric(t["co2_reduction"], f"{econ['co2_reduction_kg']/1000:,.2f} {UNITS['t']} CO₂")
-            e4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}")
+            e1.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if _grid_known else "—")
+            e2.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if econ['current_water_cost_kzt'] is not None else "—")
+            e3.metric(t["co2_reduction"], f"{econ['co2_reduction_kg']/1000:,.2f} {UNITS['t']} CO₂" if _grid_known else "—")
+            e4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if _grid_known and econ['total_saving_kzt'] is not None else "—")
         st.markdown("### " + {"kk":"Практикалық қорытынды","ru":"Практический вывод","en":"Practical conclusion"}[lang])
         if scenario is not None:
             st.write({"kk":f"{extended_crop_label(crop,lang)} бойынша негізгі шектеулер климат, нормативтік су жүктемесі және дерек сенімділігі бірге қарастырылып бағаланды.","ru":f"Для культуры «{extended_crop_label(crop,lang)}» ограничения оцениваются совместно по климату, нормативной водной нагрузке и надежности исходных данных.","en":f"For {extended_crop_label(crop,lang)}, constraints are assessed jointly through climate, normative water demand and evidence reliability."}[lang])
@@ -2969,22 +3289,23 @@ if submitted:
         if observed_energy is not None:
             economic_energy_kwh = float(observed_energy)
             economic_energy_source = "user_observed"
-        elif effective_water_used is not None and effective_water_used > 0:
-            economic_energy_kwh = float(effective_water_used) * float(PUMPING_REFERENCE_KWH_PER_M3)
-            economic_energy_source = "hypothetical_pumping_scenario_unverified_0.70509_kwh_m3"
+        elif energy_reference.value is not None:
+            economic_energy_kwh = float(energy_reference.value)
+            economic_energy_source = energy_reference.source_tier + ': '+energy_reference.source
         else:
-            economic_energy_kwh = 0.0
+            # Preserve missing energy as unknown; no silent 0 kWh.
+            economic_energy_kwh = None
             economic_energy_source = "unknown_electricity_no_estimate"
         report_payload["inputs"].append([
             {"kk":"Экономикалық сценарийдегі электр энергиясы","ru":"Электроэнергия в экономическом сценарии","en":"Electricity in economic scenario"}[lang],
-            f"{economic_energy_kwh:,.2f} кВт·ч" if economic_energy_source != "unknown_electricity_no_estimate" else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang],
+            f"{economic_energy_kwh:,.2f} кВт·ч" if economic_energy_kwh is not None else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang],
             economic_energy_source + ("; НЕ фактическое потребление, исходный коэффициент не подтверждён как норматив РК" if economic_energy_source.startswith("hypothetical") else ""),
         ])
-        if economic_energy_source.startswith("hypothetical"):
+        if economic_energy_kwh is None:
             st.caption({
-                "ru":"Электроэнергия, её стоимость и связанные выбросы в экономическом блоке - только условный насосный сценарий 0,70509 кВт·ч/м³, не показания счётчика и не подтверждённая норма РК.",
-                "kk":"Экономикалық блоктағы электр, оның құны және шығарындылары - тек 0,70509 кВт·сағ/м³ болжамды сорғы сценарийі; есептегіш көрсеткіші немесе ресми норма емес.",
-                "en":"Electricity, cost and emissions in the economic section use a hypothetical 0.70509 kWh/m³ pump scenario; this is not metered usage or a verified Kazakhstan standard.",
+                "ru":"Расход электроэнергии неизвестен. Для расчёта насосной энергии укажите напор, КПД и границу услуги; нулевой расход не предполагается.",
+                "kk":"Электр энергиясының шығыны белгісіз. Сорғы есебі үшін арын, КПД және қызмет шекарасы қажет; нөлдік шығын болжанбайды.",
+                "en":"Electricity consumption is unknown. Pump energy needs head, efficiency and the service boundary; zero consumption is not assumed.",
             }[lang])
         econ = economic_climate_effect(
             energy_kwh=economic_energy_kwh,
@@ -2999,16 +3320,16 @@ if submitted:
         if mode_key == "mode1" and user_level != "farmer":
             st.markdown("### " + t["climate_cost_title"])
             ec1, ec2, ec3, ec4 = st.columns(4)
-            ec1.metric(t["grid_energy"], f"{econ['current_grid_energy_kwh']:,.0f} кВт·ч" if lang != "en" else f"{econ['current_grid_energy_kwh']:,.0f} kWh")
-            ec2.metric(t["co2_calc"], f"{econ['current_co2_kg']/1000:,.2f} т CO₂" if lang != "en" else f"{econ['current_co2_kg']/1000:,.2f} t CO₂")
-            ec3.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}")
-            ec4.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}")
+            ec1.metric(t["grid_energy"], (f"{econ['current_grid_energy_kwh']:,.0f} кВт·ч" if lang != "en" else f"{econ['current_grid_energy_kwh']:,.0f} kWh") if _grid_known else "—")
+            ec2.metric(t["co2_calc"], (f"{econ['current_co2_kg']/1000:,.2f} т CO₂" if lang != "en" else f"{econ['current_co2_kg']/1000:,.2f} t CO₂") if _grid_known else "—")
+            ec3.metric(t["energy_cost"], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if _grid_known else "—")
+            ec4.metric(t["water_cost"], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if econ['current_water_cost_kzt'] is not None else "—")
             wc1, wc2, wc3, wc4 = st.columns(4)
-            wc1.metric(t["green_saving"], f"{econ['energy_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['energy_saving_kzt']:,.0f} {UNITS['currency']}")
-            wc2.metric(t["water_saving"], f"{econ['water_saving_m3']:,.0f} {UNITS['m3']} / {econ['water_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['water_saving_m3']:,.0f} m³ / {econ['water_saving_kzt']:,.0f} {UNITS['currency']}")
-            wc3.metric(t["co2_reduction"], f"{econ['co2_reduction_kg']/1000:,.2f} т CO₂" if lang != "en" else f"{econ['co2_reduction_kg']/1000:,.2f} t CO₂")
-            wc4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if lang != "en" else f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}")
-            pb = payback_years(investment, econ["total_saving_kzt"], seasons_per_year)
+            wc1.metric(t["green_saving"], (f"{econ['energy_saving_kzt']:,.0f} тг" if lang != "en" else f"{econ['energy_saving_kzt']:,.0f} {UNITS['currency']}") if _grid_known else "—")
+            wc2.metric(t["water_saving"], (f"{econ['water_saving_m3']:,.0f} {UNITS['m3']} / {econ['water_saving_kzt']:,.0f} {UNITS['currency']}" if econ['water_saving_kzt'] is not None else "—"))
+            wc3.metric(t["co2_reduction"], f"{econ['co2_reduction_kg']/1000:,.2f} т CO₂" if _grid_known else "—")
+            wc4.metric(t["total_saving"], f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if _grid_known and econ['total_saving_kzt'] is not None else "—")
+            pb = payback_years(investment, econ["total_saving_kzt"], seasons_per_year) if _grid_known else None
             if pb is not None:
                 st.caption(f"{t['payback']}: {pb:.1f} " + ("жыл" if lang == "kk" else "лет" if lang == "ru" else "years"))
             else:
@@ -3043,9 +3364,9 @@ if submitted:
         if mode_key == "mode1" and user_level == "farmer":
             st.markdown("### " + {"kk":"Ақша және климат әсері","ru":"Деньги и климатический эффект","en":"Money and climate effect"}[lang])
             c1,c2,c3=st.columns(3)
-            c1.metric({"kk":"Электр шығыны","ru":"Расходы на электроэнергию","en":"Electricity cost"}[lang],f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}")
-            c2.metric({"kk":"Су шығыны","ru":"Стоимость воды","en":"Water cost"}[lang],f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}")
-            c3.metric({"kk":"Сценарийлік үнем","ru":"Потенциальная экономия","en":"Potential saving"}[lang],f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if lang!="en" else f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}")
+            c1.metric({"kk":"Электр шығыны","ru":"Расходы на электроэнергию","en":"Electricity cost"}[lang], f"{econ['current_energy_cost_kzt']:,.0f} {UNITS['currency']}" if _grid_known else "—")
+            c2.metric({"kk":"Су шығыны","ru":"Стоимость воды","en":"Water cost"}[lang], f"{econ['current_water_cost_kzt']:,.0f} {UNITS['currency']}" if econ['current_water_cost_kzt'] is not None else "—")
+            c3.metric({"kk":"Сценарийлік үнем","ru":"Потенциальная экономия","en":"Potential saving"}[lang], f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}" if _grid_known and econ['total_saving_kzt'] is not None else "—")
 
         if mode_key == "mode1":
             ref_m3_ha = float(water_default_info.m3_ha) if water_default_info is not None else 0.0
@@ -3163,12 +3484,32 @@ if submitted:
                         st.caption(f"Машиналық оқыту сапасын жылдар бойынша тексеру: орташа абсолюттік қате (MAE)={val['mae']:.2f} ц/га; орташа квадраттық қатенің түбірі (RMSE)={val.get('rmse', float('nan')):.2f} ц/га; R²={val['r2']:.3f}; 5 уақыттық блок; бақылау саны={val['n']}.")
                     else:
                         st.caption(f"ML validation by year: MAE={val['mae']:.2f} centners/ha; RMSE={val.get('rmse', float('nan')):.2f} centners/ha; R²={val['r2']:.3f}; 5 year-groups; N={val['n']}.")
-                        _pi = prediction_interval_for_crop(crop)
-                        if _pi:
-                            st.caption({"kk":f"90% эмпирикалық OOS белгісіздік жолағы: болжам ±{_pi['half_width_centners_ha']:.1f} ц/га (дақыл бойынша N={_pi['n']}). Бұл параметрлік сенімділік интервалы емес.","ru":f"90% эмпирическая OOS-полоса неопределенности: прогноз ±{_pi['half_width_centners_ha']:.1f} ц/га (N по культуре={_pi['n']}). Это не параметрический доверительный интервал.","en":f"90% empirical OOS uncertainty band: prediction ±{_pi['half_width_centners_ha']:.1f} centners/ha (crop N={_pi['n']}). This is not a parametric confidence interval."}[lang])
-                        _sv = spatial_validation_summary()
-                        if _sv:
-                            st.caption({"kk":f"Кеңістіктік тасымалдану стресс-тесті (leave-one-district-out): R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} аумақ.","ru":f"Стресс-тест пространственной переносимости leave-one-district-out: R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} территорий.","en":f"Leave-one-district-out spatial transferability stress test: R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} territories."}[lang])
+                    _sv = spatial_validation_summary()
+                    if _sv:
+                        st.caption({"kk":f"Кеңістіктік тасымалдану стресс-тесті (leave-one-district-out): R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} аумақ.","ru":f"Стресс-тест пространственной переносимости leave-one-district-out: R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} территорий.","en":f"Leave-one-district-out spatial transferability stress test: R²={_sv['r2']:.3f}, MAE={_sv['mae']:.2f}, RMSE={_sv['rmse']:.2f}, {int(_sv['districts'])} territories."}[lang])
+
+        if user_level == "researcher":
+            _future = forward_holdout_for_crop(crop)
+            if _future:
+                st.caption({
+                    "ru":f"Прямая временная проверка ML (обучение до 2020 г., тест 2021–2025): R²={_future['r2']:.3f}, MAE={_future['mae']:.2f} ц/га, N={_future['n']}. Отрицательный R² указывает на слабое качество прогноза на этом периоде.",
+                    "kk":f"ML уақыттық тексеруі (2020 жылға дейін оқыту, 2021–2025 сынағы): R²={_future['r2']:.3f}, MAE={_future['mae']:.2f} ц/га, N={_future['n']}. Теріс R² осы кезеңдегі болжам сапасының төмендігін көрсетеді.",
+                    "en":f"Forward ML test (train through 2020, test 2021–2025): R²={_future['r2']:.3f}, MAE={_future['mae']:.2f} centners/ha, N={_future['n']}. Negative R² indicates weak predictions in this period."
+                }[lang])
+            _pi = prediction_interval_for_crop(crop)
+            if _pi and _pi.get("is_forward_backtest"):
+                _coverage_pct = 100.0 * _pi["empirical_coverage"]
+                st.caption({
+                    "ru": f"Историческая проверка интервалов: ширина ±{_pi['half_width_centners_ha']:.1f} ц/га рассчитана до 2021 г.; фактическое покрытие за 2021–2025 гг. = {_coverage_pct:.1f}% при целевых 90% (N={_pi['n']}). Это не гарантия для нового прогноза.",
+                    "kk": f"Аралықтардың тарихи тексеруі: ±{_pi['half_width_centners_ha']:.1f} ц/га ені 2021 жылға дейін есептелген; 2021–2025 жылдардағы нақты қамту {_coverage_pct:.1f}%, мақсаттысы 90% (N={_pi['n']}). Бұл жаңа болжамның кепілдігі емес.",
+                    "en": f"Historical interval backtest: width ±{_pi['half_width_centners_ha']:.1f} centners/ha calibrated before 2021; observed 2021–2025 coverage {_coverage_pct:.1f}% versus nominal 90% (N={_pi['n']}). This does not guarantee coverage of a new forecast."
+                }[lang])
+            elif _pi:
+                st.caption({
+                    "ru":"Доступна только ретроспективная калибровка на тех же остатках; независимое покрытие не проверено.",
+                    "kk":"Тек сол қалдықтар бойынша тарихи калибрлеу бар; тәуелсіз қамту тексерілмеген.",
+                    "en":"Only same-residual retrospective calibration exists; independent coverage has not been tested."
+                }[lang])
 
     elif mode_key == "mode2":
         st.markdown("### " + {"kk":"Дақылдың жарамдылығын бағалау","ru":"Оценка пригодности культуры","en":"Crop suitability assessment"}[lang])
@@ -3590,7 +3931,6 @@ if submitted:
                             st.warning({'ru':'Расчёт воды до/после недоступен: ',
                                         'kk':'Су есебі қолжетімсіз: ',
                                         'en':'Crop-mix water comparison unavailable: '}[lang]+str(_sw_err))
-            _a1_comp = None  # absent accounting data remain UNKNOWN, never zero
             with st.expander({'ru':'А1: выбросы исходной и оптимизированной структуры',
                               'kk':'A1: бастапқы және оңтайлы егіс құрылымының шығарындылары',
                               'en':'A1: baseline vs optimized crop-mix emissions'}[lang],expanded=False):
@@ -3650,87 +3990,6 @@ if submitted:
                             f'optimized areas={_a1_plan}',_a1_evidence])
                     except (ValueError,TypeError,KeyError) as _a1_err:
                         st.warning(str(_a1_err))
-            # Safeguard applies to EVERY objective, not only the green objective.
-            # Economic metrics remain visible for an auditable, informed choice.
-            if opt.get('baseline_available') or _a1_comp is not None:
-                _green_opt = evaluate_green_guard(
-                    water_before_m3=opt.get('baseline_water_m3'),
-                    water_after_m3=opt.get('modelled_total_water_m3') if opt.get('baseline_water_m3') is not None else None,
-                    ghg_before_kgco2e=_a1_comp['baseline_kgco2e'] if _a1_comp is not None else None,
-                    ghg_after_kgco2e=_a1_comp['scenario_kgco2e'] if _a1_comp is not None else None,
-                    margin_before_kzt=opt.get('baseline_contribution_margin_kzt'),
-                    margin_after_kzt=opt.get('optimized_contribution_margin_kzt') if opt.get('baseline_available') else None,
-                    water_cap_m3=_scenario_available_water if _scenario_available_water > 0 else None,
-                    comparable=opt.get('baseline_water_feasible') is not False,
-                    evidence='Matched before/after crop allocation; partial GHG only if crop activities confirmed')
-                _green_head, _green_message, _green_action = alert_text(_green_opt, lang)
-                _green_deltas = (f"Δ water: {_green_opt['water_change_m3']:+,.0f} m³; "
-                                 if _green_opt['water_change_m3'] is not None else '') + (
-                                 f"Δ partial CO₂e: {_green_opt['partial_ghg_change_kgco2e']:+,.1f} kg; "
-                                 if _green_opt['partial_ghg_change_kgco2e'] is not None else '') + (
-                                 f"Δ margin: {_green_opt['margin_change_kzt']:+,.0f} KZT"
-                                 if _green_opt['margin_change_kzt'] is not None else '')
-                if _green_opt['status'] == 'red':
-                    st.error('### '+_green_head+'\n\n'+_green_message+'\n\n**'+_green_deltas+'**\n\n'+_green_action)
-                elif _green_opt['status'] in ('amber','incomplete','noncomparable'):
-                    st.warning('**'+_green_head+'**\n\n'+_green_message+'\n\n'+_green_deltas+'\n\n'+_green_action)
-                elif _green_opt['status'] == 'green_conditional':
-                    st.info('**'+_green_head+'** '+_green_message)
-                if (_green_opt['status'] in ('red','amber')
-                    and _a1_comp is not None and opt.get('baseline_available')
-                    and optimization_economic_margins):
-                    if st.button({'ru':'Найти альтернативу: не увеличивать воду и CO₂e',
-                                  'kk':'Баламаны табу: су мен CO₂e артпасын',
-                                  'en':'Find alternative: no additional water or CO₂e'}[lang],
-                                 key='green_comparison_alternative'):
-                        try:
-                            from core.ghg_structure import structure_inventory
-                            _per_ha_ghg = {}
-                            for _crop_key, _crop_activity in _a1_acts.items():
-                                _g_inv = structure_inventory({_crop_key:1.0}, {_crop_key:_crop_activity},
-                                    grid_factor=float(ef), diesel_factor=float(DEFAULT_DIESEL_CO2_KG_L),
-                                    accounting_period='apr_sep', evidence=_a1_evidence, confirmed=True)
-                                _per_ha_ghg[_crop_key] = _g_inv['inventory'].known_total_kg_co2e
-                            _green_kwargs = dict(_opt_kwargs)
-                            _green_kwargs.update({
-                                'objective_mode':'sustainable',
-                                'economic_margin_by_product':optimization_economic_margins,
-                                'baseline_share_by_product':optimization_baseline_shares,
-                                'ghg_kg_co2e_by_product':_per_ha_ghg,
-                                'economic_weight':0.35,
-                                'sustainable_max_margin_decline_pct':5.0,
-                                'sustainable_absolute_ghg_cap_kg':None,
-                            })
-                            _alternative_df, _alternative_info = optimize_structure(**_green_kwargs)
-                            _alt_feas = validate_allocation(_alternative_df,_alternative_info,
-                                area_ha=area_ha, available_water_m3=_scenario_available_water,
-                                max_share=optimization_max_share,n_crops=optimization_n_crops)
-                            _alternative_sust = _alternative_info.get('sustainable_comparison')
-                            if _alternative_df.empty or not _alt_feas['ok'] or not _alternative_sust or not _alternative_sust.get('all_constraints_met'):
-                                st.warning({'ru':'При сохранении заданных лимитов альтернативу найти не удалось. Возможные причины: недостающие нормы CO₂e/маржа по культурам или несовместимые ограничения. Они не ослаблены автоматически.',
-                                            'kk':'Берілген шектеулерге сай балама табылмады. Шектеулер автоматты түрде жұмсартылмайды.',
-                                            'en':'No feasible alternative under these inputs and constraints. Missing GHG/margin entries or conflicting caps may be the cause; constraints are never relaxed silently.'}[lang])
-                            else:
-                                st.success({'ru':'Найден условный устойчивый вариант с сохранением экологических ограничений и допуска маржи 5%.',
-                                            'kk':'Экологиялық шектеулер мен маржаның 5% шегін сақтайтын шартты нұсқа табылды.',
-                                            'en':'A conditional alternative satisfies the environmental constraints and 5% margin tolerance.'}[lang])
-                                st.dataframe(_alternative_df[['product','area_ha','share']].copy(),hide_index=True)
-                                st.write(f"Water {_alternative_sust['optimized_water_m3']:,.0f} m³; partial CO₂e {_alternative_sust['optimized_partial_ghg_kg_co2e']:,.1f} kg; margin {_alternative_sust['optimized_margin_kzt']:,.0f} KZT")
-                                report_payload['summary'].append({'label':'Alternative under joint water/partial-GHG/margin constraints',
-                                    'value':'feasible conditional scenario',
-                                    'note':f"water={_alternative_sust['optimized_water_m3']:.2f} m3; GHG={_alternative_sust['optimized_partial_ghg_kg_co2e']:.2f} kgCO2e; margin={_alternative_sust['optimized_margin_kzt']:.2f} KZT; max margin decline=5%"})
-                        except (ValueError,KeyError,TypeError) as _green_err:
-                            st.warning(str(_green_err))
-                report_payload['summary'].append({'label':'Environmental safeguard / Экологическая проверка',
-                    'value':_green_opt['status'], 'note':_green_head+'; '+_green_message+'; '+_green_deltas})
-                report_payload['recommendations'].append({'title':_green_head,
-                    'text':_green_action,
-                    'evidence':_green_message+'; '+_green_opt['evidence'],
-                    'effect':_green_deltas+'; conditional comparison, no full footprint or observed mitigation'})
-                report_payload['inputs'].append(['Environmental safeguards and thresholds',
-                    f"water_cap_m3={_green_opt['explicit_water_cap_breached']} (user water budget {_scenario_available_water}); "
-                    f"partial_GHG_scope={_green_opt['comparison_scope']}; comparable={_green_opt['comparable']}",
-                    'Absolute carbon limit is NOT invented; partial inventory and baseline comparability must be verified'])
             s1,s2,s3,s4=st.columns(4)
             s1.metric({"kk":"Құрылымның QŪNAR бағасы","ru":"Оценка структуры QŪNAR","en":"Structure QŪNAR score"}[lang],f"{opt['weighted_qunar']:.1f}/100")
             if optimization_profile in ('survey_proxy','custom'):
@@ -3868,16 +4127,16 @@ if submitted:
                 yield_centners_ha=econ_yield,
                 selling_price_kzt_t=selling_price_kzt_t,
                 variable_cost_kzt_ha=(variable_cost_kzt_ha if variable_cost_kzt_ha > 0 else None),
-                water_m3_ha=(effective_water_used/area_ha if (effective_water_used is not None and effective_water_used > 0) and area_ha > 0 else 0.0),
+                water_m3_ha=(effective_water_used/area_ha if effective_water_used is not None and area_ha > 0 else None),
                 water_tariff_kzt_m3=water_tariff,
-                energy_kwh_ha=(economic_energy_kwh/area_ha if economic_energy_kwh > 0 and area_ha > 0 else 0.0),
+                energy_kwh_ha=(economic_energy_kwh/area_ha if economic_energy_source != "unknown_electricity_no_estimate" and area_ha > 0 else None),
                 electricity_tariff_kzt_kwh=electricity_tariff,
                 variable_cost_includes_water_energy=False,  # field explicitly describes OTHER variable costs
             )
             st.markdown("### " + {"kk":"Экономикалық орындылық","ru":"Экономическая целесообразность","en":"Economic feasibility"}[lang])
             e1,e2,e3=st.columns(3)
             e1.metric({"kk":"Жалпы түсім, тг/га","ru":"Валовая выручка, тг/га","en":"Gross revenue, KZT/ha"}[lang], f"{econ08['gross_revenue_kzt_ha']:,.0f}")
-            e2.metric({"kk":"Ресурстық шығын, тг/га","ru":"Стоимость воды и энергии, тг/га","en":"Water + energy cost, KZT/ha"}[lang], f"{econ08['resource_cost_kzt_ha']:,.0f}")
+            e2.metric({"kk":"Ресурстық шығын, тг/га","ru":"Стоимость воды и энергии, тг/га","en":"Water + energy cost, KZT/ha"}[lang], (f"{econ08['resource_cost_kzt_ha']:,.0f}" if econ08["resource_cost_kzt_ha"] is not None else "—"))
             _margin = econ08.get('contribution_margin_kzt_ha')
             e3.metric({"kk":"Салым маржасы, тг/га","ru":"Отдельная маржа по введённому водопотреблению, тг/га","en":"Contribution margin, KZT/ha"}[lang], f"{_margin:,.0f}" if _margin is not None else "—")
             st.caption({
@@ -4063,11 +4322,11 @@ if submitted:
             if resource.get("farm_freshwater_m3") is not None: report_payload["summary"].append({"label":t["freshwater"],"value":f"{resource['farm_freshwater_m3']:,.0f} {UNITS['m3']}"})
             if resource.get("energy_kwh") is not None: report_payload["summary"].append({"label":t["energy_use"],"value":f"{resource['energy_kwh']:,.0f} {UNITS['kwh']}"})
             if resource.get("operational_co2e_kg") is not None: report_payload["summary"].append({"label":t["co2"],"value":f"{resource['operational_co2e_kg']:,.0f} {UNITS['kg']} CO₂e"})
-        if "econ" in locals():
+        if "econ" in locals() and _grid_known and econ.get('total_saving_kzt') is not None:
             report_payload["summary"].append({"label":{"kk":"Жасыл энергия және таза су бойынша бөлек сценарий, тг","ru":"Отдельный сценарий зелёной энергии и пресной воды, тг","en":"Separate green-energy and freshwater scenario, KZT"}[lang],"value":f"{econ['total_saving_kzt']:,.0f} {UNITS['currency']}"})
         report_payload["analysis"] = list(locals().get("analysis", []) or [])
         report_payload["recommendations"] = structured_recommendations(locals().get("recs", []) or [], report_payload["analysis"], lang)
-        if "econ" in locals() and float(econ.get("total_saving_kzt", 0) or 0) > 0:
+        if "econ" in locals() and _grid_known and econ.get('total_saving_kzt') is not None and econ['total_saving_kzt'] > 0:
             report_payload["recommendations"].insert(0, {
                 "title":{"kk":"Экономикалық және климаттық басымдық","ru":"Экономико-климатический приоритет","en":"Economic and climate priority"}[lang],
                 "text":{"kk":"Суару өзгерісінен бөлек жасыл энергия мен жалпы ресурс үнемдеу сценарийін қарастыруға болады. Екі нәтиженің үнемін қосуға болмайды.","ru":"Отдельно от смены полива можно рассмотреть сценарий зелёной энергии и общего ресурсосбережения. Его экономию нельзя прибавлять к результату смены полива.","en":"Separately from the irrigation switch, consider the green-energy and general resource-saving scenario. Do not add its savings to the irrigation outcome."}[lang],
@@ -4084,7 +4343,7 @@ if submitted:
                 *[r for r in report_payload["recommendations"]
                   if r.get("title") == {"kk":"Экономикалық және климаттық басымдық", "ru":"Экономико-климатический приоритет", "en":"Economic and climate priority"}[lang]]
             ]
-        if "econ" in locals():
+        if "econ" in locals() and _grid_known and econ.get('total_saving_kzt') is not None:
             cats=[]; vals=[]
             if econ.get("energy_saving_kzt") is not None:
                 cats.append({"kk":"Жасыл энергия","ru":"Зеленая энергия","en":"Green energy"}[lang]); vals.append(float(econ.get("energy_saving_kzt",0)))
@@ -4380,13 +4639,6 @@ if submitted:
                     'Contribution margin, KZT':round(part['contribution_margin_kzt']),
                     'Partial GHG, kg CO₂e':round(part['partial_ghg_kg_co2e']),
                 } for label, part in zip(_a8_labels,_a8_parts)]),hide_index=True)
-                _example_guard = _a8_demo.get('normal_environmental_guard')
-                if _example_guard:
-                    _eh, _em, _ea = alert_text(_example_guard, lang)
-                    if _example_guard['status'] == 'red':
-                        st.error('### '+_eh+'\n\n'+_em+'\n\n'+_ea)
-                    elif _example_guard['status'] == 'amber':
-                        st.warning(_eh+' '+_em+' '+_ea)
                 st.warning({
                     'ru':'При стрессе исходная структура нарушает водный лимит. Её маржу нельзя трактовать как допустимую альтернативу. CO₂e и вода — расчётные сценарии, не измеренная экономия.',
                     'kk':'Стресс кезінде бастапқы құрылым су шегінен асады. Оның маржасы жарамды балама емес. CO₂e және су көрсеткіштері - өлшенген үнем емес, сценарийлік есеп.',

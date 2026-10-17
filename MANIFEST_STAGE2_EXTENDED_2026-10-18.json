@@ -1,0 +1,26 @@
+{
+  "project_version_visible": "v0.8.1",
+  "status": "experimental_methodological_audit_only",
+  "base": "existing stage1/stage2 working copy; previous full ZIP archives untouched",
+  "production_model_changed": false,
+  "production_weights_changed": false,
+  "files_added": [
+    "scripts/stage2_mcda_full_validation.py",
+    "scripts/stage2_ml_multimodel_rolling.py",
+    "scripts/build_stage2_extended_protocol.py",
+    "tests/test_stage2_mcda_multimodel_2026_10_18.py",
+    "STAGE2_EXTENDED_MCDA_ML_AUDIT_2026-10-18_RU.md",
+    "examples/stage2_evidence/mcda_topsis_by_district.csv",
+    "examples/stage2_evidence/mcda_mc_15crops_17districts.csv",
+    "examples/stage2_evidence/mcda_robustness_2026_10_18.json",
+    "examples/stage2_evidence/ml_rolling_models_by_crop_district.csv",
+    "examples/stage2_evidence/ml_rolling_predictions_all.csv",
+    "examples/stage2_evidence/ml_rolling_overall.csv",
+    "examples/stage2_evidence/ml_rolling_by_crop.csv",
+    "examples/stage2_evidence/ml_rolling_by_district.csv",
+    "examples/stage2_evidence/ml_multimodel_summary.json",
+    "examples/stage2_evidence/ml_rf_vs_extratrees_year_bootstrap.json"
+  ],
+  "qa": "276 tests passed",
+  "withheld_user_delivery": true
+}

@@ -1,0 +1,15 @@
+{
+  "base": "QUNAR_v0.8.1_FULL_A4_A6_A7_A8_2026-10-17.zip + staged stage1/2 changes",
+  "edition": "stage3 evidence patch unmerged, original unchanged",
+  "regression": "283 passed on staged copy 2026-10-18",
+  "files": {
+    "core/economic_feasibility.py": "7c71389b405e1e38abec43f55bc5119c5ca5381ad6d3ef0849e5b560fa9aa167",
+    "app.py": "094913f944b32528c6e668fddd86d03b1e41bff7dffda8531407e6b85f647295",
+    "core/carbon_scenarios.py": "a178aaf7e64ce7b0197266c73d03d3a663fd9109e144b97fb5b531f7aa2847fd",
+    "core/ghg_structure.py": "0cf4126aac0f56a8955d6365639ec0c2295023a759d698b3761ad7b9a4176eb2",
+    "tests/test_stage3_evidence_2026_10_18.py": "b09fc871d2866d57c1ce5181cb5ec783dca5b77a54afb5f7b2a31eb0bc8e191b",
+    "scripts/audit_a8_evidence_sensitivity.py": "4c6c1efda5b214b877a7404c494cc3e5aab7148d8741e687e26426305604b551",
+    "examples/stage3_a1_a3_a5_a8_evidence/a8_9_scenario_sensitivity.csv": "63bc6e2dcffdbe6fe8661f01302f8e7f3e59eb6f731bb373c4addaeebf99f90b",
+    "examples/stage3_a1_a3_a5_a8_evidence/a8_assumptions_and_provenance.json": "6642f6f2146c261fd2744e614dff432df5744f4420f8f1dca2b44918cf29e9f9"
+  }
+}
