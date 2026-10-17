@@ -1,0 +1,799 @@
+{
+  "schema": "qunar-nasa-regional-cache-v1",
+  "start_year": 1995,
+  "end_year": 2025,
+  "parameters": [
+    "T2M",
+    "T2M_MAX",
+    "T2M_MIN",
+    "RH2M",
+    "WS2M",
+    "PS",
+    "ALLSKY_SFC_SW_DWN",
+    "PRECTOTCORR",
+    "GWETROOT"
+  ],
+  "cell_count": 65,
+  "nominal_grid": {
+    "latitude_step": 0.5,
+    "longitude_step": 0.625,
+    "interpretation": "nominal meteorological sampling cells; not verified exact native POWER pixel footprints; solar has coarser support"
+  },
+  "region_area_km2": 116224.70045361469,
+  "boundary_file": "turkestan_admin_boundaries.geojson",
+  "grid_file": "grid_clipped.geojson",
+  "cells": [
+    {
+      "id": "power_i106_j83",
+      "latitude": 41.5,
+      "longitude": 66.25,
+      "monthly_file": "monthly/power_i106_j83.json",
+      "region_intersection_km2": 0.6054504054088593,
+      "region_area_weight": 5.2094565711838984e-06,
+      "districts": [
+        "Shardara District"
+      ]
+    },
+    {
+      "id": "power_i106_j84",
+      "latitude": 42.0,
+      "longitude": 66.25,
+      "monthly_file": "monthly/power_i106_j84.json",
+      "region_intersection_km2": 1802.7887234253315,
+      "region_area_weight": 0.015511674412641995,
+      "districts": [
+        "Otyrar District",
+        "Shardara District"
+      ]
+    },
+    {
+      "id": "power_i106_j85",
+      "latitude": 42.5,
+      "longitude": 66.25,
+      "monthly_file": "monthly/power_i106_j85.json",
+      "region_intersection_km2": 861.8048812643774,
+      "region_area_weight": 0.0074151987704910325,
+      "districts": [
+        "Otyrar District"
+      ]
+    },
+    {
+      "id": "power_i107_j82",
+      "latitude": 41.0,
+      "longitude": 66.875,
+      "monthly_file": "monthly/power_i107_j82.json",
+      "region_intersection_km2": 508.71728457350207,
+      "region_area_weight": 0.004377139031241751,
+      "districts": [
+        "Shardara District"
+      ]
+    },
+    {
+      "id": "power_i107_j83",
+      "latitude": 41.5,
+      "longitude": 66.875,
+      "monthly_file": "monthly/power_i107_j83.json",
+      "region_intersection_km2": 2676.147466882117,
+      "region_area_weight": 0.023026285691214756,
+      "districts": [
+        "Shardara District"
+      ]
+    },
+    {
+      "id": "power_i107_j84",
+      "latitude": 42.0,
+      "longitude": 66.875,
+      "monthly_file": "monthly/power_i107_j84.json",
+      "region_intersection_km2": 2875.7641231990356,
+      "region_area_weight": 0.024743840577094618,
+      "districts": [
+        "Arys City",
+        "Otyrar District",
+        "Shardara District"
+      ]
+    },
+    {
+      "id": "power_i107_j85",
+      "latitude": 42.5,
+      "longitude": 66.875,
+      "monthly_file": "monthly/power_i107_j85.json",
+      "region_intersection_km2": 2597.646668083886,
+      "region_area_weight": 0.02235084390690136,
+      "districts": [
+        "Otyrar District"
+      ]
+    },
+    {
+      "id": "power_i107_j86",
+      "latitude": 43.0,
+      "longitude": 66.875,
+      "monthly_file": "monthly/power_i107_j86.json",
+      "region_intersection_km2": 264.99559745441053,
+      "region_area_weight": 0.0022800927114111766,
+      "districts": [
+        "Otyrar District"
+      ]
+    },
+    {
+      "id": "power_i107_j91",
+      "latitude": 45.5,
+      "longitude": 66.875,
+      "monthly_file": "monthly/power_i107_j91.json",
+      "region_intersection_km2": 8.946595319644407,
+      "region_area_weight": 7.697888937108091e-05,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i107_j92",
+      "latitude": 46.0,
+      "longitude": 66.875,
+      "monthly_file": "monthly/power_i107_j92.json",
+      "region_intersection_km2": 9.738566354928494,
+      "region_area_weight": 8.379321912805233e-05,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i108_j82",
+      "latitude": 41.0,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j82.json",
+      "region_intersection_km2": 568.3089796006241,
+      "region_area_weight": 0.004889881849602551,
+      "districts": [
+        "Shardara District"
+      ]
+    },
+    {
+      "id": "power_i108_j83",
+      "latitude": 41.5,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j83.json",
+      "region_intersection_km2": 2897.9140027851563,
+      "region_area_weight": 0.02493442404145439,
+      "districts": [
+        "Shardara District"
+      ]
+    },
+    {
+      "id": "power_i108_j84",
+      "latitude": 42.0,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j84.json",
+      "region_intersection_km2": 2875.7641231990356,
+      "region_area_weight": 0.024743840577094618,
+      "districts": [
+        "Arys City",
+        "Otyrar District",
+        "Shardara District"
+      ]
+    },
+    {
+      "id": "power_i108_j85",
+      "latitude": 42.5,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j85.json",
+      "region_intersection_km2": 2853.3906599261472,
+      "region_area_weight": 0.024551333339134503,
+      "districts": [
+        "Arys City",
+        "Otyrar District"
+      ]
+    },
+    {
+      "id": "power_i108_j86",
+      "latitude": 43.0,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j86.json",
+      "region_intersection_km2": 1733.789438564772,
+      "region_area_weight": 0.014917986185311307,
+      "districts": [
+        "Sauran District",
+        "Otyrar District"
+      ]
+    },
+    {
+      "id": "power_i108_j87",
+      "latitude": 43.5,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j87.json",
+      "region_intersection_km2": 181.8372397548658,
+      "region_area_weight": 0.0015645760496059728,
+      "districts": [
+        "Sauran District"
+      ]
+    },
+    {
+      "id": "power_i108_j88",
+      "latitude": 44.0,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j88.json",
+      "region_intersection_km2": 27.2414575790205,
+      "region_area_weight": 0.000234392757731861,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i108_j89",
+      "latitude": 44.5,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j89.json",
+      "region_intersection_km2": 1232.768490430901,
+      "region_area_weight": 0.010607068482986504,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i108_j90",
+      "latitude": 45.0,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j90.json",
+      "region_intersection_km2": 1435.4676519252052,
+      "region_area_weight": 0.012351146064546445,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i108_j91",
+      "latitude": 45.5,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j91.json",
+      "region_intersection_km2": 2423.509218382864,
+      "region_area_weight": 0.02085251890202901,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i108_j92",
+      "latitude": 46.0,
+      "longitude": 67.5,
+      "monthly_file": "monthly/power_i108_j92.json",
+      "region_intersection_km2": 1187.0950203668187,
+      "region_area_weight": 0.010214081779817268,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i109_j81",
+      "latitude": 40.5,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j81.json",
+      "region_intersection_km2": 250.41593698241365,
+      "region_area_weight": 0.0021546454289038935,
+      "districts": [
+        "Maktaaral District",
+        "Zhetysay District"
+      ]
+    },
+    {
+      "id": "power_i109_j82",
+      "latitude": 41.0,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j82.json",
+      "region_intersection_km2": 2088.8722393579205,
+      "region_area_weight": 0.017973213192149454,
+      "districts": [
+        "Shardara District",
+        "Maktaaral District",
+        "Zhetysay District",
+        "Keles District"
+      ]
+    },
+    {
+      "id": "power_i109_j83",
+      "latitude": 41.5,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j83.json",
+      "region_intersection_km2": 2897.9140027851563,
+      "region_area_weight": 0.02493442404145439,
+      "districts": [
+        "Shardara District",
+        "Saryagash District",
+        "Keles District"
+      ]
+    },
+    {
+      "id": "power_i109_j84",
+      "latitude": 42.0,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j84.json",
+      "region_intersection_km2": 2875.7641231990356,
+      "region_area_weight": 0.024743840577094618,
+      "districts": [
+        "Arys City",
+        "Otyrar District",
+        "Shardara District",
+        "Saryagash District"
+      ]
+    },
+    {
+      "id": "power_i109_j85",
+      "latitude": 42.5,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j85.json",
+      "region_intersection_km2": 2853.3906599261472,
+      "region_area_weight": 0.024551333339134503,
+      "districts": [
+        "Arys City",
+        "Otyrar District"
+      ]
+    },
+    {
+      "id": "power_i109_j86",
+      "latitude": 43.0,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j86.json",
+      "region_intersection_km2": 2813.0449482172735,
+      "region_area_weight": 0.024204188088089624,
+      "districts": [
+        "Sauran District",
+        "Turkestan City",
+        "Otyrar District"
+      ]
+    },
+    {
+      "id": "power_i109_j87",
+      "latitude": 43.5,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j87.json",
+      "region_intersection_km2": 2744.9774362167664,
+      "region_area_weight": 0.023618517082657355,
+      "districts": [
+        "Sauran District",
+        "Turkestan City",
+        "Kentau City"
+      ]
+    },
+    {
+      "id": "power_i109_j88",
+      "latitude": 44.0,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j88.json",
+      "region_intersection_km2": 2213.048556589196,
+      "region_area_weight": 0.019041659304344292,
+      "districts": [
+        "Suzak District",
+        "Sauran District"
+      ]
+    },
+    {
+      "id": "power_i109_j89",
+      "latitude": 44.5,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j89.json",
+      "region_intersection_km2": 2761.6920132938844,
+      "region_area_weight": 0.023762333756345354,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i109_j90",
+      "latitude": 45.0,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j90.json",
+      "region_intersection_km2": 2738.224089916931,
+      "region_area_weight": 0.02356040949210186,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i109_j91",
+      "latitude": 45.5,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j91.json",
+      "region_intersection_km2": 2714.542106794922,
+      "region_area_weight": 0.02335664340078955,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i109_j92",
+      "latitude": 46.0,
+      "longitude": 68.125,
+      "monthly_file": "monthly/power_i109_j92.json",
+      "region_intersection_km2": 1348.5039314055787,
+      "region_area_weight": 0.011602887047344803,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i110_j81",
+      "latitude": 40.5,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j81.json",
+      "region_intersection_km2": 302.1994004468972,
+      "region_area_weight": 0.002600204142902184,
+      "districts": [
+        "Maktaaral District"
+      ]
+    },
+    {
+      "id": "power_i110_j82",
+      "latitude": 41.0,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j82.json",
+      "region_intersection_km2": 1255.4726267557162,
+      "region_area_weight": 0.01080242091997181,
+      "districts": [
+        "Shardara District",
+        "Maktaaral District",
+        "Zhetysay District",
+        "Keles District"
+      ]
+    },
+    {
+      "id": "power_i110_j83",
+      "latitude": 41.5,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j83.json",
+      "region_intersection_km2": 2865.9473059720885,
+      "region_area_weight": 0.02465937406661884,
+      "districts": [
+        "Saryagash District",
+        "Keles District"
+      ]
+    },
+    {
+      "id": "power_i110_j84",
+      "latitude": 42.0,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j84.json",
+      "region_intersection_km2": 2875.7641231990356,
+      "region_area_weight": 0.024743840577094618,
+      "districts": [
+        "Arys City",
+        "Otyrar District",
+        "Ordabasy District",
+        "Kazygurt District",
+        "Saryagash District"
+      ]
+    },
+    {
+      "id": "power_i110_j85",
+      "latitude": 42.5,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j85.json",
+      "region_intersection_km2": 2853.3906599261472,
+      "region_area_weight": 0.024551333339134503,
+      "districts": [
+        "Arys City",
+        "Otyrar District",
+        "Ordabasy District"
+      ]
+    },
+    {
+      "id": "power_i110_j86",
+      "latitude": 43.0,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j86.json",
+      "region_intersection_km2": 2829.57674800124,
+      "region_area_weight": 0.024346432097258175,
+      "districts": [
+        "Sauran District",
+        "Otyrar District",
+        "Baydibek District",
+        "Ordabasy District"
+      ]
+    },
+    {
+      "id": "power_i110_j87",
+      "latitude": 43.5,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j87.json",
+      "region_intersection_km2": 2807.9542845480482,
+      "region_area_weight": 0.02416038666180199,
+      "districts": [
+        "Suzak District",
+        "Sauran District",
+        "Baydibek District",
+        "Kentau City"
+      ]
+    },
+    {
+      "id": "power_i110_j88",
+      "latitude": 44.0,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j88.json",
+      "region_intersection_km2": 2784.9442394036255,
+      "region_area_weight": 0.023962402103843188,
+      "districts": [
+        "Suzak District",
+        "Sauran District"
+      ]
+    },
+    {
+      "id": "power_i110_j89",
+      "latitude": 44.5,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j89.json",
+      "region_intersection_km2": 2761.6920132938844,
+      "region_area_weight": 0.023762333756345354,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i110_j90",
+      "latitude": 45.0,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j90.json",
+      "region_intersection_km2": 2738.224089916931,
+      "region_area_weight": 0.02356040949210186,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i110_j91",
+      "latitude": 45.5,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j91.json",
+      "region_intersection_km2": 2714.542106794922,
+      "region_area_weight": 0.02335664340078955,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i110_j92",
+      "latitude": 46.0,
+      "longitude": 68.75,
+      "monthly_file": "monthly/power_i110_j92.json",
+      "region_intersection_km2": 1347.1104872429353,
+      "region_area_weight": 0.011590897482576475,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i111_j83",
+      "latitude": 41.5,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j83.json",
+      "region_intersection_km2": 1408.2146142372105,
+      "region_area_weight": 0.0121166536684722,
+      "districts": [
+        "Kazygurt District",
+        "Saryagash District"
+      ]
+    },
+    {
+      "id": "power_i111_j84",
+      "latitude": 42.0,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j84.json",
+      "region_intersection_km2": 2605.267808078947,
+      "region_area_weight": 0.022416418225578,
+      "districts": [
+        "Arys City",
+        "Tolebi District",
+        "Ordabasy District",
+        "Kazygurt District",
+        "Sairam District",
+        "Saryagash District"
+      ]
+    },
+    {
+      "id": "power_i111_j85",
+      "latitude": 42.5,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j85.json",
+      "region_intersection_km2": 2230.747484037309,
+      "region_area_weight": 0.01919394559084073,
+      "districts": [
+        "Arys City",
+        "Baydibek District",
+        "Ordabasy District",
+        "Sairam District"
+      ]
+    },
+    {
+      "id": "power_i111_j86",
+      "latitude": 43.0,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j86.json",
+      "region_intersection_km2": 2830.4319381952314,
+      "region_area_weight": 0.024353790381497313,
+      "districts": [
+        "Baydibek District",
+        "Ordabasy District"
+      ]
+    },
+    {
+      "id": "power_i111_j87",
+      "latitude": 43.5,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j87.json",
+      "region_intersection_km2": 2239.985842341311,
+      "region_area_weight": 0.01927343488665058,
+      "districts": [
+        "Suzak District",
+        "Baydibek District"
+      ]
+    },
+    {
+      "id": "power_i111_j88",
+      "latitude": 44.0,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j88.json",
+      "region_intersection_km2": 2778.3818121460085,
+      "region_area_weight": 0.02390593723158495,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i111_j89",
+      "latitude": 44.5,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j89.json",
+      "region_intersection_km2": 2761.6917546815366,
+      "region_area_weight": 0.023762331531175823,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i111_j90",
+      "latitude": 45.0,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j90.json",
+      "region_intersection_km2": 2324.5115651596498,
+      "region_area_weight": 0.020000716722183755,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i111_j91",
+      "latitude": 45.5,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j91.json",
+      "region_intersection_km2": 1362.995342750471,
+      "region_area_weight": 0.011727575010854216,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i111_j92",
+      "latitude": 46.0,
+      "longitude": 69.375,
+      "monthly_file": "monthly/power_i111_j92.json",
+      "region_intersection_km2": 225.9514984922433,
+      "region_area_weight": 0.0019441468831693706,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i112_j83",
+      "latitude": 41.5,
+      "longitude": 70.0,
+      "monthly_file": "monthly/power_i112_j83.json",
+      "region_intersection_km2": 109.80228964798131,
+      "region_area_weight": 0.0009447681498395179,
+      "districts": [
+        "Kazygurt District"
+      ]
+    },
+    {
+      "id": "power_i112_j84",
+      "latitude": 42.0,
+      "longitude": 70.0,
+      "monthly_file": "monthly/power_i112_j84.json",
+      "region_intersection_km2": 2482.4651314660173,
+      "region_area_weight": 0.02135979128318098,
+      "districts": [
+        "Tolebi District",
+        "Kazygurt District"
+      ]
+    },
+    {
+      "id": "power_i112_j85",
+      "latitude": 42.5,
+      "longitude": 70.0,
+      "monthly_file": "monthly/power_i112_j85.json",
+      "region_intersection_km2": 2600.699325894067,
+      "region_area_weight": 0.022377109787883112,
+      "districts": [
+        "Tolebi District",
+        "Tulkibas District",
+        "Baydibek District",
+        "Sairam District"
+      ]
+    },
+    {
+      "id": "power_i112_j86",
+      "latitude": 43.0,
+      "longitude": 70.0,
+      "monthly_file": "monthly/power_i112_j86.json",
+      "region_intersection_km2": 2041.061397777364,
+      "region_area_weight": 0.01756183597508827,
+      "districts": [
+        "Tulkibas District",
+        "Baydibek District"
+      ]
+    },
+    {
+      "id": "power_i112_j87",
+      "latitude": 43.5,
+      "longitude": 70.0,
+      "monthly_file": "monthly/power_i112_j87.json",
+      "region_intersection_km2": 10.67466348687005,
+      "region_area_weight": 9.184764821372818e-05,
+      "districts": [
+        "Baydibek District"
+      ]
+    },
+    {
+      "id": "power_i112_j88",
+      "latitude": 44.0,
+      "longitude": 70.0,
+      "monthly_file": "monthly/power_i112_j88.json",
+      "region_intersection_km2": 217.8692470343237,
+      "region_area_weight": 0.0018746050386330092,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i112_j89",
+      "latitude": 44.5,
+      "longitude": 70.0,
+      "monthly_file": "monthly/power_i112_j89.json",
+      "region_intersection_km2": 275.6009459385681,
+      "region_area_weight": 0.002371343954877074,
+      "districts": [
+        "Suzak District"
+      ]
+    },
+    {
+      "id": "power_i113_j84",
+      "latitude": 42.0,
+      "longitude": 70.625,
+      "monthly_file": "monthly/power_i113_j84.json",
+      "region_intersection_km2": 788.6976381321541,
+      "region_area_weight": 0.0067861645758915375,
+      "districts": [
+        "Tolebi District",
+        "Kazygurt District"
+      ]
+    },
+    {
+      "id": "power_i113_j85",
+      "latitude": 42.5,
+      "longitude": 70.625,
+      "monthly_file": "monthly/power_i113_j85.json",
+      "region_intersection_km2": 1464.5444102540712,
+      "region_area_weight": 0.01260133023882699,
+      "districts": [
+        "Tolebi District",
+        "Tulkibas District"
+      ]
+    },
+    {
+      "id": "power_i114_j85",
+      "latitude": 42.5,
+      "longitude": 71.25,
+      "monthly_file": "monthly/power_i114_j85.json",
+      "region_intersection_km2": 0.368855308180958,
+      "region_area_weight": 3.1737293291954196e-06,
+      "districts": [
+        "Tolebi District"
+      ]
+    }
+  ]
+}

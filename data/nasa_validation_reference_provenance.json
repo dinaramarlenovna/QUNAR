@@ -1,0 +1,6 @@
+{
+  "source": "https://power.larc.nasa.gov/api/temporal/monthly/point?parameters=T2M%2CT2M_MAX%2CT2M_MIN%2CRH2M%2CWS2M%2CPS%2CALLSKY_SFC_SW_DWN%2CPRECTOTCORR&community=AG&latitude=40.75&longitude=68.49&start=1995&end=2014&format=JSON",
+  "retrieval_utc": "Sat, 17 Oct 2026 16:53:52 GMT",
+  "sha256": "0c1017d98b98dd6bd4c13c8101258eabec9d766f1024e600052203e8caf4ba6c",
+  "scope": "demonstration reference coordinate only; regional polygon cache separate"
+}
