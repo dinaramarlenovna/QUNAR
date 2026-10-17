@@ -1,0 +1,310 @@
+{
+  "case_id": "A8_MAKTAARAL_100HA_2026",
+  "input_sha256": "fffd384358faaeaf3dcc4ae3099f20fb004a421f3b55a4d8d68c0820fa884f9a",
+  "case_type": "illustrative_hypothetical_not_observed_or_policy_impact",
+  "area_ha": 100.0,
+  "district": "Maktaaral District",
+  "assessment_year": 2026,
+  "accounting_period": "Apr-Sep",
+  "water_boundary": "field delivery; not water-source abstraction",
+  "inputs": {
+    "label": "A8: Maktaaral 100 ha illustrative scientific case (NOT an observed farm)",
+    "district": "Maktaaral District",
+    "area_ha": 100,
+    "assessment_year": 2026,
+    "price_reference_year": 2025,
+    "accounting_period": "apr_sep",
+    "irrigation_type": "furrow",
+    "water_boundary": "field_delivery",
+    "normal_water_budget_m3": 750000,
+    "stress": {
+      "water_budget_change_pct": -20,
+      "yield_change_pct": -10,
+      "cost_change_pct": 10
+    },
+    "baseline_crop_shares": {
+      "Cotton": 0.5,
+      "Corn": 0.3,
+      "Wheat": 0.2
+    },
+    "economic_objective": {
+      "profile": "balanced",
+      "objective_mode": "economic",
+      "economic_weight": 0.7,
+      "n_crops": 3,
+      "max_crop_share": 0.6
+    },
+    "crop_activities": {
+      "Cotton": {
+        "other_variable_cost_kzt_ha": 350000,
+        "nitrogen_kg_ha": 110,
+        "diesel_litres_ha": 60
+      },
+      "Corn": {
+        "other_variable_cost_kzt_ha": 210000,
+        "nitrogen_kg_ha": 90,
+        "diesel_litres_ha": 55
+      },
+      "Wheat": {
+        "other_variable_cost_kzt_ha": 120000,
+        "nitrogen_kg_ha": 55,
+        "diesel_litres_ha": 38
+      }
+    },
+    "technical_assumptions": {
+      "pump_electricity_kwh_per_m3_field_delivery": 0.70509,
+      "water_tariff_kzt_per_m3_field_delivery": 2.5,
+      "electricity_tariff_kzt_per_kwh": 30,
+      "grid_kg_co2e_per_kwh": 0.6061,
+      "diesel_kg_co2_per_litre": 2.68,
+      "n2o_n_kg_per_kg_n": 0.01,
+      "n2o_gwp100": 273
+    },
+    "evidence_status": {
+      "prices": "Official BNS Turkestan 2025 published producer prices, prices do not imply 2026 contract prices",
+      "yields": "District 2023-2025 arithmetic reference, NOT farm observed yield nor validated 2026 forecast",
+      "water": "Order 108-NQ 2025 QUNAR reference field-delivery norms for Maktaaral; not measured water",
+      "baseline": "Illustrative arbitrary 50/30/20 crop shares, NOT an observed farm allocation",
+      "budgets": "Illustrative 750,000 m3 normal-water budget and -20% stress, NOT official quota",
+      "other_variable_costs": "Illustrative assumed full non-water/non-electric variable costs per ha, NOT statistical regional averages",
+      "energy_and_tariffs": "Uses QUNAR pre-existing reference pump-energy intensity 0.70509 kWh/m3 and grid factor 0.6061 kgCO2e/kWh (reference provenance to be verified); water/electricity tariffs remain illustrative inputs, not farm bills",
+      "nitrogen_and_diesel": "Illustrative input activities per ha, NOT audited farm resource consumption",
+      "boundaries": "Same Apr-Sep crop period, field-delivery irrigation. Partial N2O from nitrogen, diesel CO2, pumping electricity CO2e. Excludes manure, fertilizer production, soil carbon and return-flow effects."
+    }
+  },
+  "crop_reference_rows": [
+    {
+      "code": "Cotton",
+      "product": "Хлопок, очищенный или не очищенный от семян",
+      "yield_c_ha": 26.03333333333333,
+      "yield_years": [
+        2023,
+        2024,
+        2025
+      ],
+      "price_kzt_t": 255373.0,
+      "price_source": "БНС РК, среднегодовая цена производителя по Туркестанской области, 2025; Т-15-19-Г (2025) рус.xlsx, лист 1, ячейка Q32. Тг/т, без НДС. Справочный сценарий, не цена хозяйства.",
+      "other_cost_kzt_ha": 350000.0,
+      "water_m3_ha": 8400.0,
+      "water_reference": "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",
+      "water_source_tier": "direct",
+      "pump_electricity_kwh_ha": 5922.756,
+      "base_revenue_kzt_ha": 664821.0433333332,
+      "base_water_cost_kzt_ha": 21000.0,
+      "base_energy_cost_kzt_ha": 177682.68000000002,
+      "base_total_variable_cost_kzt_ha": 548682.68,
+      "base_margin_kzt_ha": 116138.3633333332
+    },
+    {
+      "code": "Corn",
+      "product": "Кукуруза (маис)",
+      "yield_c_ha": 44.06666666666666,
+      "yield_years": [
+        2023,
+        2024,
+        2025
+      ],
+      "price_kzt_t": 99844.0,
+      "price_source": "БНС РК, среднегодовая цена производителя по Туркестанской области, 2025; Т-15-19-Г (2025) рус.xlsx, лист 1, ячейка Q7. Тг/т, без НДС. Справочный сценарий, не цена хозяйства.",
+      "other_cost_kzt_ha": 210000.0,
+      "water_m3_ha": 7450.0,
+      "water_reference": "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",
+      "water_source_tier": "direct",
+      "pump_electricity_kwh_ha": 5252.9205,
+      "base_revenue_kzt_ha": 439979.2266666666,
+      "base_water_cost_kzt_ha": 18625.0,
+      "base_energy_cost_kzt_ha": 157587.615,
+      "base_total_variable_cost_kzt_ha": 386212.615,
+      "base_margin_kzt_ha": 53766.611666666635
+    },
+    {
+      "code": "Wheat",
+      "product": "Пшеница",
+      "yield_c_ha": 20.7,
+      "yield_years": [
+        2023,
+        2024,
+        2025
+      ],
+      "price_kzt_t": 100044.0,
+      "price_source": "БНС РК, среднегодовая цена производителя по Туркестанской области, 2025; Т-15-19-Г (2025) рус.xlsx, лист 1, ячейка Q4. Тг/т, без НДС. Справочный сценарий, не цена хозяйства.",
+      "other_cost_kzt_ha": 120000.0,
+      "water_m3_ha": 4100.0,
+      "water_reference": "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",
+      "water_source_tier": "direct",
+      "pump_electricity_kwh_ha": 2890.869,
+      "base_revenue_kzt_ha": 207091.08,
+      "base_water_cost_kzt_ha": 10250.0,
+      "base_energy_cost_kzt_ha": 86726.07,
+      "base_total_variable_cost_kzt_ha": 216976.07,
+      "base_margin_kzt_ha": -9884.99000000002
+    }
+  ],
+  "normal": {
+    "water_budget_m3": 750000.0,
+    "baseline_areas_ha": {
+      "Cotton": 50.0,
+      "Corn": 30.0,
+      "Wheat": 20.0
+    },
+    "optimized_areas_ha": {
+      "Cotton": 60.0,
+      "Corn": 24.477611940298498,
+      "Wheat": 15.522388059701509
+    },
+    "baseline": {
+      "area_ha": 100.0,
+      "water_field_delivery_m3": 725500.0,
+      "pump_energy_kwh": 511542.795,
+      "revenue_kzt": 50582250.56666666,
+      "variable_cost_kzt": 43360033.85,
+      "contribution_margin_kzt": 7222216.7166666575,
+      "partial_ghg_kg_co2e": 364441.88804949995,
+      "partial_ghg_components_kg_co2e": {
+        "direct_fertilizer_n2o_kgco2e": 39897.0,
+        "diesel_combustion_kgco2": 14498.800000000001,
+        "electricity_kgco2e": 310046.08804949996
+      },
+      "ghg_activity_total": {
+        "nitrogen_kg_ha": 9300.0,
+        "diesel_litres_ha": 5410.0,
+        "electricity_kwh_ha": 511542.795
+      },
+      "water_budget_m3": 750000.0,
+      "water_feasible": true
+    },
+    "optimized": {
+      "area_ha": 100.0,
+      "water_field_delivery_m3": 750000.0,
+      "pump_energy_kwh": 528817.5,
+      "revenue_kzt": 53873451.47960198,
+      "variable_cost_kzt": 45742510.07462687,
+      "contribution_margin_kzt": 8130941.4049751125,
+      "partial_ghg_kg_co2e": 376780.4001828358,
+      "partial_ghg_components_kg_co2e": {
+        "direct_fertilizer_n2o_kgco2e": 41427.31343283582,
+        "diesel_combustion_kgco2": 14836.800000000001,
+        "electricity_kgco2e": 320516.28674999997
+      },
+      "ghg_activity_total": {
+        "nitrogen_kg_ha": 9656.716417910447,
+        "diesel_litres_ha": 5536.119402985075,
+        "electricity_kwh_ha": 528817.5
+      },
+      "water_budget_m3": 750000.0,
+      "water_feasible": true
+    },
+    "optimizer_status": "optimal_enumerated_candidates",
+    "margin_change_same_conditions_kzt": 908724.688308455,
+    "water_change_same_conditions_m3": 24500.0,
+    "ghg_difference": {
+      "baseline_kgco2e": 364441.88804949995,
+      "scenario_kgco2e": 376780.4001828358,
+      "change_kgco2e": 12338.51213333587,
+      "possible_reduction_kgco2e": -12338.51213333587,
+      "status": "counterfactual scenario, not field-measured achieved saving",
+      "baseline_activities": {
+        "nitrogen_kg_ha": 9300.0,
+        "diesel_litres_ha": 5410.0,
+        "electricity_kwh_ha": 511542.795
+      },
+      "proposed_activities": {
+        "nitrogen_kg_ha": 9656.716417910447,
+        "diesel_litres_ha": 5536.119402985075,
+        "electricity_kwh_ha": 528817.5
+      },
+      "baseline_area_ha": 100.0,
+      "proposed_area_ha": 100.0,
+      "intensities_assumption": "user_scenario_per_crop",
+      "evidence": "Hypothetical A8 100-ha case; equal reporting period and factors",
+      "boundary": "partial N2O from applied N, diesel combustion, grid electricity; no lifecycle or all sources",
+      "interpretation": "modeled crop-mix difference, not measured mitigation outcome"
+    }
+  },
+  "stress": {
+    "water_budget_m3": 600000.0,
+    "baseline_areas_ha": {
+      "Cotton": 50.0,
+      "Corn": 30.0,
+      "Wheat": 20.0
+    },
+    "optimized_areas_ha": {
+      "Cotton": 41.84883720930234,
+      "Corn": 3.0,
+      "Wheat": 55.15116279069768
+    },
+    "unchanged_baseline_infeasible": true,
+    "baseline_counterfactual_water_shortfall_m3": 125500.0,
+    "baseline_counterfactual": {
+      "area_ha": 100.0,
+      "water_field_delivery_m3": 725500.0,
+      "pump_energy_kwh": 511542.795,
+      "revenue_kzt": 45524025.50999999,
+      "variable_cost_kzt": 47696037.23500001,
+      "contribution_margin_kzt": -2172011.7250000127,
+      "partial_ghg_kg_co2e": 364441.88804949995,
+      "partial_ghg_components_kg_co2e": {
+        "direct_fertilizer_n2o_kgco2e": 39897.0,
+        "diesel_combustion_kgco2": 14498.800000000001,
+        "electricity_kgco2e": 310046.08804949996
+      },
+      "ghg_activity_total": {
+        "nitrogen_kg_ha": 9300.0,
+        "diesel_litres_ha": 5410.0,
+        "electricity_kwh_ha": 511542.795
+      },
+      "water_budget_m3": 600000.0,
+      "water_feasible": false
+    },
+    "optimized": {
+      "area_ha": 100.00000000000003,
+      "water_field_delivery_m3": 600000.0000000001,
+      "pump_energy_kwh": 423054.0000000001,
+      "revenue_kzt": 36506915.24522093,
+      "variable_cost_kzt": 39695537.813953504,
+      "contribution_margin_kzt": -3188622.5687325695,
+      "partial_ghg_kg_co2e": 303120.7999813954,
+      "partial_ghg_components_kg_co2e": {
+        "direct_fertilizer_n2o_kgco2e": 33919.683139534885,
+        "diesel_combustion_kgco2": 12788.087441860469,
+        "electricity_kgco2e": 256413.02940000006
+      },
+      "ghg_activity_total": {
+        "nitrogen_kg_ha": 7906.68604651163,
+        "diesel_litres_ha": 4771.674418604653,
+        "electricity_kwh_ha": 423054.0000000001
+      },
+      "water_budget_m3": 600000.0,
+      "water_feasible": true
+    },
+    "optimizer_status": "optimal_enumerated_candidates",
+    "hypothetical_margin_difference_vs_infeasible_baseline_kzt": -1016610.8437325568,
+    "field_delivery_change_vs_infeasible_baseline_m3": -125499.99999999988,
+    "ghg_difference_vs_infeasible_baseline": {
+      "baseline_kgco2e": 364441.88804949995,
+      "scenario_kgco2e": 303120.7999813954,
+      "change_kgco2e": -61321.088068104524,
+      "possible_reduction_kgco2e": 61321.088068104524,
+      "status": "counterfactual scenario, not field-measured achieved saving",
+      "baseline_activities": {
+        "nitrogen_kg_ha": 9300.0,
+        "diesel_litres_ha": 5410.0,
+        "electricity_kwh_ha": 511542.795
+      },
+      "proposed_activities": {
+        "nitrogen_kg_ha": 7906.68604651163,
+        "diesel_litres_ha": 4771.674418604653,
+        "electricity_kwh_ha": 423054.0000000001
+      },
+      "baseline_area_ha": 100.0,
+      "proposed_area_ha": 100.00000000000003,
+      "intensities_assumption": "user_scenario_per_crop",
+      "evidence": "Hypothetical A8 stressed baseline is water-infeasible; comparison is counterfactual",
+      "boundary": "partial N2O from applied N, diesel combustion, grid electricity; no lifecycle or all sources",
+      "interpretation": "modeled crop-mix difference, not measured mitigation outcome"
+    },
+    "interpretation": "Counterfactual infeasible baseline: not an achievable margin uplift or a field-measured water/GHG saving"
+  },
+  "provenance": "Prices: BNS 2025; district yields: 2023–2025; crop water reference: Order 108-NQ, QUNAR implementation; production costs, tariffs, energy/GHG activities, baseline and budgets: explicit hypothetical assumptions. All output is an illustrative scenario.",
+  "excluded": "No observed farm profit, no verified farm water quota, no actual basin savings, no out-of-sample yield forecast, no realized emissions reductions, no full life-cycle GHG or capital expenditure."
+}

@@ -1,0 +1,119 @@
+{
+  "note": "climate-score-only sensitivity with fixed per-crop water/margin/GHG; region-level CCKP anomalies; NOT climate-resilient irrigation/yield confirmation",
+  "results": [
+    {
+      "scenario": "baseline",
+      "climate_inputs": {
+        "Apr-Sep temperature, °C": 25.873224043715844,
+        "Apr-Sep precipitation, mm": 72.625,
+        "Apr-Sep root-zone wetness": 0.4739344262295082,
+        "Apr-Sep solar radiation, MJ/m²/day": 24.06950819672132
+      },
+      "shift": {},
+      "status": "optimal_enumerated_candidates",
+      "area": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 16.734,
+        "Пшеница": 23.266
+      },
+      "comparison": {
+        "baseline_water_m3": 725500.0,
+        "baseline_partial_ghg_kg_co2e": 232143.3,
+        "baseline_margin_kzt": 14950750.56666666,
+        "minimum_margin_kzt": 14950750.56666666,
+        "max_margin_decline_pct": 0.0,
+        "baseline_feasible_under_current_water_budget": true,
+        "optimized_water_m3": 724059.751490467,
+        "optimized_partial_ghg_kg_co2e": 232143.30000000002,
+        "optimized_margin_kzt": 15351255.595718468,
+        "all_constraints_met": true,
+        "emission_boundary": "user-supplied partial kg CO2e/ha; same crop period and factor set required",
+        "method": "weighted utility maximum among enumerated candidate sets subject to margin floor, water and partial-GHG ceilings; not guaranteed globally Pareto-optimal in unmodelled dimensions"
+      },
+      "climate_scores": {
+        "Хлопок, очищенный или не очищенный от семян": 100.0,
+        "Кукуруза (маис)": 100.0,
+        "Пшеница": 100.0
+      }
+    },
+    {
+      "scenario": "SSP2-4.5",
+      "climate_inputs": {
+        "Apr-Sep temperature, °C": 27.883934426229505,
+        "Apr-Sep precipitation, mm": 73.57563595949617,
+        "Apr-Sep root-zone wetness": 0.4739344262295082,
+        "Apr-Sep solar radiation, MJ/m²/day": 24.06950819672132
+      },
+      "shift": {
+        "Delta_T_c": 2.010710382513661,
+        "Delta_P_pct": 1.3089651765868113
+      },
+      "status": "optimal_enumerated_candidates",
+      "area": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 16.734,
+        "Пшеница": 23.266
+      },
+      "comparison": {
+        "baseline_water_m3": 725500.0,
+        "baseline_partial_ghg_kg_co2e": 232143.3,
+        "baseline_margin_kzt": 14950750.56666666,
+        "minimum_margin_kzt": 14950750.56666666,
+        "max_margin_decline_pct": 0.0,
+        "baseline_feasible_under_current_water_budget": true,
+        "optimized_water_m3": 724059.751490467,
+        "optimized_partial_ghg_kg_co2e": 232143.30000000002,
+        "optimized_margin_kzt": 15351255.595718468,
+        "all_constraints_met": true,
+        "emission_boundary": "user-supplied partial kg CO2e/ha; same crop period and factor set required",
+        "method": "weighted utility maximum among enumerated candidate sets subject to margin floor, water and partial-GHG ceilings; not guaranteed globally Pareto-optimal in unmodelled dimensions"
+      },
+      "climate_scores": {
+        "Хлопок, очищенный или не очищенный от семян": 31.8182,
+        "Кукуруза (маис)": 9.0909,
+        "Пшеница": 9.5238
+      }
+    },
+    {
+      "scenario": "SSP5-8.5",
+      "climate_inputs": {
+        "Apr-Sep temperature, °C": 28.552786885245897,
+        "Apr-Sep precipitation, mm": 73.24082077879312,
+        "Apr-Sep root-zone wetness": 0.4739344262295082,
+        "Apr-Sep solar radiation, MJ/m²/day": 24.06950819672132
+      },
+      "shift": {
+        "Delta_T_c": 2.6795628415300548,
+        "Delta_P_pct": 0.8479459948958593
+      },
+      "status": "optimal_enumerated_candidates",
+      "area": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 16.734,
+        "Пшеница": 23.266
+      },
+      "comparison": {
+        "baseline_water_m3": 725500.0,
+        "baseline_partial_ghg_kg_co2e": 232143.3,
+        "baseline_margin_kzt": 14950750.56666666,
+        "minimum_margin_kzt": 14950750.56666666,
+        "max_margin_decline_pct": 0.0,
+        "baseline_feasible_under_current_water_budget": true,
+        "optimized_water_m3": 724059.751490467,
+        "optimized_partial_ghg_kg_co2e": 232143.30000000002,
+        "optimized_margin_kzt": 15351255.595718468,
+        "all_constraints_met": true,
+        "emission_boundary": "user-supplied partial kg CO2e/ha; same crop period and factor set required",
+        "method": "weighted utility maximum among enumerated candidate sets subject to margin floor, water and partial-GHG ceilings; not guaranteed globally Pareto-optimal in unmodelled dimensions"
+      },
+      "climate_scores": {
+        "Хлопок, очищенный или не очищенный от семян": 31.8182,
+        "Кукуруза (маис)": 0.0,
+        "Пшеница": 9.5238
+      }
+    }
+  ],
+  "superseded_for_current_A8": true,
+  "superseded_reason": "Uses earlier illustrative pumping/grid factors; climate-score-only; future water/economics unchanged",
+  "current_source": "examples/a8_output/a8_canonical_climate_margintolerance_0pct.json"
+}

@@ -1,0 +1,17 @@
+{
+  "Apr-Sep temperature, °C": 22.745060612120337,
+  "Apr-Sep precipitation, mm": 83.50266305024813,
+  "Apr-Sep relative humidity, %": 34.51050315955228,
+  "Apr-Sep solar radiation, MJ/m²/day": 23.812174140222986,
+  "source": "NASA POWER Monthly API, 1995–2025, polygon-weighted grid",
+  "year": 2026,
+  "period_start": "1995-04-01",
+  "period_end": "2025-09-30",
+  "partial_season": false,
+  "climate_period": "historical climatology for prospective planning",
+  "soil_moisture_source": "NASA POWER modelled root-zone wetness; not fertility or soil chemistry",
+  "Apr-Sep root-zone wetness": 0.41023457991763973,
+  "estimated_monthly_values": [],
+  "polygon_sample_count": 65,
+  "polygon_sampling_note": "Nominal NASA meteo grid, area-weighted field footprint; not measured microclimate"
+}

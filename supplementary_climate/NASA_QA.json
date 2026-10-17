@@ -1,0 +1,61 @@
+{
+  "source_archive": "QUNAR_NASA_POWER_REGION_1995_2025_RESULT.zip",
+  "period": "1995-2025",
+  "cell_count": 65,
+  "territory_count": 17,
+  "monthly_points_per_parameter_per_cell": 372,
+  "expected_cell_month_values_per_parameter": 24180,
+  "valid_counts": {
+    "T2M": 24180,
+    "T2M_MAX": 24180,
+    "T2M_MIN": 24180,
+    "RH2M": 24180,
+    "WS2M": 24180,
+    "PS": 24180,
+    "ALLSKY_SFC_SW_DWN": 24180,
+    "PRECTOTCORR": 24180,
+    "GWETROOT": 24180
+  },
+  "invalid_counts": {
+    "T2M": 0,
+    "T2M_MAX": 0,
+    "T2M_MIN": 0,
+    "RH2M": 0,
+    "WS2M": 0,
+    "PS": 0,
+    "ALLSKY_SFC_SW_DWN": 0,
+    "PRECTOTCORR": 0,
+    "GWETROOT": 0
+  },
+  "annual_summary_entries_excluded": 585,
+  "coverage_under_95percent_parameter_rows": 0,
+  "errors": [],
+  "district_cell_weights_sum": {
+    "Suzak District": 1.0,
+    "Sauran District": 1.0,
+    "Arys City": 1.0,
+    "Turkestan City": 1.0,
+    "Tolebi District": 1.0,
+    "Otyrar District": 1.0,
+    "Tulkibas District": 1.0,
+    "Shardara District": 1.0,
+    "Baydibek District": 1.0,
+    "Ordabasy District": 1.0,
+    "Kazygurt District": 1.0,
+    "Sairam District": 1.0,
+    "Maktaaral District": 1.0,
+    "Saryagash District": 1.0,
+    "Zhetysay District": 1.0,
+    "Keles District": 1.0,
+    "Kentau City": 1.0,
+    "REGION": 1.0
+  },
+  "notes": [
+    "Spatial weight polygons are NOMINAL approximations; NASA POWER native parameter footprints differ, particularly solar radiation.",
+    "Do not concatenate 13th annual records as months.",
+    "PRECTOTCORR is monthly mean rate (mm/day); convert to monthly total by multiplying days in calendar month.",
+    "NASA T2M_MAX/T2M_MIN monthly extrema aggregation depends on API parameter semantics; they cannot reconstruct counts of days above 35/40/45 °C.",
+    "Monthly inputs can support approximate monthly FAO-56 Penman-Monteith ET0 but daily heat-extreme indicators require daily source.",
+    "Area-based district averages are gridded estimates, not weather station measurements."
+  ]
+}

@@ -1,0 +1,674 @@
+{
+  "project_version": "v0.8.1",
+  "description": "Reproducible A1/A3/A4/A7/A8 evidence; all A5 production costs hypothetical",
+  "historical_model_unchanged": true,
+  "CCKP_CMIP6": {
+    "SSP2-4.5": {
+      "scenario": "SSP2-4.5",
+      "period": "2040-2059",
+      "reference_period": "1995-2014",
+      "region_source_label": "Yujno-kazachstanskaya",
+      "source": "World Bank Climate Change Knowledge Portal, CMIP6",
+      "temperature_change_c": 2.010710382513661,
+      "precipitation_change_mm": 1.5899999999999996,
+      "precipitation_change_pct": 1.3089651765868113,
+      "days_over_35": 63.04,
+      "days_over_40": 16.55,
+      "days_over_45": 0.54,
+      "status": "regional scenario estimate, not observed farm climate",
+      "projected_mean_minus_historical_mean_mm": 2.31,
+      "mean_minus_anomaly_discrepancy_mm": 0.72,
+      "precipitation_aggregation_note": "Use exported CCKP Anomaly for scenario delta; independently exported mean differences do not match. Exact ensemble aggregation method must be checked before claiming equivalence."
+    },
+    "SSP5-8.5": {
+      "scenario": "SSP5-8.5",
+      "period": "2040-2059",
+      "reference_period": "1995-2014",
+      "region_source_label": "Yujno-kazachstanskaya",
+      "source": "World Bank Climate Change Knowledge Portal, CMIP6",
+      "temperature_change_c": 2.6795628415300548,
+      "precipitation_change_mm": 1.0300000000000002,
+      "precipitation_change_pct": 0.8479459948958593,
+      "days_over_35": 70.41,
+      "days_over_40": 21.45,
+      "days_over_45": 1.01,
+      "status": "regional scenario estimate, not observed farm climate",
+      "projected_mean_minus_historical_mean_mm": 2.2,
+      "mean_minus_anomaly_discrepancy_mm": 1.17,
+      "precipitation_aggregation_note": "Use exported CCKP Anomaly for scenario delta; independently exported mean differences do not match. Exact ensemble aggregation method must be checked before claiming equivalence."
+    }
+  },
+  "A7_survey": {
+    "climate": 0.43661971830985913,
+    "water": 0.5633802816901409,
+    "respondents": 208,
+    "water_mentions": 120,
+    "climate_mentions": 93,
+    "source": "2026 survey, Q3 water deficiency / Q7 climate barriers",
+    "method": "cross_question_frequency_ratio_sensitivity_only",
+    "warning": "Exploratory scenario, not direct pairwise preferences or validated survey weights"
+  },
+  "A7_sensitivity": {
+    "territories": 17,
+    "same_top1": 17,
+    "same_top3_set": 15,
+    "changed_top3_territories": [
+      "Zhetysay District",
+      "Arys City"
+    ],
+    "source": "survey_weight_sensitivity_17_regions.csv",
+    "interpretation": "Ranking perturbation with survey proxy, NOT farming area allocation, and NOT known respondent districts"
+  },
+  "A8_100ha": {
+    "case_id": "A8_MAKTAARAL_100HA_2026",
+    "input_sha256": "fffd384358faaeaf3dcc4ae3099f20fb004a421f3b55a4d8d68c0820fa884f9a",
+    "case_type": "illustrative_hypothetical_not_observed_or_policy_impact",
+    "area_ha": 100.0,
+    "district": "Maktaaral District",
+    "assessment_year": 2026,
+    "accounting_period": "Apr-Sep",
+    "water_boundary": "field delivery; not water-source abstraction",
+    "inputs": {
+      "label": "A8: Maktaaral 100 ha illustrative scientific case (NOT an observed farm)",
+      "district": "Maktaaral District",
+      "area_ha": 100,
+      "assessment_year": 2026,
+      "price_reference_year": 2025,
+      "accounting_period": "apr_sep",
+      "irrigation_type": "furrow",
+      "water_boundary": "field_delivery",
+      "normal_water_budget_m3": 750000,
+      "stress": {
+        "water_budget_change_pct": -20,
+        "yield_change_pct": -10,
+        "cost_change_pct": 10
+      },
+      "baseline_crop_shares": {
+        "Cotton": 0.5,
+        "Corn": 0.3,
+        "Wheat": 0.2
+      },
+      "economic_objective": {
+        "profile": "balanced",
+        "objective_mode": "economic",
+        "economic_weight": 0.7,
+        "n_crops": 3,
+        "max_crop_share": 0.6
+      },
+      "crop_activities": {
+        "Cotton": {
+          "other_variable_cost_kzt_ha": 350000,
+          "nitrogen_kg_ha": 110,
+          "diesel_litres_ha": 60
+        },
+        "Corn": {
+          "other_variable_cost_kzt_ha": 210000,
+          "nitrogen_kg_ha": 90,
+          "diesel_litres_ha": 55
+        },
+        "Wheat": {
+          "other_variable_cost_kzt_ha": 120000,
+          "nitrogen_kg_ha": 55,
+          "diesel_litres_ha": 38
+        }
+      },
+      "technical_assumptions": {
+        "pump_electricity_kwh_per_m3_field_delivery": 0.70509,
+        "water_tariff_kzt_per_m3_field_delivery": 2.5,
+        "electricity_tariff_kzt_per_kwh": 30,
+        "grid_kg_co2e_per_kwh": 0.6061,
+        "diesel_kg_co2_per_litre": 2.68,
+        "n2o_n_kg_per_kg_n": 0.01,
+        "n2o_gwp100": 273
+      },
+      "evidence_status": {
+        "prices": "Official BNS Turkestan 2025 published producer prices, prices do not imply 2026 contract prices",
+        "yields": "District 2023-2025 arithmetic reference, NOT farm observed yield nor validated 2026 forecast",
+        "water": "Order 108-NQ 2025 QUNAR reference field-delivery norms for Maktaaral; not measured water",
+        "baseline": "Illustrative arbitrary 50/30/20 crop shares, NOT an observed farm allocation",
+        "budgets": "Illustrative 750,000 m3 normal-water budget and -20% stress, NOT official quota",
+        "other_variable_costs": "Illustrative assumed full non-water/non-electric variable costs per ha, NOT statistical regional averages",
+        "energy_and_tariffs": "Uses QUNAR pre-existing reference pump-energy intensity 0.70509 kWh/m3 and grid factor 0.6061 kgCO2e/kWh (reference provenance to be verified); water/electricity tariffs remain illustrative inputs, not farm bills",
+        "nitrogen_and_diesel": "Illustrative input activities per ha, NOT audited farm resource consumption",
+        "boundaries": "Same Apr-Sep crop period, field-delivery irrigation. Partial N2O from nitrogen, diesel CO2, pumping electricity CO2e. Excludes manure, fertilizer production, soil carbon and return-flow effects."
+      }
+    },
+    "crop_reference_rows": [
+      {
+        "code": "Cotton",
+        "product": "Хлопок, очищенный или не очищенный от семян",
+        "yield_c_ha": 26.03333333333333,
+        "yield_years": [
+          2023,
+          2024,
+          2025
+        ],
+        "price_kzt_t": 255373.0,
+        "price_source": "БНС РК, среднегодовая цена производителя по Туркестанской области, 2025; Т-15-19-Г (2025) рус.xlsx, лист 1, ячейка Q32. Тг/т, без НДС. Справочный сценарий, не цена хозяйства.",
+        "other_cost_kzt_ha": 350000.0,
+        "water_m3_ha": 8400.0,
+        "water_reference": "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",
+        "water_source_tier": "direct",
+        "pump_electricity_kwh_ha": 5922.756,
+        "base_revenue_kzt_ha": 664821.0433333332,
+        "base_water_cost_kzt_ha": 21000.0,
+        "base_energy_cost_kzt_ha": 177682.68000000002,
+        "base_total_variable_cost_kzt_ha": 548682.68,
+        "base_margin_kzt_ha": 116138.3633333332
+      },
+      {
+        "code": "Corn",
+        "product": "Кукуруза (маис)",
+        "yield_c_ha": 44.06666666666666,
+        "yield_years": [
+          2023,
+          2024,
+          2025
+        ],
+        "price_kzt_t": 99844.0,
+        "price_source": "БНС РК, среднегодовая цена производителя по Туркестанской области, 2025; Т-15-19-Г (2025) рус.xlsx, лист 1, ячейка Q7. Тг/т, без НДС. Справочный сценарий, не цена хозяйства.",
+        "other_cost_kzt_ha": 210000.0,
+        "water_m3_ha": 7450.0,
+        "water_reference": "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",
+        "water_source_tier": "direct",
+        "pump_electricity_kwh_ha": 5252.9205,
+        "base_revenue_kzt_ha": 439979.2266666666,
+        "base_water_cost_kzt_ha": 18625.0,
+        "base_energy_cost_kzt_ha": 157587.615,
+        "base_total_variable_cost_kzt_ha": 386212.615,
+        "base_margin_kzt_ha": 53766.611666666635
+      },
+      {
+        "code": "Wheat",
+        "product": "Пшеница",
+        "yield_c_ha": 20.7,
+        "yield_years": [
+          2023,
+          2024,
+          2025
+        ],
+        "price_kzt_t": 100044.0,
+        "price_source": "БНС РК, среднегодовая цена производителя по Туркестанской области, 2025; Т-15-19-Г (2025) рус.xlsx, лист 1, ячейка Q4. Тг/т, без НДС. Справочный сценарий, не цена хозяйства.",
+        "other_cost_kzt_ha": 120000.0,
+        "water_m3_ha": 4100.0,
+        "water_reference": "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",
+        "water_source_tier": "direct",
+        "pump_electricity_kwh_ha": 2890.869,
+        "base_revenue_kzt_ha": 207091.08,
+        "base_water_cost_kzt_ha": 10250.0,
+        "base_energy_cost_kzt_ha": 86726.07,
+        "base_total_variable_cost_kzt_ha": 216976.07,
+        "base_margin_kzt_ha": -9884.99000000002
+      }
+    ],
+    "normal": {
+      "water_budget_m3": 750000.0,
+      "baseline_areas_ha": {
+        "Cotton": 50.0,
+        "Corn": 30.0,
+        "Wheat": 20.0
+      },
+      "optimized_areas_ha": {
+        "Cotton": 60.0,
+        "Corn": 24.477611940298498,
+        "Wheat": 15.522388059701509
+      },
+      "baseline": {
+        "area_ha": 100.0,
+        "water_field_delivery_m3": 725500.0,
+        "pump_energy_kwh": 511542.795,
+        "revenue_kzt": 50582250.56666666,
+        "variable_cost_kzt": 43360033.85,
+        "contribution_margin_kzt": 7222216.7166666575,
+        "partial_ghg_kg_co2e": 364441.88804949995,
+        "partial_ghg_components_kg_co2e": {
+          "direct_fertilizer_n2o_kgco2e": 39897.0,
+          "diesel_combustion_kgco2": 14498.800000000001,
+          "electricity_kgco2e": 310046.08804949996
+        },
+        "ghg_activity_total": {
+          "nitrogen_kg_ha": 9300.0,
+          "diesel_litres_ha": 5410.0,
+          "electricity_kwh_ha": 511542.795
+        },
+        "water_budget_m3": 750000.0,
+        "water_feasible": true
+      },
+      "optimized": {
+        "area_ha": 100.0,
+        "water_field_delivery_m3": 750000.0,
+        "pump_energy_kwh": 528817.5,
+        "revenue_kzt": 53873451.47960198,
+        "variable_cost_kzt": 45742510.07462687,
+        "contribution_margin_kzt": 8130941.4049751125,
+        "partial_ghg_kg_co2e": 376780.4001828358,
+        "partial_ghg_components_kg_co2e": {
+          "direct_fertilizer_n2o_kgco2e": 41427.31343283582,
+          "diesel_combustion_kgco2": 14836.800000000001,
+          "electricity_kgco2e": 320516.28674999997
+        },
+        "ghg_activity_total": {
+          "nitrogen_kg_ha": 9656.716417910447,
+          "diesel_litres_ha": 5536.119402985075,
+          "electricity_kwh_ha": 528817.5
+        },
+        "water_budget_m3": 750000.0,
+        "water_feasible": true
+      },
+      "optimizer_status": "optimal_enumerated_candidates",
+      "margin_change_same_conditions_kzt": 908724.688308455,
+      "water_change_same_conditions_m3": 24500.0,
+      "ghg_difference": {
+        "baseline_kgco2e": 364441.88804949995,
+        "scenario_kgco2e": 376780.4001828358,
+        "change_kgco2e": 12338.51213333587,
+        "possible_reduction_kgco2e": -12338.51213333587,
+        "status": "counterfactual scenario, not field-measured achieved saving",
+        "baseline_activities": {
+          "nitrogen_kg_ha": 9300.0,
+          "diesel_litres_ha": 5410.0,
+          "electricity_kwh_ha": 511542.795
+        },
+        "proposed_activities": {
+          "nitrogen_kg_ha": 9656.716417910447,
+          "diesel_litres_ha": 5536.119402985075,
+          "electricity_kwh_ha": 528817.5
+        },
+        "baseline_area_ha": 100.0,
+        "proposed_area_ha": 100.0,
+        "intensities_assumption": "user_scenario_per_crop",
+        "evidence": "Hypothetical A8 100-ha case; equal reporting period and factors",
+        "boundary": "partial N2O from applied N, diesel combustion, grid electricity; no lifecycle or all sources",
+        "interpretation": "modeled crop-mix difference, not measured mitigation outcome"
+      }
+    },
+    "stress": {
+      "water_budget_m3": 600000.0,
+      "baseline_areas_ha": {
+        "Cotton": 50.0,
+        "Corn": 30.0,
+        "Wheat": 20.0
+      },
+      "optimized_areas_ha": {
+        "Cotton": 41.84883720930234,
+        "Corn": 3.0,
+        "Wheat": 55.15116279069768
+      },
+      "unchanged_baseline_infeasible": true,
+      "baseline_counterfactual_water_shortfall_m3": 125500.0,
+      "baseline_counterfactual": {
+        "area_ha": 100.0,
+        "water_field_delivery_m3": 725500.0,
+        "pump_energy_kwh": 511542.795,
+        "revenue_kzt": 45524025.50999999,
+        "variable_cost_kzt": 47696037.23500001,
+        "contribution_margin_kzt": -2172011.7250000127,
+        "partial_ghg_kg_co2e": 364441.88804949995,
+        "partial_ghg_components_kg_co2e": {
+          "direct_fertilizer_n2o_kgco2e": 39897.0,
+          "diesel_combustion_kgco2": 14498.800000000001,
+          "electricity_kgco2e": 310046.08804949996
+        },
+        "ghg_activity_total": {
+          "nitrogen_kg_ha": 9300.0,
+          "diesel_litres_ha": 5410.0,
+          "electricity_kwh_ha": 511542.795
+        },
+        "water_budget_m3": 600000.0,
+        "water_feasible": false
+      },
+      "optimized": {
+        "area_ha": 100.00000000000003,
+        "water_field_delivery_m3": 600000.0000000001,
+        "pump_energy_kwh": 423054.0000000001,
+        "revenue_kzt": 36506915.24522093,
+        "variable_cost_kzt": 39695537.813953504,
+        "contribution_margin_kzt": -3188622.5687325695,
+        "partial_ghg_kg_co2e": 303120.7999813954,
+        "partial_ghg_components_kg_co2e": {
+          "direct_fertilizer_n2o_kgco2e": 33919.683139534885,
+          "diesel_combustion_kgco2": 12788.087441860469,
+          "electricity_kgco2e": 256413.02940000006
+        },
+        "ghg_activity_total": {
+          "nitrogen_kg_ha": 7906.68604651163,
+          "diesel_litres_ha": 4771.674418604653,
+          "electricity_kwh_ha": 423054.0000000001
+        },
+        "water_budget_m3": 600000.0,
+        "water_feasible": true
+      },
+      "optimizer_status": "optimal_enumerated_candidates",
+      "hypothetical_margin_difference_vs_infeasible_baseline_kzt": -1016610.8437325568,
+      "field_delivery_change_vs_infeasible_baseline_m3": -125499.99999999988,
+      "ghg_difference_vs_infeasible_baseline": {
+        "baseline_kgco2e": 364441.88804949995,
+        "scenario_kgco2e": 303120.7999813954,
+        "change_kgco2e": -61321.088068104524,
+        "possible_reduction_kgco2e": 61321.088068104524,
+        "status": "counterfactual scenario, not field-measured achieved saving",
+        "baseline_activities": {
+          "nitrogen_kg_ha": 9300.0,
+          "diesel_litres_ha": 5410.0,
+          "electricity_kwh_ha": 511542.795
+        },
+        "proposed_activities": {
+          "nitrogen_kg_ha": 7906.68604651163,
+          "diesel_litres_ha": 4771.674418604653,
+          "electricity_kwh_ha": 423054.0000000001
+        },
+        "baseline_area_ha": 100.0,
+        "proposed_area_ha": 100.00000000000003,
+        "intensities_assumption": "user_scenario_per_crop",
+        "evidence": "Hypothetical A8 stressed baseline is water-infeasible; comparison is counterfactual",
+        "boundary": "partial N2O from applied N, diesel combustion, grid electricity; no lifecycle or all sources",
+        "interpretation": "modeled crop-mix difference, not measured mitigation outcome"
+      },
+      "interpretation": "Counterfactual infeasible baseline: not an achievable margin uplift or a field-measured water/GHG saving"
+    },
+    "provenance": "Prices: BNS 2025; district yields: 2023–2025; crop water reference: Order 108-NQ, QUNAR implementation; production costs, tariffs, energy/GHG activities, baseline and budgets: explicit hypothetical assumptions. All output is an illustrative scenario.",
+    "excluded": "No observed farm profit, no verified farm water quota, no actual basin savings, no out-of-sample yield forecast, no realized emissions reductions, no full life-cycle GHG or capital expenditure."
+  },
+  "A3_FAO56": {
+    "status": "scenario_calculated",
+    "crop": "Cotton",
+    "sowing_date": "2025-04-15",
+    "kc_status": "FAO reference, illustrative local planting date",
+    "field_irrigation_efficiency_reference": 0.6,
+    "weather_meta": {
+      "status": "api_retrieved",
+      "source": "NASA POWER monthly point API",
+      "coverage": "1995-2014, Apr-Sep",
+      "reference_position": [
+        40.75,
+        68.49
+      ],
+      "scope": "district-centroid weather, not measured farm polygon"
+    },
+    "scenario_results": {
+      "SSP2-4.5": {
+        "months": [
+          {
+            "month": "Apr",
+            "baseline_rain_mm": 45.675,
+            "future_rain_mm": 48.435,
+            "baseline_et0_mm": 129.387,
+            "future_et0_mm": 135.3234,
+            "kc": 0.24,
+            "baseline_etc_mm": 31.0529,
+            "future_etc_mm": 32.4776,
+            "baseline_effective_rain_mm": 17.405,
+            "future_effective_rain_mm": 19.061,
+            "baseline_net_irrigation_mm": 13.6479,
+            "future_net_irrigation_mm": 13.4166,
+            "baseline_gross_irrigation_m3_ha": 227.465,
+            "future_gross_irrigation_m3_ha": 223.61
+          },
+          {
+            "month": "May",
+            "baseline_rain_mm": 28.5665,
+            "future_rain_mm": 27.4565,
+            "baseline_et0_mm": 195.1885,
+            "future_et0_mm": 203.9993,
+            "kc": 0.614516,
+            "baseline_etc_mm": 119.9464,
+            "future_etc_mm": 125.3609,
+            "baseline_effective_rain_mm": 7.1399,
+            "future_effective_rain_mm": 6.4739,
+            "baseline_net_irrigation_mm": 112.8065,
+            "future_net_irrigation_mm": 118.887,
+            "baseline_gross_irrigation_m3_ha": 1880.109,
+            "future_gross_irrigation_m3_ha": 1981.449
+          },
+          {
+            "month": "Jun",
+            "baseline_rain_mm": 11.34,
+            "future_rain_mm": 12.77,
+            "baseline_et0_mm": 256.1845,
+            "future_et0_mm": 265.8703,
+            "kc": 0.75,
+            "baseline_etc_mm": 192.1384,
+            "future_etc_mm": 199.4028,
+            "baseline_effective_rain_mm": 0.0,
+            "future_effective_rain_mm": 0.0,
+            "baseline_net_irrigation_mm": 192.1384,
+            "future_net_irrigation_mm": 199.4028,
+            "baseline_gross_irrigation_m3_ha": 3202.306,
+            "future_gross_irrigation_m3_ha": 3323.379
+          },
+          {
+            "month": "Jul",
+            "baseline_rain_mm": 3.8905,
+            "future_rain_mm": 3.9805,
+            "baseline_et0_mm": 292.9288,
+            "future_et0_mm": 304.2559,
+            "kc": 1.11129,
+            "baseline_etc_mm": 325.5289,
+            "future_etc_mm": 338.1165,
+            "baseline_effective_rain_mm": 0.0,
+            "future_effective_rain_mm": 0.0,
+            "baseline_net_irrigation_mm": 325.5289,
+            "future_net_irrigation_mm": 338.1165,
+            "baseline_gross_irrigation_m3_ha": 5425.481,
+            "future_gross_irrigation_m3_ha": 5635.275
+          },
+          {
+            "month": "Aug",
+            "baseline_rain_mm": 1.736,
+            "future_rain_mm": 0.796,
+            "baseline_et0_mm": 265.0803,
+            "future_et0_mm": 276.0568,
+            "kc": 1.098387,
+            "baseline_etc_mm": 291.1608,
+            "future_etc_mm": 303.2172,
+            "baseline_effective_rain_mm": 0.0,
+            "future_effective_rain_mm": 0.0,
+            "baseline_net_irrigation_mm": 291.1608,
+            "future_net_irrigation_mm": 303.2172,
+            "baseline_gross_irrigation_m3_ha": 4852.68,
+            "future_gross_irrigation_m3_ha": 5053.62
+          },
+          {
+            "month": "Sep",
+            "baseline_rain_mm": 4.365,
+            "future_rain_mm": 3.725,
+            "baseline_et0_mm": 203.0318,
+            "future_et0_mm": 212.6044,
+            "kc": 0.75,
+            "baseline_etc_mm": 152.2739,
+            "future_etc_mm": 159.4533,
+            "baseline_effective_rain_mm": 0.0,
+            "future_effective_rain_mm": 0.0,
+            "baseline_net_irrigation_mm": 152.2739,
+            "future_net_irrigation_mm": 159.4533,
+            "baseline_gross_irrigation_m3_ha": 2537.898,
+            "future_gross_irrigation_m3_ha": 2657.555
+          }
+        ],
+        "totals": {
+          "baseline_et0_mm": 1341.8009000000002,
+          "future_et0_mm": 1398.1100999999999,
+          "baseline_etc_mm": 1112.1013,
+          "future_etc_mm": 1158.0283,
+          "baseline_net_irrigation_mm": 1087.5564,
+          "future_net_irrigation_mm": 1132.4934,
+          "baseline_gross_irrigation_m3_ha": 18125.939,
+          "future_gross_irrigation_m3_ha": 18874.888,
+          "baseline_gross_irrigation_m3": 1812593.9,
+          "future_gross_irrigation_m3": 1887488.7999999998
+        },
+        "status": "scenario only: FAO-56 ETo, crop Kc supplied by user",
+        "evidence": {
+          "weather": "NASA POWER monthly point API, api_retrieved",
+          "anomaly": "World Bank CCKP CMIP6 SSP2-4.5 2040-2059",
+          "humidity_wind_radiation": "held at historic monthly climatology",
+          "kc": "user-defined / unverified",
+          "rainfall_method": "fao_training",
+          "soil_moisture_change": "not modeled",
+          "soil_heat_flux": "monthly FAO-56 gradient for May-Sep; April G=0 (March not supplied)",
+          "official_water_norm": "not replaced"
+        }
+      },
+      "SSP5-8.5": {
+        "months": [
+          {
+            "month": "Apr",
+            "baseline_rain_mm": 45.675,
+            "future_rain_mm": 49.145,
+            "baseline_et0_mm": 129.387,
+            "future_et0_mm": 137.7099,
+            "kc": 0.24,
+            "baseline_etc_mm": 31.0529,
+            "future_etc_mm": 33.0504,
+            "baseline_effective_rain_mm": 17.405,
+            "future_effective_rain_mm": 19.487,
+            "baseline_net_irrigation_mm": 13.6479,
+            "future_net_irrigation_mm": 13.5634,
+            "baseline_gross_irrigation_m3_ha": 227.465,
+            "future_gross_irrigation_m3_ha": 226.056
+          },
+          {
+            "month": "May",
+            "baseline_rain_mm": 28.5665,
+            "future_rain_mm": 27.4965,
+            "baseline_et0_mm": 195.1885,
+            "future_et0_mm": 207.0472,
+            "kc": 0.614516,
+            "baseline_etc_mm": 119.9464,
+            "future_etc_mm": 127.2338,
+            "baseline_effective_rain_mm": 7.1399,
+            "future_effective_rain_mm": 6.4979,
+            "baseline_net_irrigation_mm": 112.8065,
+            "future_net_irrigation_mm": 120.7359,
+            "baseline_gross_irrigation_m3_ha": 1880.109,
+            "future_gross_irrigation_m3_ha": 2012.266
+          },
+          {
+            "month": "Jun",
+            "baseline_rain_mm": 11.34,
+            "future_rain_mm": 11.01,
+            "baseline_et0_mm": 256.1845,
+            "future_et0_mm": 269.1769,
+            "kc": 0.75,
+            "baseline_etc_mm": 192.1384,
+            "future_etc_mm": 201.8827,
+            "baseline_effective_rain_mm": 0.0,
+            "future_effective_rain_mm": 0.0,
+            "baseline_net_irrigation_mm": 192.1384,
+            "future_net_irrigation_mm": 201.8827,
+            "baseline_gross_irrigation_m3_ha": 3202.306,
+            "future_gross_irrigation_m3_ha": 3364.712
+          },
+          {
+            "month": "Jul",
+            "baseline_rain_mm": 3.8905,
+            "future_rain_mm": 3.6505,
+            "baseline_et0_mm": 292.9288,
+            "future_et0_mm": 308.2384,
+            "kc": 1.11129,
+            "baseline_etc_mm": 325.5289,
+            "future_etc_mm": 342.5423,
+            "baseline_effective_rain_mm": 0.0,
+            "future_effective_rain_mm": 0.0,
+            "baseline_net_irrigation_mm": 325.5289,
+            "future_net_irrigation_mm": 342.5423,
+            "baseline_gross_irrigation_m3_ha": 5425.481,
+            "future_gross_irrigation_m3_ha": 5709.038
+          },
+          {
+            "month": "Aug",
+            "baseline_rain_mm": 1.736,
+            "future_rain_mm": 1.266,
+            "baseline_et0_mm": 265.0803,
+            "future_et0_mm": 279.3684,
+            "kc": 1.098387,
+            "baseline_etc_mm": 291.1608,
+            "future_etc_mm": 306.8547,
+            "baseline_effective_rain_mm": 0.0,
+            "future_effective_rain_mm": 0.0,
+            "baseline_net_irrigation_mm": 291.1608,
+            "future_net_irrigation_mm": 306.8547,
+            "baseline_gross_irrigation_m3_ha": 4852.68,
+            "future_gross_irrigation_m3_ha": 5114.245
+          },
+          {
+            "month": "Sep",
+            "baseline_rain_mm": 4.365,
+            "future_rain_mm": 4.035,
+            "baseline_et0_mm": 203.0318,
+            "future_et0_mm": 215.3966,
+            "kc": 0.75,
+            "baseline_etc_mm": 152.2739,
+            "future_etc_mm": 161.5475,
+            "baseline_effective_rain_mm": 0.0,
+            "future_effective_rain_mm": 0.0,
+            "baseline_net_irrigation_mm": 152.2739,
+            "future_net_irrigation_mm": 161.5475,
+            "baseline_gross_irrigation_m3_ha": 2537.898,
+            "future_gross_irrigation_m3_ha": 2692.458
+          }
+        ],
+        "totals": {
+          "baseline_et0_mm": 1341.8009000000002,
+          "future_et0_mm": 1416.9374,
+          "baseline_etc_mm": 1112.1013,
+          "future_etc_mm": 1173.1114,
+          "baseline_net_irrigation_mm": 1087.5564,
+          "future_net_irrigation_mm": 1147.1265,
+          "baseline_gross_irrigation_m3_ha": 18125.939,
+          "future_gross_irrigation_m3_ha": 19118.774999999998,
+          "baseline_gross_irrigation_m3": 1812593.9,
+          "future_gross_irrigation_m3": 1911877.4999999998
+        },
+        "status": "scenario only: FAO-56 ETo, crop Kc supplied by user",
+        "evidence": {
+          "weather": "NASA POWER monthly point API, api_retrieved",
+          "anomaly": "World Bank CCKP CMIP6 SSP5-8.5 2040-2059",
+          "humidity_wind_radiation": "held at historic monthly climatology",
+          "kc": "user-defined / unverified",
+          "rainfall_method": "fao_training",
+          "soil_moisture_change": "not modeled",
+          "soil_heat_flux": "monthly FAO-56 gradient for May-Sep; April G=0 (March not supplied)",
+          "official_water_norm": "not replaced"
+        }
+      }
+    },
+    "scope": "Apr-Sep monthly climatology; 2050 anomalies. Not measured farm saving or official water limit"
+  },
+  "A3_NASA_weather_provenance": {
+    "status": "api_retrieved",
+    "source": "NASA POWER monthly point API",
+    "coverage": "1995-2014, Apr-Sep",
+    "reference_position": [
+      40.75,
+      68.49
+    ],
+    "scope": "district-centroid weather, not measured farm polygon"
+  },
+  "methods_and_sources": {
+    "CCKP": "World Bank CCKP CSV 2040-2059 / 1995-2014, historical former South Kazakhstan administrative area",
+    "FAO56": "https://www.fao.org/4/x0490e/x0490e06.htm",
+    "NASA": "https://power.larc.nasa.gov/docs/services/api/temporal/monthly/",
+    "FAO_Kc": "https://www.fao.org/4/S2022E/s2022e07.htm",
+    "Kazakhstan_irrigation_norms": "https://adilet.zan.kz/rus/docs/V2500036253",
+    "BNS_prices": "Source spreadsheets and source-cell references in data/producer_prices_turkestan_2022_2025.csv",
+    "GHG": "IPCC EF1 reference; illustrative nitrogen, diesel, grid factors in the A8 input JSON"
+  },
+  "data_file_sha256": {
+    "a8_inputs": "5953ffbb49a2f1e0735907dc4c95e4b958dd74501ab93b282a24f1d993a27302",
+    "cckp_temp": "a59e5adf18481d55339752200c2fea35f3a6682e015cad50a08537d18854a288",
+    "cckp_precip": "6c1f6e4dc6feeaaeffa3f27d04a8009de4a70d6246c2d07a92ca5590c69d7b43",
+    "survey_aggregate": "895e30e2bf21abf7a1e06b7bdeb595353d8aa536dca8d92e92f97ca2ca32635d",
+    "survey_sensitivity": "1074399ab769d84373ab3551e46b45e296c6677f48902ef44c5cb205747be6a1"
+  },
+  "limitations": [
+    "A1: Partial emissions inventory, not measured net climate mitigation or full lifecycle accounting.",
+    "A3: No FAO56 field-water estimates without real NASA weather and crop phenology.",
+    "A5: A8 production costs and tariffs are research assumptions; no verified regional cost mean.",
+    "A8: 100-ha farm, baseline, cap, N/diesel intensities and technology assumptions are hypothetical.",
+    "Existing Appendix D 24.7/23.8 million KZT case was not reconstructed by this separate A8 demonstration.",
+    "A7: Survey proxy weights are sensitivity tests, not inferred respondent priority weights.",
+    "A2: Spatial sampling unit tests cannot confirm real NASA meteorological response.",
+    "Browser Streamlit and NASA/WaPOR production integration still require live testing."
+  ]
+}

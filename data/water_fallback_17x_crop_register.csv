@@ -1,0 +1,307 @@
+﻿district,crop_code,m3_per_ha,tier,zone,source_label,evidence_url_or_note
+Arys City,Wheat,4100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Barley,4600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Corn,7450.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Cotton,8400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Potato,7600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Cabbage,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Cucumbers,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Tomatoes,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Carrots,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Onion,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Melons,5650.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,PomeStone,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,FreshGrapes,6600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,OtherFruits,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Forage,11000.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Arys City,Sunflower,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Arys City,OtherOilseeds,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Arys City,Rice,8181.6,regional_fallback,south_desert_dry,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Baydibek District,Wheat,3100.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Barley,3700.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Corn,5600.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Cotton,5350.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Potato,5850.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Cabbage,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Cucumbers,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Tomatoes,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Carrots,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Onion,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Melons,4150.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,PomeStone,7200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,FreshGrapes,4700.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,OtherFruits,7200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Forage,8200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Baydibek District,Sunflower,3375.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Baydibek District,OtherOilseeds,3375.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Baydibek District,Rice,8181.6,regional_fallback,ordabasy_sairam_baidibek,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kazygurt District,Wheat,2950.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Barley,3350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Corn,5350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Cotton,5500.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Potato,5350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Cabbage,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Cucumbers,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Tomatoes,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Carrots,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Onion,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kazygurt District,Melons,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kazygurt District,PomeStone,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kazygurt District,FreshGrapes,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kazygurt District,OtherFruits,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kazygurt District,Forage,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kazygurt District,Sunflower,2350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Kazygurt District,OtherOilseeds,2350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Kazygurt District,Rice,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Keles District,Wheat,2950.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Barley,3350.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Corn,5350.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Cotton,5500.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Potato,5350.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Cabbage,6400.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Cucumbers,6400.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Tomatoes,6400.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Carrots,6400.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Onion,6400.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Keles District,Melons,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Keles District,PomeStone,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Keles District,FreshGrapes,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Keles District,OtherFruits,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Keles District,Forage,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Keles District,Sunflower,2350.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Keles District,OtherOilseeds,2350.0,zone_fallback,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Keles District,Rice,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kentau City,Wheat,3550.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,Barley,4050.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,Corn,6450.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,Cotton,6700.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,Potato,6450.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,Cabbage,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kentau City,Cucumbers,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kentau City,Tomatoes,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kentau City,Carrots,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kentau City,Onion,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kentau City,Melons,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Kentau City,PomeStone,6450.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,FreshGrapes,4300.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,OtherFruits,6450.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,Forage,7200.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Kentau City,Sunflower,2675.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Kentau City,OtherOilseeds,2675.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Kentau City,Rice,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Maktaaral District,Wheat,4100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Barley,4600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Corn,7450.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Cotton,8400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Potato,7600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Cabbage,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Cucumbers,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Tomatoes,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Carrots,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Onion,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Melons,5650.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,PomeStone,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,FreshGrapes,6600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,OtherFruits,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Forage,11000.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Maktaaral District,Sunflower,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Maktaaral District,OtherOilseeds,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Maktaaral District,Rice,8181.6,regional_fallback,south_desert_dry,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Ordabasy District,Wheat,3100.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Barley,3700.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Corn,5600.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Cotton,5350.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Potato,5850.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Cabbage,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Cucumbers,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Tomatoes,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Carrots,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Onion,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Melons,4150.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,PomeStone,7200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,FreshGrapes,4700.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,OtherFruits,7200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Forage,8200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Ordabasy District,Sunflower,3375.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Ordabasy District,OtherOilseeds,3375.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Ordabasy District,Rice,8181.6,regional_fallback,ordabasy_sairam_baidibek,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Otyrar District,Wheat,4100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Barley,4600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Corn,7450.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Cotton,8400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Potato,7600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Cabbage,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Cucumbers,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Tomatoes,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Carrots,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Onion,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Melons,5650.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,PomeStone,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,FreshGrapes,6600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,OtherFruits,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Forage,11000.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Otyrar District,Sunflower,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Otyrar District,OtherOilseeds,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Otyrar District,Rice,8181.6,regional_fallback,south_desert_dry,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Sairam District,Wheat,3100.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Barley,3700.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Corn,5600.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Cotton,5350.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Potato,5850.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Cabbage,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Cucumbers,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Tomatoes,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Carrots,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Onion,6900.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Melons,4150.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,PomeStone,7200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,FreshGrapes,4700.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,OtherFruits,7200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Forage,8200.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sairam District,Sunflower,3375.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Sairam District,OtherOilseeds,3375.0,direct,ordabasy_sairam_baidibek,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Sairam District,Rice,8181.6,regional_fallback,ordabasy_sairam_baidibek,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Saryagash District,Wheat,2950.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Barley,3350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Corn,5350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Cotton,5500.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Potato,5350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Cabbage,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Cucumbers,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Tomatoes,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Carrots,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Onion,6400.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Saryagash District,Melons,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Saryagash District,PomeStone,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Saryagash District,FreshGrapes,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Saryagash District,OtherFruits,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Saryagash District,Forage,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Saryagash District,Sunflower,2350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Saryagash District,OtherOilseeds,2350.0,direct,saryagash_kazygurt,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Saryagash District,Rice,8181.6,regional_fallback,saryagash_kazygurt,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Sauran District,Wheat,3550.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,Barley,4050.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,Corn,6450.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,Cotton,6700.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,Potato,6450.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,Cabbage,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Sauran District,Cucumbers,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Sauran District,Tomatoes,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Sauran District,Carrots,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Sauran District,Onion,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Sauran District,Melons,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Sauran District,PomeStone,6450.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,FreshGrapes,4300.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,OtherFruits,6450.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,Forage,7200.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; географический fallback к официальной зоне",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Sauran District,Sunflower,2675.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Sauran District,OtherOilseeds,2675.0,zone_fallback,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Sauran District,Rice,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Shardara District,Wheat,4100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Barley,4600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Corn,7450.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Cotton,8400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Potato,7600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Cabbage,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Cucumbers,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Tomatoes,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Carrots,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Onion,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Melons,5650.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,PomeStone,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,FreshGrapes,6600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,OtherFruits,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Forage,11000.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Shardara District,Sunflower,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Shardara District,OtherOilseeds,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Shardara District,Rice,8181.6,regional_fallback,south_desert_dry,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Wheat,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Barley,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Corn,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Cotton,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Potato,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Cabbage,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Cucumbers,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Tomatoes,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Carrots,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Onion,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Melons,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,PomeStone,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,FreshGrapes,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,OtherFruits,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Forage,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Suzak District,Sunflower,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма; исследовательское усреднение масличных"
+Suzak District,OtherOilseeds,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма; исследовательское усреднение масличных"
+Suzak District,Rice,8181.6,regional_fallback,,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Tolebi District,Wheat,2600.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Barley,3250.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Corn,5250.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Cotton,4750.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Potato,5050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Cabbage,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Cucumbers,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Tomatoes,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Carrots,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Onion,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Melons,3550.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,PomeStone,8181.6,regional_fallback,tolebi_tulkibas,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Tolebi District,FreshGrapes,8181.6,regional_fallback,tolebi_tulkibas,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Tolebi District,OtherFruits,8181.6,regional_fallback,tolebi_tulkibas,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Tolebi District,Forage,7450.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tolebi District,Sunflower,4050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Tolebi District,OtherOilseeds,4050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Tolebi District,Rice,8181.6,regional_fallback,tolebi_tulkibas,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Tulkibas District,Wheat,2600.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Barley,3250.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Corn,5250.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Cotton,4750.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Potato,5050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Cabbage,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Cucumbers,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Tomatoes,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Carrots,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Onion,6050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Melons,3550.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,PomeStone,8181.6,regional_fallback,tolebi_tulkibas,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Tulkibas District,FreshGrapes,8181.6,regional_fallback,tolebi_tulkibas,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Tulkibas District,OtherFruits,8181.6,regional_fallback,tolebi_tulkibas,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Tulkibas District,Forage,7450.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Tulkibas District,Sunflower,4050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Tulkibas District,OtherOilseeds,4050.0,direct,tolebi_tulkibas,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Tulkibas District,Rice,8181.6,regional_fallback,tolebi_tulkibas,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Turkestan City,Wheat,3550.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,Barley,4050.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,Corn,6450.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,Cotton,6700.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,Potato,6450.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,Cabbage,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Turkestan City,Cucumbers,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Turkestan City,Tomatoes,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Turkestan City,Carrots,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Turkestan City,Onion,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Turkestan City,Melons,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Turkestan City,PomeStone,6450.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,FreshGrapes,4300.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,OtherFruits,6450.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,Forage,7200.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Turkestan City,Sunflower,2675.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Turkestan City,OtherOilseeds,2675.0,direct,turkestan,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Turkestan City,Rice,8181.6,regional_fallback,turkestan,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
+Zhetysay District,Wheat,4100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Barley,4600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Corn,7450.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Cotton,8400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Potato,7600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Cabbage,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Cucumbers,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Tomatoes,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Carrots,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Onion,9100.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Melons,5650.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,PomeStone,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,FreshGrapes,6600.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,OtherFruits,9350.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Forage,11000.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253
+Zhetysay District,Sunflower,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Zhetysay District,OtherOilseeds,4400.0,direct,south_desert_dry,"МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3; прокси масличных = среднее рапса и сафлора",№108-НҚ табл.3: https://old.adilet.zan.kz/rus/docs/V2500036253; исследовательское усреднение масличных
+Zhetysay District,Rice,8181.6,regional_fallback,south_desert_dry,"Региональный калибровочный benchmark 8 181,6 м³/га","Модельная база 8181,6 без верифицированной региональной ячейки; не официальная норма"
