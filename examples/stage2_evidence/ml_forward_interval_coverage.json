@@ -1,0 +1,84 @@
+{
+  "method": "Prior-window RF OOS abs residual 90% finite-sample quantile, validated forward on 2021-2025",
+  "rows": [
+    {
+      "crop": "Overall",
+      "nominal_coverage": 0.9,
+      "calibration_N": 610,
+      "holdout_N": 326,
+      "calibration_halfwidth_centners_ha": 24.358529591836714,
+      "holdout_coverage": 0.8067484662576687,
+      "holdout_MAE": 16.70143456318489,
+      "holdout_90th_abs_error": 43.163861420325674,
+      "meets_nominal_on_heldout": false
+    },
+    {
+      "crop": "Corn",
+      "nominal_coverage": 0.9,
+      "calibration_N": 130,
+      "holdout_N": 75,
+      "calibration_halfwidth_centners_ha": 14.433251587301587,
+      "holdout_coverage": 0.6666666666666666,
+      "holdout_MAE": 15.613150259053121,
+      "holdout_90th_abs_error": 32.71353013605443,
+      "meets_nominal_on_heldout": false
+    },
+    {
+      "crop": "Cotton",
+      "nominal_coverage": 0.9,
+      "calibration_N": 80,
+      "holdout_N": 43,
+      "calibration_halfwidth_centners_ha": 9.604207936507944,
+      "holdout_coverage": 0.7674418604651163,
+      "holdout_MAE": 7.029239221833904,
+      "holdout_90th_abs_error": 15.778631700680275,
+      "meets_nominal_on_heldout": false
+    },
+    {
+      "crop": "Potato",
+      "nominal_coverage": 0.9,
+      "calibration_N": 135,
+      "holdout_N": 64,
+      "calibration_halfwidth_centners_ha": 55.70429897959184,
+      "holdout_coverage": 0.6875,
+      "holdout_MAE": 49.10719602063361,
+      "holdout_90th_abs_error": 117.31553713151918,
+      "meets_nominal_on_heldout": false
+    },
+    {
+      "crop": "Rice",
+      "nominal_coverage": 0.9,
+      "calibration_N": 23,
+      "holdout_N": 17,
+      "calibration_halfwidth_centners_ha": 25.44563106575965,
+      "holdout_coverage": 0.9411764705882353,
+      "holdout_MAE": 13.823628874813327,
+      "holdout_90th_abs_error": 22.224113997114003,
+      "meets_nominal_on_heldout": true
+    },
+    {
+      "crop": "Sunflower",
+      "nominal_coverage": 0.9,
+      "calibration_N": 111,
+      "holdout_N": 55,
+      "calibration_halfwidth_centners_ha": 7.6705328798185874,
+      "holdout_coverage": 0.9090909090909091,
+      "holdout_MAE": 3.8203244712430444,
+      "holdout_90th_abs_error": 7.048484331065762,
+      "meets_nominal_on_heldout": true
+    },
+    {
+      "crop": "Wheat",
+      "nominal_coverage": 0.9,
+      "calibration_N": 131,
+      "holdout_N": 72,
+      "calibration_halfwidth_centners_ha": 10.973216439909287,
+      "holdout_coverage": 0.8472222222222222,
+      "holdout_MAE": 5.325611521106757,
+      "holdout_90th_abs_error": 12.867403061224502,
+      "meets_nominal_on_heldout": false
+    }
+  ],
+  "no_production_interval_change": true,
+  "warning": "Forward coverage can be lower than 90%; widths from earlier climate regimes are not guaranteed for a future shift. No theoretical conformal coverage claim under non-exchangeable time periods."
+}

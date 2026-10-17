@@ -1,0 +1,178 @@
+{
+  "methods": [
+    "Historical median",
+    "Pooled RF",
+    "Per-crop RF",
+    "Ridge",
+    "ExtraTrees",
+    "HistGradientBoosting",
+    "CatBoost"
+  ],
+  "windows": [
+    {
+      "train_start": 2004,
+      "train_end": 2010,
+      "test_start": 2011,
+      "test_end": 2015,
+      "n_train": 426,
+      "n_test": 292
+    },
+    {
+      "train_start": 2004,
+      "train_end": 2015,
+      "test_start": 2016,
+      "test_end": 2020,
+      "n_train": 718,
+      "n_test": 318
+    },
+    {
+      "train_start": 2004,
+      "train_end": 2020,
+      "test_start": 2021,
+      "test_end": 2025,
+      "n_train": 1036,
+      "n_test": 326
+    }
+  ],
+  "hyperparameters_fixed_no_test_tuning": true,
+  "best_pooled_MAE_earlier_windows": "Pooled RF",
+  "selection_from_earlier_only": true,
+  "earlier_metrics": [
+    {
+      "model": "Pooled RF",
+      "period": "earlier_only",
+      "n": 610,
+      "MAE": 9.658834347053679,
+      "RMSE": 17.276278369833737,
+      "R2": 0.9151081546299623,
+      "WAPE_percent": 17.218532047771934
+    },
+    {
+      "model": "Per-crop RF",
+      "period": "earlier_only",
+      "n": 610,
+      "MAE": 9.769207902700215,
+      "RMSE": 17.322461637022926,
+      "R2": 0.9146536790791405,
+      "WAPE_percent": 17.41529187787567
+    },
+    {
+      "model": "ExtraTrees",
+      "period": "earlier_only",
+      "n": 610,
+      "MAE": 10.326635400231824,
+      "RMSE": 18.499108049858354,
+      "R2": 0.9026654184603795,
+      "WAPE_percent": 18.409002183455673
+    },
+    {
+      "model": "Historical median",
+      "period": "earlier_only",
+      "n": 610,
+      "MAE": 10.648196721311475,
+      "RMSE": 19.64389635317867,
+      "R2": 0.8902458739142699,
+      "WAPE_percent": 18.98224049704398
+    },
+    {
+      "model": "HistGradientBoosting",
+      "period": "earlier_only",
+      "n": 610,
+      "MAE": 10.844215179101518,
+      "RMSE": 18.591665559022832,
+      "R2": 0.9016889839096986,
+      "WAPE_percent": 19.33167708288233
+    },
+    {
+      "model": "CatBoost",
+      "period": "earlier_only",
+      "n": 610,
+      "MAE": 10.874513919671475,
+      "RMSE": 18.48730964221092,
+      "R2": 0.9027895354562468,
+      "WAPE_percent": 19.385689794640875
+    },
+    {
+      "model": "Ridge",
+      "period": "earlier_only",
+      "n": 610,
+      "MAE": 14.306023880362096,
+      "RMSE": 21.983707123344814,
+      "R2": 0.8625428145424648,
+      "WAPE_percent": 25.502945988026518
+    }
+  ],
+  "late_metrics": [
+    {
+      "model": "ExtraTrees",
+      "period": "late_exploratory",
+      "n": 326,
+      "MAE": 15.896445014627291,
+      "RMSE": 29.34734829535746,
+      "R2": 0.8225882980155912,
+      "WAPE_percent": 24.842124544087675
+    },
+    {
+      "model": "Pooled RF",
+      "period": "late_exploratory",
+      "n": 326,
+      "MAE": 16.71197722042443,
+      "RMSE": 30.449682832120363,
+      "R2": 0.809010242933397,
+      "WAPE_percent": 26.116595195071906
+    },
+    {
+      "model": "Per-crop RF",
+      "period": "late_exploratory",
+      "n": 326,
+      "MAE": 16.812334609664365,
+      "RMSE": 30.88617340399331,
+      "R2": 0.8034953913461726,
+      "WAPE_percent": 26.273428421628147
+    },
+    {
+      "model": "Historical median",
+      "period": "late_exploratory",
+      "n": 326,
+      "MAE": 16.87990797546012,
+      "RMSE": 32.11173397045007,
+      "R2": 0.787591425591082,
+      "WAPE_percent": 26.379028508151695
+    },
+    {
+      "model": "CatBoost",
+      "period": "late_exploratory",
+      "n": 326,
+      "MAE": 17.20300709745304,
+      "RMSE": 30.621744782706926,
+      "R2": 0.8068456938222914,
+      "WAPE_percent": 26.88395074839143
+    },
+    {
+      "model": "HistGradientBoosting",
+      "period": "late_exploratory",
+      "n": 326,
+      "MAE": 18.144302429035683,
+      "RMSE": 32.623961909748864,
+      "R2": 0.7807609394621773,
+      "WAPE_percent": 28.354957368955183
+    },
+    {
+      "model": "Ridge",
+      "period": "late_exploratory",
+      "n": 326,
+      "MAE": 18.764038516220495,
+      "RMSE": 31.583411385051424,
+      "R2": 0.7945232896881104,
+      "WAPE_percent": 29.323448188641237
+    }
+  ],
+  "caveats": [
+    "Late window already analyzed in previous audits: this is a retrospective comparison not independent confirmatory verification.",
+    "Preprocessing fitted only on earlier training years; historical median avoids any future-year leakage.",
+    "Inputs use contemporaneous sowing area and full Apr–Sep climate, so outputs are not pre-season forecasts.",
+    "Different crops have different yields; pooled MAE/R2 can mask deterioration in individual crops.",
+    "No hyperparameter search or deployment selection, no refit of the packaged model."
+  ],
+  "runtime_seconds": 8.1
+}

@@ -1,0 +1,179 @@
+{
+  "scenario_id": "historic_2025_inVAT_45p9872",
+  "as_of_date": "2026-10-18",
+  "case_type": "illustrative hypothetical not measured",
+  "description": "gravity Kazvodkhoz water service + on-farm pump; Apr-Sep; field delivery",
+  "input_sha256": "d2cbedac5fffb8cf1048889b6f3aedce2b36c20637916f88bb56254a897880b5",
+  "input": {
+    "label": "A8: Maktaaral 100 ha illustrative scientific case (NOT an observed farm)",
+    "district": "Maktaaral District",
+    "area_ha": 100,
+    "assessment_year": 2026,
+    "price_reference_year": 2025,
+    "accounting_period": "apr_sep",
+    "irrigation_type": "furrow",
+    "water_boundary": "field_delivery",
+    "normal_water_budget_m3": 750000,
+    "stress": {
+      "water_budget_change_pct": -20,
+      "yield_change_pct": -10,
+      "cost_change_pct": 10
+    },
+    "baseline_crop_shares": {
+      "Cotton": 0.5,
+      "Corn": 0.3,
+      "Wheat": 0.2
+    },
+    "economic_objective": {
+      "profile": "balanced",
+      "objective_mode": "economic",
+      "economic_weight": 0.7,
+      "n_crops": 3,
+      "max_crop_share": 0.6
+    },
+    "crop_activities": {
+      "Cotton": {
+        "other_variable_cost_kzt_ha": 350000,
+        "nitrogen_kg_ha": 110,
+        "diesel_litres_ha": 60
+      },
+      "Corn": {
+        "other_variable_cost_kzt_ha": 210000,
+        "nitrogen_kg_ha": 90,
+        "diesel_litres_ha": 55
+      },
+      "Wheat": {
+        "other_variable_cost_kzt_ha": 120000,
+        "nitrogen_kg_ha": 55,
+        "diesel_litres_ha": 38
+      }
+    },
+    "technical_assumptions": {
+      "pump_electricity_kwh_per_m3_field_delivery": 0.10480769230769231,
+      "water_tariff_kzt_per_m3_field_delivery": 1.16,
+      "electricity_tariff_kzt_per_kwh": 45.9872,
+      "grid_kg_co2e_per_kwh": 0.813,
+      "diesel_kg_co2_per_litre": 2.676492,
+      "n2o_n_kg_per_kg_n": 0.01,
+      "n2o_gwp100": 273,
+      "water_supply_service_mode": "gravity_with_separate_onfarm_pump"
+    },
+    "evidence_status": {
+      "prices": "Official BNS Turkestan 2025 published producer prices, prices do not imply 2026 contract prices",
+      "yields": "District 2023-2025 arithmetic reference, NOT farm observed yield nor validated 2026 forecast",
+      "water": "Order 108-NQ (2025) historical; for Maktaaral these three rows match Order 288-NQ of 2026 (same soil/surface/50% assumptions). https://insecure.zan.kz/rus/docs/G26MA000288",
+      "baseline": "Illustrative arbitrary 50/30/20 crop shares, NOT an observed farm allocation",
+      "budgets": "Illustrative 750,000 m3 normal-water budget and -20% stress, NOT official quota",
+      "other_variable_costs": "Illustrative assumed full non-water/non-electric variable costs per ha, NOT statistical regional averages",
+      "energy_and_tariffs": "Own pump H=25m overall efficiency=0.65, theoretical kWh/m3; water 1.160 ex VAT national Kazvodkhoz public reference, conditional on provider; electricity 45.9872 KZT/kWh date-labelled November 2025 commercial reference, NOT independently confirmed for October 2026; https://www.gov.kz/memleket/entities/karaganda-tabigat/press/article/details/224741; https://hearings.ndbecology.gov.kz/Public/PubHearings/LoadFile/245313",
+      "nitrogen_and_diesel": "Illustrative input activities per ha, NOT audited farm resource consumption",
+      "boundaries": "Same Apr-Sep crop period, field-delivery irrigation. Partial N2O from nitrogen, diesel CO2, pumping electricity CO2e. Excludes manure, fertilizer production, soil carbon and return-flow effects.",
+      "emission_factor": "2025 electricity generation average 0.813 kg CO2/kWh (Ember secondary reproduction), not full CO2e or official farm factor"
+    }
+  },
+  "rows": [
+    {
+      "scenario": "Исходная структура",
+      "areas_ha": {
+        "Хлопчатник": 50.0,
+        "Кукуруза": 30.0,
+        "Пшеница": 20.0
+      },
+      "water_m3": 725500.0,
+      "contribution_margin_kzt": 20043896.737435892,
+      "partial_ghg_kgco2e": 116195.70008538461,
+      "solver_status": "reference",
+      "constraints": "Проверка воды при лимите 750000 м³"
+    },
+    {
+      "scenario": "Экономический оптимум",
+      "areas_ha": {
+        "Хлопчатник": 60.0,
+        "Кукуруза": 24.477611940298498,
+        "Пшеница": 15.522388059701509
+      },
+      "water_m3": 750000.0,
+      "contribution_margin_kzt": 21385607.174205884,
+      "partial_ghg_kgco2e": 120151.18311058554,
+      "solver_status": "optimal_enumerated_candidates",
+      "constraints": "Только водный лимит, без ограничения CO₂e"
+    },
+    {
+      "scenario": "Устойчивый компромисс δ=0",
+      "areas_ha": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 16.255852777348778,
+        "Пшеница": 23.744147222651225
+      },
+      "water_m3": 722457.1068041185,
+      "contribution_margin_kzt": 20375516.5767945,
+      "partial_ghg_kgco2e": 116195.70008538463,
+      "solver_status": "optimal_enumerated_candidates",
+      "constraints": "Вода ≤750000; CO₂e ≤сегодня; маржа ≥исходной"
+    },
+    {
+      "scenario": "Комбинированный стресс",
+      "areas_ha": {
+        "Хлопчатник": 41.84883720930234,
+        "Кукуруза": 3.0,
+        "Пшеница": 55.15116279069768
+      },
+      "water_m3": 600000.0000000001,
+      "contribution_margin_kzt": 8475483.308190513,
+      "partial_ghg_kgco2e": 97816.2238552272,
+      "solver_status": "optimal_enumerated_candidates",
+      "constraints": "Вода ≤600000; урожай −10%; затраты +10%"
+    },
+    {
+      "scenario": "SSP2-4.5, δ≤0%",
+      "areas_ha": null,
+      "water_m3": null,
+      "contribution_margin_kzt": null,
+      "partial_ghg_kgco2e": null,
+      "solver_status": "infeasible_under_hard_constraints",
+      "constraints": "Вода ≤750000; CO₂e ≤116195.7001 кг; маржа ≥ 100% исходной в будущем; SSP proxy"
+    },
+    {
+      "scenario": "SSP2-4.5, δ≤5%",
+      "areas_ha": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 10.521413970836116,
+        "Пшеница": 29.47858602916389
+      },
+      "water_m3": 735624.1384281082,
+      "contribution_margin_kzt": 19477396.865797587,
+      "partial_ghg_kgco2e": 116195.7000853846,
+      "solver_status": "optimal_enumerated_candidates",
+      "constraints": "Вода ≤750000; CO₂e ≤116195.7001 кг; маржа ≥ 95% исходной в будущем; SSP proxy"
+    },
+    {
+      "scenario": "SSP5-8.5, δ≤0%",
+      "areas_ha": null,
+      "water_m3": null,
+      "contribution_margin_kzt": null,
+      "partial_ghg_kgco2e": null,
+      "solver_status": "infeasible_under_hard_constraints",
+      "constraints": "Вода ≤750000; CO₂e ≤116195.7001 кг; маржа ≥ 100% исходной в будущем; SSP proxy"
+    },
+    {
+      "scenario": "SSP5-8.5, δ≤5%",
+      "areas_ha": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 8.680884040427795,
+        "Пшеница": 31.31911595957221
+      },
+      "water_m3": 739850.2391183908,
+      "contribution_margin_kzt": 19189135.666235715,
+      "partial_ghg_kgco2e": 116195.70008538461,
+      "solver_status": "optimal_enumerated_candidates",
+      "constraints": "Вода ≤750000; CO₂e ≤116195.7001 кг; маржа ≥ 95% исходной в будущем; SSP proxy"
+    }
+  ],
+  "scenario_proxy": "CCKP SSP anomaly/Hargreaves temperature TERM, not FAO-56 future irrigation",
+  "source_links": [
+    "https://hearings.ndbecology.gov.kz/Public/PubHearings/LoadFile/245313",
+    "https://www.gov.kz/memleket/entities/karaganda-tabigat/press/article/details/224741",
+    "https://insecure.zan.kz/rus/docs/G26MA000288",
+    "https://old.adilet.zan.kz/rus/docs/V2500036253"
+  ]
+}

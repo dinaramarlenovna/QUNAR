@@ -1,0 +1,256 @@
+﻿district,crop,baseline_rank,topsis_rank,mc_weight_only_top1_fraction,mc_weight_plus_3pt_top1_fraction
+Sauran District,Семена подсолнечника,1,1,1.0,0.6328
+Sauran District,"Семена масличные прочие, не включенные в другие группировки",2,2,0.0,0.3632
+Sauran District,Пшеница,3,3,0.0,0.0025
+Sauran District,Ячмень,4,4,0.0,0.0015
+Sauran District,Плоды семечковые и косточковые,5,5,0.0,0.0
+Sauran District,Культуры бахчевые,6,6,0.0,0.0
+Sauran District,Картофель,7,7,0.0,0.0
+Sauran District,Кукуруза (маис),8,8,0.0,0.0
+Sauran District,Культуры кормовые,9,11,0.0,0.0
+Sauran District,Лук,10,9,0.0,0.0
+Sauran District,Морковь и турнепс,11,10,0.0,0.0
+Sauran District,Капуста,12,13,0.0,0.0
+Sauran District,"Хлопок, очищенный или не очищенный от семян",13,12,0.0,0.0
+Sauran District,Помидоры,14,14,0.0,0.0
+Sauran District,Огурцы и корнишоны,15,15,0.0,0.0
+Turkestan City,Семена подсолнечника,1,1,1.0,0.6223
+Turkestan City,"Семена масличные прочие, не включенные в другие группировки",2,2,0.0,0.3741
+Turkestan City,Пшеница,3,3,0.0,0.0029
+Turkestan City,Ячмень,4,4,0.0,0.0007
+Turkestan City,Плоды семечковые и косточковые,5,5,0.0,0.0
+Turkestan City,Культуры бахчевые,6,6,0.0,0.0
+Turkestan City,Картофель,7,7,0.0,0.0
+Turkestan City,Кукуруза (маис),8,8,0.0,0.0
+Turkestan City,Культуры кормовые,9,10,0.0,0.0
+Turkestan City,Лук,10,9,0.0,0.0
+Turkestan City,Морковь и турнепс,11,11,0.0,0.0
+Turkestan City,Капуста,12,13,0.0,0.0
+Turkestan City,"Хлопок, очищенный или не очищенный от семян",13,12,0.0,0.0
+Turkestan City,Помидоры,14,14,0.0,0.0
+Turkestan City,Огурцы и корнишоны,15,15,0.0,0.0
+Saryagash District,Семена подсолнечника,1,1,1.0,0.6155
+Saryagash District,"Семена масличные прочие, не включенные в другие группировки",2,2,0.0,0.3578
+Saryagash District,Пшеница,3,3,0.0,0.0184
+Saryagash District,Ячмень,4,4,0.0,0.0083
+Saryagash District,Картофель,5,5,0.0,0.0
+Saryagash District,Лук,6,7,0.0,0.0
+Saryagash District,Морковь и турнепс,7,8,0.0,0.0
+Saryagash District,Кукуруза (маис),8,6,0.0,0.0
+Saryagash District,Капуста,9,10,0.0,0.0
+Saryagash District,Культуры бахчевые,10,11,0.0,0.0
+Saryagash District,Помидоры,11,12,0.0,0.0
+Saryagash District,Огурцы и корнишоны,12,13,0.0,0.0
+Saryagash District,"Хлопок, очищенный или не очищенный от семян",13,9,0.0,0.0
+Saryagash District,Плоды семечковые и косточковые,14,14,0.0,0.0
+Saryagash District,Культуры кормовые,15,15,0.0,0.0
+Keles District,Семена подсолнечника,1,1,1.0,0.6112
+Keles District,"Семена масличные прочие, не включенные в другие группировки",2,2,0.0,0.3652
+Keles District,Пшеница,3,3,0.0,0.0145
+Keles District,Ячмень,4,4,0.0,0.0091
+Keles District,Картофель,5,5,0.0,0.0
+Keles District,Лук,6,7,0.0,0.0
+Keles District,Морковь и турнепс,7,8,0.0,0.0
+Keles District,Кукуруза (маис),8,6,0.0,0.0
+Keles District,Капуста,9,11,0.0,0.0
+Keles District,Культуры бахчевые,10,10,0.0,0.0
+Keles District,Помидоры,11,12,0.0,0.0
+Keles District,Огурцы и корнишоны,12,13,0.0,0.0
+Keles District,"Хлопок, очищенный или не очищенный от семян",13,9,0.0,0.0
+Keles District,Плоды семечковые и косточковые,14,14,0.0,0.0
+Keles District,Культуры кормовые,15,15,0.0,0.0
+Zhetysay District,Пшеница,1,3,0.9187,0.393
+Zhetysay District,Семена подсолнечника,2,2,0.0,0.2391
+Zhetysay District,Ячмень,3,1,0.011,0.1814
+Zhetysay District,"Семена масличные прочие, не включенные в другие группировки",4,4,0.0,0.1248
+Zhetysay District,Культуры бахчевые,5,5,0.0703,0.0617
+Zhetysay District,Картофель,6,6,0.0,0.0
+Zhetysay District,Лук,7,8,0.0,0.0
+Zhetysay District,Плоды семечковые и косточковые,8,9,0.0,0.0
+Zhetysay District,Морковь и турнепс,9,10,0.0,0.0
+Zhetysay District,Кукуруза (маис),10,7,0.0,0.0
+Zhetysay District,Капуста,11,11,0.0,0.0
+Zhetysay District,Помидоры,12,12,0.0,0.0
+Zhetysay District,Огурцы и корнишоны,13,13,0.0,0.0
+Zhetysay District,"Хлопок, очищенный или не очищенный от семян",14,14,0.0,0.0
+Zhetysay District,Культуры кормовые,15,15,0.0,0.0
+Maktaaral District,Пшеница,1,3,0.8856,0.3857
+Maktaaral District,Семена подсолнечника,2,2,0.0,0.2361
+Maktaaral District,Ячмень,3,1,0.0209,0.1894
+Maktaaral District,"Семена масличные прочие, не включенные в другие группировки",4,4,0.0,0.1223
+Maktaaral District,Культуры бахчевые,5,5,0.0935,0.0665
+Maktaaral District,Картофель,6,6,0.0,0.0
+Maktaaral District,Лук,7,7,0.0,0.0
+Maktaaral District,Плоды семечковые и косточковые,8,8,0.0,0.0
+Maktaaral District,Морковь и турнепс,9,9,0.0,0.0
+Maktaaral District,Кукуруза (маис),10,10,0.0,0.0
+Maktaaral District,Капуста,11,11,0.0,0.0
+Maktaaral District,Помидоры,12,12,0.0,0.0
+Maktaaral District,Огурцы и корнишоны,13,13,0.0,0.0
+Maktaaral District,"Хлопок, очищенный или не очищенный от семян",14,14,0.0,0.0
+Maktaaral District,Культуры кормовые,15,15,0.0,0.0
+Shardara District,Пшеница,1,3,0.8724,0.3656
+Shardara District,Ячмень,2,1,0.0266,0.1964
+Shardara District,Семена подсолнечника,3,2,0.0,0.2416
+Shardara District,"Семена масличные прочие, не включенные в другие группировки",4,4,0.0,0.1208
+Shardara District,Культуры бахчевые,5,5,0.101,0.0756
+Shardara District,Картофель,6,6,0.0,0.0
+Shardara District,Лук,7,8,0.0,0.0
+Shardara District,Плоды семечковые и косточковые,8,7,0.0,0.0
+Shardara District,Морковь и турнепс,9,9,0.0,0.0
+Shardara District,Кукуруза (маис),10,10,0.0,0.0
+Shardara District,Капуста,11,11,0.0,0.0
+Shardara District,Помидоры,12,12,0.0,0.0
+Shardara District,Огурцы и корнишоны,13,13,0.0,0.0
+Shardara District,"Хлопок, очищенный или не очищенный от семян",14,14,0.0,0.0
+Shardara District,Культуры кормовые,15,15,0.0,0.0
+Otyrar District,Пшеница,1,3,0.8607,0.3696
+Otyrar District,Ячмень,2,1,0.0238,0.194
+Otyrar District,Семена подсолнечника,3,2,0.0,0.2375
+Otyrar District,"Семена масличные прочие, не включенные в другие группировки",4,5,0.0,0.1203
+Otyrar District,Культуры бахчевые,5,4,0.1155,0.0786
+Otyrar District,Картофель,6,6,0.0,0.0
+Otyrar District,Лук,7,8,0.0,0.0
+Otyrar District,Плоды семечковые и косточковые,8,7,0.0,0.0
+Otyrar District,Морковь и турнепс,9,9,0.0,0.0
+Otyrar District,Кукуруза (маис),10,10,0.0,0.0
+Otyrar District,Капуста,11,11,0.0,0.0
+Otyrar District,Помидоры,12,12,0.0,0.0
+Otyrar District,Огурцы и корнишоны,13,13,0.0,0.0
+Otyrar District,"Хлопок, очищенный или не очищенный от семян",14,14,0.0,0.0
+Otyrar District,Культуры кормовые,15,15,0.0,0.0
+Ordabasy District,Пшеница,1,2,0.959,0.527
+Ordabasy District,Семена подсолнечника,2,1,0.0,0.2267
+Ordabasy District,"Семена масличные прочие, не включенные в другие группировки",3,3,0.0,0.1203
+Ordabasy District,Культуры бахчевые,4,5,0.041,0.0721
+Ordabasy District,Ячмень,5,4,0.0,0.0539
+Ordabasy District,Картофель,6,6,0.0,0.0
+Ordabasy District,Кукуруза (маис),7,7,0.0,0.0
+Ordabasy District,Лук,8,9,0.0,0.0
+Ordabasy District,Морковь и турнепс,9,10,0.0,0.0
+Ordabasy District,Плоды семечковые и косточковые,10,11,0.0,0.0
+Ordabasy District,"Хлопок, очищенный или не очищенный от семян",11,8,0.0,0.0
+Ordabasy District,Капуста,12,12,0.0,0.0
+Ordabasy District,Помидоры,13,13,0.0,0.0
+Ordabasy District,Огурцы и корнишоны,14,14,0.0,0.0
+Ordabasy District,Культуры кормовые,15,15,0.0,0.0
+Arys City,Пшеница,1,3,0.9665,0.4103
+Arys City,Семена подсолнечника,2,2,0.0,0.2401
+Arys City,Ячмень,3,1,0.0181,0.1744
+Arys City,"Семена масличные прочие, не включенные в другие группировки",4,4,0.0,0.1337
+Arys City,Культуры бахчевые,5,5,0.0154,0.0415
+Arys City,Картофель,6,6,0.0,0.0
+Arys City,Лук,7,8,0.0,0.0
+Arys City,Кукуруза (маис),8,7,0.0,0.0
+Arys City,Плоды семечковые и косточковые,9,9,0.0,0.0
+Arys City,Морковь и турнепс,10,10,0.0,0.0
+Arys City,Капуста,11,11,0.0,0.0
+Arys City,Помидоры,12,12,0.0,0.0
+Arys City,Огурцы и корнишоны,13,14,0.0,0.0
+Arys City,"Хлопок, очищенный или не очищенный от семян",14,13,0.0,0.0
+Arys City,Культуры кормовые,15,15,0.0,0.0
+Sairam District,Пшеница,1,1,1.0,0.5688
+Sairam District,Семена подсолнечника,2,2,0.0,0.2155
+Sairam District,"Семена масличные прочие, не включенные в другие группировки",3,3,0.0,0.1442
+Sairam District,Ячмень,4,4,0.0,0.0414
+Sairam District,Культуры бахчевые,5,5,0.0,0.0301
+Sairam District,Картофель,6,8,0.0,0.0
+Sairam District,Кукуруза (маис),7,7,0.0,0.0
+Sairam District,"Хлопок, очищенный или не очищенный от семян",8,6,0.0,0.0
+Sairam District,Лук,9,9,0.0,0.0
+Sairam District,Морковь и турнепс,10,10,0.0,0.0
+Sairam District,Плоды семечковые и косточковые,11,12,0.0,0.0
+Sairam District,Капуста,12,11,0.0,0.0
+Sairam District,Помидоры,13,13,0.0,0.0
+Sairam District,Огурцы и корнишоны,14,14,0.0,0.0
+Sairam District,Культуры кормовые,15,15,0.0,0.0
+Kazygurt District,Семена подсолнечника,1,1,1.0,0.5609
+Kazygurt District,"Семена масличные прочие, не включенные в другие группировки",2,2,0.0,0.414
+Kazygurt District,Пшеница,3,3,0.0,0.0205
+Kazygurt District,Ячмень,4,4,0.0,0.0046
+Kazygurt District,Картофель,5,5,0.0,0.0
+Kazygurt District,Кукуруза (маис),6,6,0.0,0.0
+Kazygurt District,Лук,7,8,0.0,0.0
+Kazygurt District,Морковь и турнепс,8,9,0.0,0.0
+Kazygurt District,Капуста,9,10,0.0,0.0
+Kazygurt District,Помидоры,10,11,0.0,0.0
+Kazygurt District,"Хлопок, очищенный или не очищенный от семян",11,7,0.0,0.0
+Kazygurt District,Огурцы и корнишоны,12,12,0.0,0.0
+Kazygurt District,Культуры бахчевые,13,13,0.0,0.0
+Kazygurt District,Плоды семечковые и косточковые,14,14,0.0,0.0
+Kazygurt District,Культуры кормовые,15,15,0.0,0.0
+Tolebi District,Пшеница,1,1,1.0,0.8567
+Tolebi District,Культуры бахчевые,2,3,0.0,0.0759
+Tolebi District,Ячмень,3,2,0.0,0.0671
+Tolebi District,Семена подсолнечника,4,4,0.0,0.0002
+Tolebi District,"Семена масличные прочие, не включенные в другие группировки",5,5,0.0,0.0001
+Tolebi District,Картофель,6,7,0.0,0.0
+Tolebi District,"Хлопок, очищенный или не очищенный от семян",7,6,0.0,0.0
+Tolebi District,Кукуруза (маис),8,8,0.0,0.0
+Tolebi District,Лук,9,9,0.0,0.0
+Tolebi District,Морковь и турнепс,10,10,0.0,0.0
+Tolebi District,Капуста,11,11,0.0,0.0
+Tolebi District,Помидоры,12,12,0.0,0.0
+Tolebi District,Огурцы и корнишоны,13,13,0.0,0.0
+Tolebi District,Культуры кормовые,14,14,0.0,0.0
+Tolebi District,Плоды семечковые и косточковые,15,15,0.0,0.0
+Tulkibas District,Пшеница,1,1,1.0,0.8563
+Tulkibas District,Культуры бахчевые,2,3,0.0,0.0749
+Tulkibas District,Ячмень,3,2,0.0,0.0684
+Tulkibas District,Семена подсолнечника,4,4,0.0,0.0002
+Tulkibas District,"Семена масличные прочие, не включенные в другие группировки",5,5,0.0,0.0002
+Tulkibas District,Картофель,6,7,0.0,0.0
+Tulkibas District,"Хлопок, очищенный или не очищенный от семян",7,6,0.0,0.0
+Tulkibas District,Кукуруза (маис),8,8,0.0,0.0
+Tulkibas District,Лук,9,9,0.0,0.0
+Tulkibas District,Морковь и турнепс,10,10,0.0,0.0
+Tulkibas District,Капуста,11,11,0.0,0.0
+Tulkibas District,Помидоры,12,12,0.0,0.0
+Tulkibas District,Огурцы и корнишоны,13,13,0.0,0.0
+Tulkibas District,Культуры кормовые,14,14,0.0,0.0
+Tulkibas District,Плоды семечковые и косточковые,15,15,0.0,0.0
+Baydibek District,Пшеница,1,1,1.0,0.5536
+Baydibek District,Семена подсолнечника,2,2,0.0,0.2249
+Baydibek District,"Семена масличные прочие, не включенные в другие группировки",3,3,0.0,0.133
+Baydibek District,Ячмень,4,4,0.0,0.0437
+Baydibek District,Культуры бахчевые,5,5,0.0,0.0448
+Baydibek District,Картофель,6,8,0.0,0.0
+Baydibek District,Кукуруза (маис),7,7,0.0,0.0
+Baydibek District,Лук,8,9,0.0,0.0
+Baydibek District,"Хлопок, очищенный или не очищенный от семян",9,6,0.0,0.0
+Baydibek District,Морковь и турнепс,10,10,0.0,0.0
+Baydibek District,Плоды семечковые и косточковые,11,11,0.0,0.0
+Baydibek District,Капуста,12,12,0.0,0.0
+Baydibek District,Помидоры,13,13,0.0,0.0
+Baydibek District,Огурцы и корнишоны,14,14,0.0,0.0
+Baydibek District,Культуры кормовые,15,15,0.0,0.0
+Suzak District,Культуры бахчевые,1,1,1.0,0.84
+Suzak District,Ячмень,2,2,0.0,0.0777
+Suzak District,Семена подсолнечника,3,3,0.0,0.0351
+Suzak District,Пшеница,4,4,0.0,0.0183
+Suzak District,"Семена масличные прочие, не включенные в другие группировки",5,5,0.0,0.0164
+Suzak District,Плоды семечковые и косточковые,6,6,0.0,0.0076
+Suzak District,Лук,7,7,0.0,0.0037
+Suzak District,Морковь и турнепс,8,8,0.0,0.0012
+Suzak District,Капуста,9,9,0.0,0.0
+Suzak District,Помидоры,10,10,0.0,0.0
+Suzak District,Картофель,11,11,0.0,0.0
+Suzak District,Культуры кормовые,12,12,0.0,0.0
+Suzak District,Огурцы и корнишоны,13,13,0.0,0.0
+Suzak District,Кукуруза (маис),14,14,0.0,0.0
+Suzak District,"Хлопок, очищенный или не очищенный от семян",15,15,0.0,0.0
+Kentau City,Семена подсолнечника,1,1,1.0,0.5949
+Kentau City,"Семена масличные прочие, не включенные в другие группировки",2,2,0.0,0.4023
+Kentau City,Пшеница,3,3,0.0,0.0024
+Kentau City,Ячмень,4,4,0.0,0.0004
+Kentau City,Плоды семечковые и косточковые,5,5,0.0,0.0
+Kentau City,Картофель,6,6,0.0,0.0
+Kentau City,Культуры бахчевые,7,8,0.0,0.0
+Kentau City,Кукуруза (маис),8,7,0.0,0.0
+Kentau City,Культуры кормовые,9,10,0.0,0.0
+Kentau City,Лук,10,11,0.0,0.0
+Kentau City,Морковь и турнепс,11,12,0.0,0.0
+Kentau City,"Хлопок, очищенный или не очищенный от семян",12,9,0.0,0.0
+Kentau City,Капуста,13,13,0.0,0.0
+Kentau City,Помидоры,14,14,0.0,0.0
+Kentau City,Огурцы и корнишоны,15,15,0.0,0.0

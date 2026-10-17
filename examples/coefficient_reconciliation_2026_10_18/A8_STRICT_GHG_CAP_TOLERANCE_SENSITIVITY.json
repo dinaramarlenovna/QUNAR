@@ -1,0 +1,78 @@
+[
+  {
+    "delta": 0,
+    "SSP2-4.5": {
+      "status": "infeasible_under_hard_constraints",
+      "areas": null,
+      "optimized": null
+    },
+    "SSP5-8.5": {
+      "status": "infeasible_under_hard_constraints",
+      "areas": null,
+      "optimized": null
+    }
+  },
+  {
+    "delta": 1,
+    "SSP2-4.5": {
+      "status": "infeasible_under_hard_constraints",
+      "areas": null,
+      "optimized": null
+    },
+    "SSP5-8.5": {
+      "status": "infeasible_under_hard_constraints",
+      "areas": null,
+      "optimized": null
+    }
+  },
+  {
+    "delta": 2,
+    "SSP2-4.5": {
+      "status": "optimal_enumerated_candidates",
+      "areas": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 10.521413970836116,
+        "Пшеница": 29.47858602916389
+      },
+      "optimized": {
+        "water_field_delivery_m3": 735624.1384281082,
+        "contribution_margin_kzt": 19572382.918010313,
+        "partial_ghg_kg_co2e": 116195.7000853846
+      }
+    },
+    "SSP5-8.5": {
+      "status": "infeasible_under_hard_constraints",
+      "areas": null,
+      "optimized": null
+    }
+  },
+  {
+    "delta": 5,
+    "SSP2-4.5": {
+      "status": "optimal_enumerated_candidates",
+      "areas": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 10.521413970836116,
+        "Пшеница": 29.47858602916389
+      },
+      "optimized": {
+        "water_field_delivery_m3": 735624.1384281082,
+        "contribution_margin_kzt": 19572382.918010313,
+        "partial_ghg_kg_co2e": 116195.7000853846
+      }
+    },
+    "SSP5-8.5": {
+      "status": "optimal_enumerated_candidates",
+      "areas": {
+        "Хлопок, очищенный или не очищенный от семян": 60.0,
+        "Кукуруза (маис)": 8.680884040427795,
+        "Пшеница": 31.31911595957221
+      },
+      "optimized": {
+        "water_field_delivery_m3": 739850.2391183908,
+        "contribution_margin_kzt": 19284667.405572955,
+        "partial_ghg_kg_co2e": 116195.70008538461
+      }
+    }
+  }
+]

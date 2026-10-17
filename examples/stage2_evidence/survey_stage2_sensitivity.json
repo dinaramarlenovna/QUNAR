@@ -1,0 +1,880 @@
+{
+  "base": {
+    "climate": 0.6,
+    "water": 0.4
+  },
+  "proxy": {
+    "climate": 0.43661971830985913,
+    "water": 0.5633802816901409
+  },
+  "n": 208,
+  "climate_Q7": 93,
+  "water_Q3": 120,
+  "headline": {
+    "same_first": 17,
+    "same_top3": 15
+  },
+  "min_baseline_margin": 0.49855072463768124,
+  "districts_with_margin_less_1": [
+    "Turkestan City",
+    "Saryagash District",
+    "Keles District",
+    "Zhetysay District",
+    "Maktaaral District",
+    "Shardara District",
+    "Otyrar District",
+    "Arys City",
+    "Kazygurt District",
+    "Kentau City"
+  ],
+  "source_comparison_all_match": true,
+  "weight_grid": [
+    {
+      "climate_weight": 0.0,
+      "water_weight": 1.0,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.01,
+      "water_weight": 0.99,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.02,
+      "water_weight": 0.98,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.03,
+      "water_weight": 0.97,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.04,
+      "water_weight": 0.96,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.05,
+      "water_weight": 0.95,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.06,
+      "water_weight": 0.94,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.07,
+      "water_weight": 0.93,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.08,
+      "water_weight": 0.92,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.09,
+      "water_weight": 0.91,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.1,
+      "water_weight": 0.9,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.11,
+      "water_weight": 0.89,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.12,
+      "water_weight": 0.88,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.13,
+      "water_weight": 0.87,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.14,
+      "water_weight": 0.86,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.15,
+      "water_weight": 0.85,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.16,
+      "water_weight": 0.84,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.17,
+      "water_weight": 0.83,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.18,
+      "water_weight": 0.82,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.19,
+      "water_weight": 0.81,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.2,
+      "water_weight": 0.8,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.21,
+      "water_weight": 0.79,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.22,
+      "water_weight": 0.78,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.23,
+      "water_weight": 0.77,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.24,
+      "water_weight": 0.76,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.25,
+      "water_weight": 0.75,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.26,
+      "water_weight": 0.74,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.27,
+      "water_weight": 0.73,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.28,
+      "water_weight": 0.72,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.29,
+      "water_weight": 0.71,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.3,
+      "water_weight": 0.7,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.31,
+      "water_weight": 0.69,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.32,
+      "water_weight": 0.68,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.33,
+      "water_weight": 0.67,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.34,
+      "water_weight": 0.66,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.35,
+      "water_weight": 0.65,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.36,
+      "water_weight": 0.64,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.37,
+      "water_weight": 0.63,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.38,
+      "water_weight": 0.62,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.39,
+      "water_weight": 0.61,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.4,
+      "water_weight": 0.6,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.41,
+      "water_weight": 0.59,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.42,
+      "water_weight": 0.58,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.43,
+      "water_weight": 0.57,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 14
+    },
+    {
+      "climate_weight": 0.44,
+      "water_weight": 0.56,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 15
+    },
+    {
+      "climate_weight": 0.45,
+      "water_weight": 0.55,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 16
+    },
+    {
+      "climate_weight": 0.46,
+      "water_weight": 0.54,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 16
+    },
+    {
+      "climate_weight": 0.47,
+      "water_weight": 0.53,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.48,
+      "water_weight": 0.52,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.49,
+      "water_weight": 0.51,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.5,
+      "water_weight": 0.5,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.51,
+      "water_weight": 0.49,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.52,
+      "water_weight": 0.48,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.53,
+      "water_weight": 0.47,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.54,
+      "water_weight": 0.46,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.55,
+      "water_weight": 0.45,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.56,
+      "water_weight": 0.44,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.57,
+      "water_weight": 0.43,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.58,
+      "water_weight": 0.42,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.59,
+      "water_weight": 0.41,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.6,
+      "water_weight": 0.4,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.61,
+      "water_weight": 0.39,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 17
+    },
+    {
+      "climate_weight": 0.62,
+      "water_weight": 0.38,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 16
+    },
+    {
+      "climate_weight": 0.63,
+      "water_weight": 0.37,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 16
+    },
+    {
+      "climate_weight": 0.64,
+      "water_weight": 0.36,
+      "same_top1_territories": 17,
+      "same_top3_sets_territories": 16
+    },
+    {
+      "climate_weight": 0.65,
+      "water_weight": 0.35,
+      "same_top1_territories": 16,
+      "same_top3_sets_territories": 14
+    },
+    {
+      "climate_weight": 0.66,
+      "water_weight": 0.34,
+      "same_top1_territories": 14,
+      "same_top3_sets_territories": 12
+    },
+    {
+      "climate_weight": 0.67,
+      "water_weight": 0.33,
+      "same_top1_territories": 13,
+      "same_top3_sets_territories": 11
+    },
+    {
+      "climate_weight": 0.68,
+      "water_weight": 0.32,
+      "same_top1_territories": 13,
+      "same_top3_sets_territories": 10
+    },
+    {
+      "climate_weight": 0.69,
+      "water_weight": 0.31,
+      "same_top1_territories": 11,
+      "same_top3_sets_territories": 7
+    },
+    {
+      "climate_weight": 0.7,
+      "water_weight": 0.3,
+      "same_top1_territories": 11,
+      "same_top3_sets_territories": 7
+    },
+    {
+      "climate_weight": 0.71,
+      "water_weight": 0.29,
+      "same_top1_territories": 11,
+      "same_top3_sets_territories": 7
+    },
+    {
+      "climate_weight": 0.72,
+      "water_weight": 0.28,
+      "same_top1_territories": 11,
+      "same_top3_sets_territories": 7
+    },
+    {
+      "climate_weight": 0.73,
+      "water_weight": 0.27,
+      "same_top1_territories": 10,
+      "same_top3_sets_territories": 6
+    },
+    {
+      "climate_weight": 0.74,
+      "water_weight": 0.26,
+      "same_top1_territories": 10,
+      "same_top3_sets_territories": 5
+    },
+    {
+      "climate_weight": 0.75,
+      "water_weight": 0.25,
+      "same_top1_territories": 9,
+      "same_top3_sets_territories": 5
+    },
+    {
+      "climate_weight": 0.76,
+      "water_weight": 0.24,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 5
+    },
+    {
+      "climate_weight": 0.77,
+      "water_weight": 0.23,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 4
+    },
+    {
+      "climate_weight": 0.78,
+      "water_weight": 0.22,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.79,
+      "water_weight": 0.21,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.8,
+      "water_weight": 0.2,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.81,
+      "water_weight": 0.19,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.82,
+      "water_weight": 0.18,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.83,
+      "water_weight": 0.17,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.84,
+      "water_weight": 0.16,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.85,
+      "water_weight": 0.15,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.86,
+      "water_weight": 0.14,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.87,
+      "water_weight": 0.13,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.88,
+      "water_weight": 0.12,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.89,
+      "water_weight": 0.11,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.9,
+      "water_weight": 0.1,
+      "same_top1_territories": 7,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.91,
+      "water_weight": 0.09,
+      "same_top1_territories": 6,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.92,
+      "water_weight": 0.08,
+      "same_top1_territories": 4,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.93,
+      "water_weight": 0.07,
+      "same_top1_territories": 3,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.94,
+      "water_weight": 0.06,
+      "same_top1_territories": 1,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.95,
+      "water_weight": 0.05,
+      "same_top1_territories": 1,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.96,
+      "water_weight": 0.04,
+      "same_top1_territories": 1,
+      "same_top3_sets_territories": 3
+    },
+    {
+      "climate_weight": 0.97,
+      "water_weight": 0.03,
+      "same_top1_territories": 1,
+      "same_top3_sets_territories": 1
+    },
+    {
+      "climate_weight": 0.98,
+      "water_weight": 0.02,
+      "same_top1_territories": 1,
+      "same_top3_sets_territories": 1
+    },
+    {
+      "climate_weight": 0.99,
+      "water_weight": 0.01,
+      "same_top1_territories": 1,
+      "same_top3_sets_territories": 1
+    },
+    {
+      "climate_weight": 1.0,
+      "water_weight": 0.0,
+      "same_top1_territories": 1,
+      "same_top3_sets_territories": 1
+    }
+  ],
+  "districts": [
+    {
+      "district": "Sauran District",
+      "baseline_leader": "Семена подсолнечника",
+      "proxy_leader": "Семена подсолнечника",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "proxy_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "baseline_first_second_gap_pts": 1.0200000000000102,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.91,
+      "grid_weights_different_leader": 9,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Turkestan City",
+      "baseline_leader": "Семена подсолнечника",
+      "proxy_leader": "Семена подсолнечника",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "proxy_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "baseline_first_second_gap_pts": 0.9599999999999795,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.92,
+      "grid_weights_different_leader": 8,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Saryagash District",
+      "baseline_leader": "Семена подсолнечника",
+      "proxy_leader": "Семена подсолнечника",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "proxy_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "baseline_first_second_gap_pts": 0.960000000000008,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.91,
+      "grid_weights_different_leader": 9,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Keles District",
+      "baseline_leader": "Семена подсолнечника",
+      "proxy_leader": "Семена подсолнечника",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "proxy_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "baseline_first_second_gap_pts": 0.9599999999999795,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.9,
+      "grid_weights_different_leader": 10,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Zhetysay District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": false,
+      "baseline_top3": "Пшеница | Семена подсолнечника | Ячмень",
+      "proxy_top3": "Пшеница | Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки",
+      "baseline_first_second_gap_pts": 0.659130434782611,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.66,
+      "grid_weights_different_leader": 34,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Maktaaral District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Пшеница | Семена подсолнечника | Ячмень",
+      "proxy_top3": "Пшеница | Семена подсолнечника | Ячмень",
+      "baseline_first_second_gap_pts": 0.5991304347825945,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.65,
+      "grid_weights_different_leader": 35,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Shardara District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Пшеница | Ячмень | Семена подсолнечника",
+      "proxy_top3": "Пшеница | Семена подсолнечника | Ячмень",
+      "baseline_first_second_gap_pts": 0.5585507246376835,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.65,
+      "grid_weights_different_leader": 35,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Otyrar District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Пшеница | Ячмень | Семена подсолнечника",
+      "proxy_top3": "Пшеница | Семена подсолнечника | Ячмень",
+      "baseline_first_second_gap_pts": 0.49855072463768124,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.64,
+      "grid_weights_different_leader": 36,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Ordabasy District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Пшеница | Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки",
+      "proxy_top3": "Пшеница | Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки",
+      "baseline_first_second_gap_pts": 1.1968627450980307,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.68,
+      "grid_weights_different_leader": 32,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Arys City",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": false,
+      "baseline_top3": "Пшеница | Семена подсолнечника | Ячмень",
+      "proxy_top3": "Пшеница | Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки",
+      "baseline_first_second_gap_pts": 0.7791304347826156,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.68,
+      "grid_weights_different_leader": 32,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Sairam District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Пшеница | Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки",
+      "proxy_top3": "Пшеница | Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки",
+      "baseline_first_second_gap_pts": 1.496862745098042,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.74,
+      "grid_weights_different_leader": 26,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Kazygurt District",
+      "baseline_leader": "Семена подсолнечника",
+      "proxy_leader": "Семена подсолнечника",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "proxy_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "baseline_first_second_gap_pts": 0.6000000000000085,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.93,
+      "grid_weights_different_leader": 7,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Tolebi District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Пшеница | Культуры бахчевые | Ячмень",
+      "proxy_top3": "Пшеница | Ячмень | Культуры бахчевые",
+      "baseline_first_second_gap_pts": 3.5080837035975208,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.75,
+      "grid_weights_different_leader": 25,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Tulkibas District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Пшеница | Культуры бахчевые | Ячмень",
+      "proxy_top3": "Пшеница | Ячмень | Культуры бахчевые",
+      "baseline_first_second_gap_pts": 3.5080837035975208,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.75,
+      "grid_weights_different_leader": 25,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Baydibek District",
+      "baseline_leader": "Пшеница",
+      "proxy_leader": "Пшеница",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Пшеница | Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки",
+      "proxy_top3": "Пшеница | Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки",
+      "baseline_first_second_gap_pts": 1.3768627450980375,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.72,
+      "grid_weights_different_leader": 28,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Suzak District",
+      "baseline_leader": "Культуры бахчевые",
+      "proxy_leader": "Культуры бахчевые",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Культуры бахчевые | Ячмень | Семена подсолнечника",
+      "proxy_top3": "Культуры бахчевые | Ячмень | Семена подсолнечника",
+      "baseline_first_second_gap_pts": 5.040000000000006,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 1.0,
+      "grid_weights_different_leader": 0,
+      "matches_prior_published_sensitivity": true
+    },
+    {
+      "district": "Kentau City",
+      "baseline_leader": "Семена подсолнечника",
+      "proxy_leader": "Семена подсолнечника",
+      "leaders_same": true,
+      "top3_same_set": true,
+      "baseline_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "proxy_top3": "Семена подсолнечника | Семена масличные прочие, не включенные в другие группировки | Пшеница",
+      "baseline_first_second_gap_pts": 0.7800000000000011,
+      "baseline_leader_min_weight_on_grid": 0.0,
+      "baseline_leader_max_weight_on_grid": 0.93,
+      "grid_weights_different_leader": 7,
+      "matches_prior_published_sensitivity": true
+    }
+  ],
+  "caution": "Grid sweeps are deterministic model-output robustness, not confidence intervals or evidence of elicited questionnaire weights."
+}

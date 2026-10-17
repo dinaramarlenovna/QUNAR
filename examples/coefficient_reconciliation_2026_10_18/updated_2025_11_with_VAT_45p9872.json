@@ -1,0 +1,315 @@
+{
+  "case_id": "A8_MAKTAARAL_100HA_2026",
+  "input_sha256": "2b13ab658066bbdf0ac4570b458dca70ccf7e760687614ba77a6f313b82b40d5",
+  "technical_assumptions": {
+    "pump_electricity_kwh_per_m3_field_delivery": 0.10480769230769231,
+    "water_tariff_kzt_per_m3_field_delivery": 1.16,
+    "electricity_tariff_kzt_per_kwh": 45.9872,
+    "grid_kg_co2e_per_kwh": 0.813,
+    "diesel_kg_co2_per_litre": 2.676492,
+    "n2o_n_kg_per_kg_n": 0.01,
+    "n2o_gwp100": 273,
+    "water_supply_service_mode": "gravity_with_separate_onfarm_pump"
+  },
+  "temperature_reference_c": 25.873224043715844,
+  "sustainable_margin_tolerance_pct": 0.0,
+  "ordinary_economic_optimum": {
+    "water_budget_m3": 750000.0,
+    "baseline_areas_ha": {
+      "Cotton": 50.0,
+      "Corn": 30.0,
+      "Wheat": 20.0
+    },
+    "optimized_areas_ha": {
+      "Cotton": 60.0,
+      "Corn": 24.477611940298498,
+      "Wheat": 15.522388059701509
+    },
+    "baseline": {
+      "area_ha": 100.0,
+      "water_field_delivery_m3": 725500.0,
+      "pump_energy_kwh": 76037.98076923077,
+      "revenue_kzt": 50582250.56666666,
+      "variable_cost_kzt": 30538353.829230767,
+      "contribution_margin_kzt": 20043896.737435892,
+      "partial_ghg_kg_co2e": 116195.70008538461,
+      "partial_ghg_components_kg_co2e": {
+        "direct_fertilizer_n2o_kgco2e": 39897.0,
+        "diesel_combustion_kgco2": 14479.82172,
+        "electricity_kgco2e": 61818.87836538461
+      },
+      "ghg_activity_total": {
+        "nitrogen_kg_ha": 9300.0,
+        "diesel_litres_ha": 5410.0,
+        "electricity_kwh_ha": 76037.98076923077
+      },
+      "water_budget_m3": 750000.0,
+      "water_feasible": true
+    },
+    "optimized": {
+      "area_ha": 100.0,
+      "water_field_delivery_m3": 750000.0,
+      "pump_energy_kwh": 78605.76923076923,
+      "revenue_kzt": 53873451.47960198,
+      "variable_cost_kzt": 32487844.3053961,
+      "contribution_margin_kzt": 21385607.174205884,
+      "partial_ghg_kg_co2e": 120151.18311058554,
+      "partial_ghg_components_kg_co2e": {
+        "direct_fertilizer_n2o_kgco2e": 41427.31343283582,
+        "diesel_combustion_kgco2": 14817.379293134329,
+        "electricity_kgco2e": 63906.49038461538
+      },
+      "ghg_activity_total": {
+        "nitrogen_kg_ha": 9656.716417910447,
+        "diesel_litres_ha": 5536.119402985075,
+        "electricity_kwh_ha": 78605.76923076923
+      },
+      "water_budget_m3": 750000.0,
+      "water_feasible": true
+    },
+    "optimizer_status": "optimal_enumerated_candidates",
+    "margin_change_same_conditions_kzt": 1341710.436769992,
+    "water_change_same_conditions_m3": 24500.0,
+    "ghg_difference": {
+      "baseline_kgco2e": 116195.70008538461,
+      "scenario_kgco2e": 120151.18311058554,
+      "change_kgco2e": 3955.483025200927,
+      "possible_reduction_kgco2e": 0.0,
+      "possible_increase_kgco2e": 3955.483025200927,
+      "direction": "increase",
+      "status": "counterfactual scenario, not field-measured achieved saving",
+      "baseline_activities": {
+        "nitrogen_kg_ha": 9300.0,
+        "diesel_litres_ha": 5410.0,
+        "electricity_kwh_ha": 76037.98076923077
+      },
+      "proposed_activities": {
+        "nitrogen_kg_ha": 9656.716417910447,
+        "diesel_litres_ha": 5536.119402985075,
+        "electricity_kwh_ha": 78605.76923076923
+      },
+      "baseline_area_ha": 100.0,
+      "proposed_area_ha": 100.0,
+      "intensities_assumption": "user_scenario_per_crop",
+      "evidence": "Hypothetical A8 100-ha case; equal reporting period and factors",
+      "boundary": "partial N2O from applied N, diesel combustion, grid electricity; no lifecycle or all sources",
+      "interpretation": "modeled crop-mix difference, not measured mitigation outcome"
+    }
+  },
+  "sustainable_current": {
+    "status": "optimal_enumerated_candidates",
+    "baseline": {
+      "water_field_delivery_m3": 725500.0,
+      "contribution_margin_kzt": 20043896.737435892,
+      "partial_ghg_kg_co2e": 116195.70008538461
+    },
+    "areas_ha": {
+      "Хлопок, очищенный или не очищенный от семян": 60.0,
+      "Кукуруза (маис)": 16.255852777348778,
+      "Пшеница": 23.744147222651225
+    },
+    "optimized": {
+      "water_field_delivery_m3": 722457.1068041185,
+      "contribution_margin_kzt": 20375516.5767945,
+      "partial_ghg_kg_co2e": 116195.70008538463
+    },
+    "constraints": {
+      "effective_partial_ghg_cap_kg_co2e": 116195.70008538463,
+      "absolute_partial_ghg_cap_input_kg": null,
+      "baseline_water_m3": 725500.0,
+      "baseline_partial_ghg_kg_co2e": 116195.70008538463,
+      "baseline_margin_kzt": 20043896.737435892,
+      "minimum_margin_kzt": 20043896.737435892,
+      "max_margin_decline_pct": 0.0,
+      "baseline_feasible_under_current_water_budget": true,
+      "optimized_water_m3": 722457.1068041184,
+      "optimized_partial_ghg_kg_co2e": 116195.70008538463,
+      "optimized_margin_kzt": 20375516.5767945,
+      "all_constraints_met": true,
+      "emission_boundary": "user-supplied partial kg CO2e/ha; same crop period and factor set required",
+      "method": "weighted utility maximum among enumerated candidate sets subject to margin floor, water and partial-GHG ceilings; not guaranteed globally Pareto-optimal in unmodelled dimensions"
+    }
+  },
+  "stress": {
+    "water_budget_m3": 600000.0,
+    "baseline_areas_ha": {
+      "Cotton": 50.0,
+      "Corn": 30.0,
+      "Wheat": 20.0
+    },
+    "optimized_areas_ha": {
+      "Cotton": 41.84883720930234,
+      "Corn": 3.0,
+      "Wheat": 55.15116279069768
+    },
+    "unchanged_baseline_infeasible": true,
+    "baseline_counterfactual_water_shortfall_m3": 125500.0,
+    "baseline_counterfactual": {
+      "area_ha": 100.0,
+      "water_field_delivery_m3": 725500.0,
+      "pump_energy_kwh": 76037.98076923077,
+      "revenue_kzt": 45524025.50999999,
+      "variable_cost_kzt": 33592189.21215385,
+      "contribution_margin_kzt": 11931836.297846146,
+      "partial_ghg_kg_co2e": 116195.70008538461,
+      "partial_ghg_components_kg_co2e": {
+        "direct_fertilizer_n2o_kgco2e": 39897.0,
+        "diesel_combustion_kgco2": 14479.82172,
+        "electricity_kgco2e": 61818.87836538461
+      },
+      "ghg_activity_total": {
+        "nitrogen_kg_ha": 9300.0,
+        "diesel_litres_ha": 5410.0,
+        "electricity_kwh_ha": 76037.98076923077
+      },
+      "water_budget_m3": 600000.0,
+      "water_feasible": false
+    },
+    "optimized": {
+      "area_ha": 100.00000000000003,
+      "water_field_delivery_m3": 600000.0000000001,
+      "pump_energy_kwh": 62884.6153846154,
+      "revenue_kzt": 36506915.24522093,
+      "variable_cost_kzt": 28031431.93703042,
+      "contribution_margin_kzt": 8475483.308190513,
+      "partial_ghg_kg_co2e": 97816.2238552272,
+      "partial_ghg_components_kg_co2e": {
+        "direct_fertilizer_n2o_kgco2e": 33919.683139534885,
+        "diesel_combustion_kgco2": 12771.348408000003,
+        "electricity_kgco2e": 51125.19230769231
+      },
+      "ghg_activity_total": {
+        "nitrogen_kg_ha": 7906.68604651163,
+        "diesel_litres_ha": 4771.674418604653,
+        "electricity_kwh_ha": 62884.6153846154
+      },
+      "water_budget_m3": 600000.0,
+      "water_feasible": true
+    },
+    "optimizer_status": "optimal_enumerated_candidates",
+    "hypothetical_margin_difference_vs_infeasible_baseline_kzt": -3456352.9896556325,
+    "field_delivery_change_vs_infeasible_baseline_m3": -125499.99999999988,
+    "ghg_difference_vs_infeasible_baseline": {
+      "baseline_kgco2e": 116195.70008538461,
+      "scenario_kgco2e": 97816.2238552272,
+      "change_kgco2e": -18379.47623015741,
+      "possible_reduction_kgco2e": 18379.47623015741,
+      "possible_increase_kgco2e": 0.0,
+      "direction": "decrease",
+      "status": "counterfactual scenario, not field-measured achieved saving",
+      "baseline_activities": {
+        "nitrogen_kg_ha": 9300.0,
+        "diesel_litres_ha": 5410.0,
+        "electricity_kwh_ha": 76037.98076923077
+      },
+      "proposed_activities": {
+        "nitrogen_kg_ha": 7906.68604651163,
+        "diesel_litres_ha": 4771.674418604653,
+        "electricity_kwh_ha": 62884.6153846154
+      },
+      "baseline_area_ha": 100.0,
+      "proposed_area_ha": 100.00000000000003,
+      "intensities_assumption": "user_scenario_per_crop",
+      "evidence": "Hypothetical A8 stressed baseline is water-infeasible; comparison is counterfactual",
+      "boundary": "partial N2O from applied N, diesel combustion, grid electricity; no lifecycle or all sources",
+      "interpretation": "modeled crop-mix difference, not measured mitigation outcome"
+    },
+    "interpretation": "Counterfactual infeasible baseline: not an achievable margin uplift or a field-measured water/GHG saving"
+  },
+  "climate_scenarios": {
+    "SSP2-4.5": {
+      "temperature_delta_c": 2.010710382513661,
+      "precipitation_delta_pct": 1.3089651765868113,
+      "water_multiplier": 1.0460398888916695,
+      "method": "Hargreaves (T+17.8) temperature TERM only; constant diurnal range, radiation, no crop ETc or effective-precipitation recalculation",
+      "fixed_current_compromise": {
+        "water_field_delivery_m3": 755718.951730377,
+        "contribution_margin_kzt": 20176616.987127908,
+        "partial_ghg_kg_co2e": 119029.89711599064
+      },
+      "reoptimized": {
+        "status": "optimal_enumerated_candidates",
+        "baseline": {
+          "water_field_delivery_m3": 758901.9393909062,
+          "contribution_margin_kzt": 19844159.409165356,
+          "partial_ghg_kg_co2e": 119041.83437673455
+        },
+        "areas_ha": {
+          "Хлопок, очищенный или не очищенный от семян": 60.0,
+          "Кукуруза (маис)": 14.62384066347937,
+          "Пшеница": 25.376159336520633
+        },
+        "optimized": {
+          "water_field_delivery_m3": 750000.0,
+          "contribution_margin_kzt": 19977620.058783963,
+          "partial_ghg_kg_co2e": 118223.28917350312
+        },
+        "constraints": {
+          "effective_partial_ghg_cap_kg_co2e": 119041.83437673455,
+          "absolute_partial_ghg_cap_input_kg": null,
+          "baseline_water_m3": 758901.9393909062,
+          "baseline_partial_ghg_kg_co2e": 119041.83437673455,
+          "baseline_margin_kzt": 19844159.409165353,
+          "minimum_margin_kzt": 19844159.409165353,
+          "max_margin_decline_pct": 0.0,
+          "baseline_feasible_under_current_water_budget": false,
+          "optimized_water_m3": 750000.0,
+          "optimized_partial_ghg_kg_co2e": 118223.28917350313,
+          "optimized_margin_kzt": 19977620.058783963,
+          "all_constraints_met": true,
+          "emission_boundary": "user-supplied partial kg CO2e/ha; same crop period and factor set required",
+          "method": "weighted utility maximum among enumerated candidate sets subject to margin floor, water and partial-GHG ceilings; not guaranteed globally Pareto-optimal in unmodelled dimensions"
+        }
+      },
+      "reoptimized_with_absolute_present_carbon_cap": {
+        "status": "infeasible_under_hard_constraints",
+        "baseline": {
+          "water_field_delivery_m3": 758901.9393909062,
+          "contribution_margin_kzt": 19844159.409165356,
+          "partial_ghg_kg_co2e": 119041.83437673455
+        },
+        "areas_ha": null,
+        "optimized": null
+      }
+    },
+    "SSP5-8.5": {
+      "temperature_delta_c": 2.6795628415300548,
+      "precipitation_delta_pct": 0.8479459948958593,
+      "water_multiplier": 1.0613548209504267,
+      "method": "Hargreaves (T+17.8) temperature TERM only; constant diurnal range, radiation, no crop ETc or effective-precipitation recalculation",
+      "fixed_current_compromise": {
+        "water_field_delivery_m3": 766783.3332364484,
+        "contribution_margin_kzt": 20110454.062420897,
+        "partial_ghg_kg_co2e": 119972.67816976327
+      },
+      "reoptimized": {
+        "status": "infeasible_under_hard_constraints",
+        "baseline": {
+          "water_field_delivery_m3": 770012.9225995345,
+          "contribution_margin_kzt": 19777717.81502384,
+          "partial_ghg_kg_co2e": 119988.58629884898
+        },
+        "areas_ha": null,
+        "optimized": null
+      },
+      "reoptimized_with_absolute_present_carbon_cap": {
+        "status": "infeasible_under_hard_constraints",
+        "baseline": {
+          "water_field_delivery_m3": 770012.9225995345,
+          "contribution_margin_kzt": 19777717.81502384,
+          "partial_ghg_kg_co2e": 119988.58629884898
+        },
+        "areas_ha": null,
+        "optimized": null
+      }
+    }
+  },
+  "status": "hypothetical scenario; proxy future water, not FAO-56 or observed field savings",
+  "limitations": [
+    "Prices official BNS 2025, farm costs/tariffs/N/diesel and input shares hypothetical.",
+    "Partial GHG from N2O, diesel, irrigation electricity only.",
+    "Soil/transport losses/return flows not included in reference irrigation norm.",
+    "SSP impact: temperature-term proxy, adjusted pump energy/cost/GHG, re-optimized climate scores; unchanged crop yield is NOT validated.",
+    "National default pumping intensity and grid factor are software reference assumptions; confirm documentary year, pump head, irrigation boundary and electricity mix."
+  ]
+}

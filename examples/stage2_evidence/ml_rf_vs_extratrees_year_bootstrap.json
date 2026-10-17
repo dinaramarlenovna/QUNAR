@@ -1,0 +1,16 @@
+{
+  "n": 326,
+  "years": [
+    2021,
+    2022,
+    2023,
+    2024,
+    2025
+  ],
+  "rf_minus_extratrees_MAE": 0.8155322057971396,
+  "bootstrap_by_year_95_descriptive": [
+    0.47712613741371673,
+    1.0865752629226733
+  ],
+  "caution": "Only 5 year blocks; late data has previously been used in exploratory method comparisons."
+}

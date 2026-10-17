@@ -1,0 +1,129 @@
+{
+  "splitting": "strict forward 2004-2020 train, 2021-2025 held out",
+  "methods": [
+    "Pooled RF",
+    "Historical median",
+    "Per-crop RF",
+    "Pooled Ridge"
+  ],
+  "overall": {
+    "Pooled RF": {
+      "crop": "All",
+      "method": "Pooled RF",
+      "train_end": 2020,
+      "test_start": 2021,
+      "test_end": 2025,
+      "n": 326,
+      "MAE": 16.70143456318489,
+      "RMSE": 30.537493370958163,
+      "R2": 0.807907105309099,
+      "WAPE_percent": 26.100119687250544
+    },
+    "Historical median": {
+      "crop": "All",
+      "method": "Historical median",
+      "train_end": 2020,
+      "test_start": 2021,
+      "test_end": 2025,
+      "n": 326,
+      "MAE": 16.87990797546012,
+      "RMSE": 32.11173397045007,
+      "R2": 0.787591425591082,
+      "WAPE_percent": 26.37902850815169
+    },
+    "Per-crop RF": {
+      "crop": "All",
+      "method": "Per-crop RF",
+      "train_end": 2020,
+      "test_start": 2021,
+      "test_end": 2025,
+      "n": 326,
+      "MAE": 16.85305620340804,
+      "RMSE": 30.91740070755655,
+      "R2": 0.803097840569827,
+      "WAPE_percent": 26.337065977225222
+    },
+    "Pooled Ridge": {
+      "crop": "All",
+      "method": "Pooled Ridge",
+      "train_end": 2020,
+      "test_start": 2021,
+      "test_end": 2025,
+      "n": 326,
+      "MAE": 18.765054268287887,
+      "RMSE": 31.58373795884119,
+      "R2": 0.7945190403906482,
+      "WAPE_percent": 29.325035552315367
+    }
+  },
+  "by_crop": [
+    {
+      "crop": "Corn",
+      "best_on_test_exploratory_only": "Pooled RF",
+      "pooled_rf_mae": 15.613150259053121,
+      "historical_median_mae": 15.834,
+      "per_crop_rf_mae": 15.618642256663973,
+      "ridge_mae": 16.18941353325628,
+      "pooled_beats_median": true,
+      "warning": "The best method was identified on this test set and cannot be marketed as independently selected or validated."
+    },
+    {
+      "crop": "Cotton",
+      "best_on_test_exploratory_only": "Pooled Ridge",
+      "pooled_rf_mae": 7.029239221833904,
+      "historical_median_mae": 7.50232558139535,
+      "per_crop_rf_mae": 7.0091998808684846,
+      "ridge_mae": 6.813522001649273,
+      "pooled_beats_median": true,
+      "warning": "The best method was identified on this test set and cannot be marketed as independently selected or validated."
+    },
+    {
+      "crop": "Potato",
+      "best_on_test_exploratory_only": "Pooled RF",
+      "pooled_rf_mae": 49.10719602063361,
+      "historical_median_mae": 50.6,
+      "per_crop_rf_mae": 49.98590827809343,
+      "ridge_mae": 53.94229163475709,
+      "pooled_beats_median": true,
+      "warning": "The best method was identified on this test set and cannot be marketed as independently selected or validated."
+    },
+    {
+      "crop": "Rice",
+      "best_on_test_exploratory_only": "Historical median",
+      "pooled_rf_mae": 13.823628874813327,
+      "historical_median_mae": 8.894117647058824,
+      "per_crop_rf_mae": 14.058015184861812,
+      "ridge_mae": 14.961014014598629,
+      "pooled_beats_median": false,
+      "warning": "The best method was identified on this test set and cannot be marketed as independently selected or validated."
+    },
+    {
+      "crop": "Sunflower",
+      "best_on_test_exploratory_only": "Per-crop RF",
+      "pooled_rf_mae": 3.8203244712430444,
+      "historical_median_mae": 3.73,
+      "per_crop_rf_mae": 3.177588555499335,
+      "ridge_mae": 5.332518490856904,
+      "pooled_beats_median": false,
+      "warning": "The best method was identified on this test set and cannot be marketed as independently selected or validated."
+    },
+    {
+      "crop": "Wheat",
+      "best_on_test_exploratory_only": "Pooled RF",
+      "pooled_rf_mae": 5.325611521106757,
+      "historical_median_mae": 5.527083333333334,
+      "per_crop_rf_mae": 5.6729277734831305,
+      "ridge_mae": 8.47621959065209,
+      "pooled_beats_median": true,
+      "warning": "The best method was identified on this test set and cannot be marketed as independently selected or validated."
+    }
+  ],
+  "training_observations": 1036,
+  "heldout_observations": 326,
+  "no_production_model_change": true,
+  "limitations": [
+    "No farm-level independent evaluation",
+    "2021-2025 used to compare methods; any selection needs a different confirmation set",
+    "Inputs include reported sown area and measured Apr-Sep conditions (not an advance-season prediction)"
+  ]
+}

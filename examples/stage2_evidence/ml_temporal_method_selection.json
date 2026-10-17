@@ -1,0 +1,161 @@
+{
+  "selection": {
+    "Corn": {
+      "earlier_validation_MAE": {
+        "Pooled RF": 6.681159575711225,
+        "Historical median": 7.197692307692307,
+        "Per-crop RF": 6.761894322027178,
+        "Pooled Ridge": 10.145630134726238
+      },
+      "chosen": "Pooled RF",
+      "earlier_best": "Pooled RF",
+      "rule": "alternative only if pooled prior-window MAE improves at least 10%; otherwise pooled RF",
+      "n_prior_validation": 130
+    },
+    "Cotton": {
+      "earlier_validation_MAE": {
+        "Pooled RF": 4.36770318181818,
+        "Historical median": 4.703749999999999,
+        "Per-crop RF": 4.690353170351474,
+        "Pooled Ridge": 6.847088023035925
+      },
+      "chosen": "Pooled RF",
+      "earlier_best": "Pooled RF",
+      "rule": "alternative only if pooled prior-window MAE improves at least 10%; otherwise pooled RF",
+      "n_prior_validation": 80
+    },
+    "Potato": {
+      "earlier_validation_MAE": {
+        "Pooled RF": 24.779507093611855,
+        "Historical median": 27.8711111111111,
+        "Per-crop RF": 25.005381957442918,
+        "Pooled Ridge": 35.136257070168234
+      },
+      "chosen": "Pooled RF",
+      "earlier_best": "Pooled RF",
+      "rule": "alternative only if pooled prior-window MAE improves at least 10%; otherwise pooled RF",
+      "n_prior_validation": 135
+    },
+    "Rice": {
+      "earlier_validation_MAE": {
+        "Pooled RF": 17.393215153307718,
+        "Historical median": 19.973913043478266,
+        "Per-crop RF": 17.447131691807183,
+        "Pooled Ridge": 18.74983072576869
+      },
+      "chosen": "Pooled RF",
+      "earlier_best": "Pooled RF",
+      "rule": "alternative only if pooled prior-window MAE improves at least 10%; otherwise pooled RF",
+      "n_prior_validation": 23
+    },
+    "Sunflower": {
+      "earlier_validation_MAE": {
+        "Pooled RF": 2.763174227659943,
+        "Historical median": 3.131081081081082,
+        "Per-crop RF": 2.9941785731,
+        "Pooled Ridge": 6.392235020180946
+      },
+      "chosen": "Pooled RF",
+      "earlier_best": "Pooled RF",
+      "rule": "alternative only if pooled prior-window MAE improves at least 10%; otherwise pooled RF",
+      "n_prior_validation": 111
+    },
+    "Wheat": {
+      "earlier_validation_MAE": {
+        "Pooled RF": 4.5859972195077425,
+        "Historical median": 4.68587786259542,
+        "Per-crop RF": 4.47000226433569,
+        "Pooled Ridge": 7.447992624901321
+      },
+      "chosen": "Pooled RF",
+      "earlier_best": "Per-crop RF",
+      "rule": "alternative only if pooled prior-window MAE improves at least 10%; otherwise pooled RF",
+      "n_prior_validation": 131
+    }
+  },
+  "test_by_crop": [
+    {
+      "crop": "Corn",
+      "selected_from_earlier": "Pooled RF",
+      "test_N": 75,
+      "MAE_selected": 15.613150259053121,
+      "MAE_original_RF": 15.613150259053121,
+      "MAE_median": 15.834,
+      "R2_selected": -0.38625190732854753,
+      "R2_original_RF": -0.38625190732854753
+    },
+    {
+      "crop": "Cotton",
+      "selected_from_earlier": "Pooled RF",
+      "test_N": 43,
+      "MAE_selected": 7.029239221833904,
+      "MAE_original_RF": 7.029239221833904,
+      "MAE_median": 7.50232558139535,
+      "R2_selected": -0.4701612052879589,
+      "R2_original_RF": -0.4701612052879589
+    },
+    {
+      "crop": "Potato",
+      "selected_from_earlier": "Pooled RF",
+      "test_N": 64,
+      "MAE_selected": 49.10719602063361,
+      "MAE_original_RF": 49.10719602063361,
+      "MAE_median": 50.6,
+      "R2_selected": -0.8984488271354827,
+      "R2_original_RF": -0.8984488271354827
+    },
+    {
+      "crop": "Rice",
+      "selected_from_earlier": "Pooled RF",
+      "test_N": 17,
+      "MAE_selected": 13.823628874813327,
+      "MAE_original_RF": 13.823628874813327,
+      "MAE_median": 8.894117647058824,
+      "R2_selected": -3.5043260940591976,
+      "R2_original_RF": -3.5043260940591976
+    },
+    {
+      "crop": "Sunflower",
+      "selected_from_earlier": "Pooled RF",
+      "test_N": 55,
+      "MAE_selected": 3.8203244712430444,
+      "MAE_original_RF": 3.8203244712430444,
+      "MAE_median": 3.73,
+      "R2_selected": -0.38006524071782555,
+      "R2_original_RF": -0.38006524071782555
+    },
+    {
+      "crop": "Wheat",
+      "selected_from_earlier": "Pooled RF",
+      "test_N": 72,
+      "MAE_selected": 5.325611521106757,
+      "MAE_original_RF": 5.325611521106757,
+      "MAE_median": 5.527083333333334,
+      "R2_selected": 0.2669081794420656,
+      "R2_original_RF": 0.2669081794420656
+    }
+  ],
+  "test_overall_selected": {
+    "n": 326,
+    "MAE": 16.70143456318489,
+    "RMSE": 30.537493370958163,
+    "R2": 0.807907105309099,
+    "WAPE_percent": 26.100119687250544
+  },
+  "test_overall_pooled_RF": {
+    "n": 326,
+    "MAE": 16.70143456318489,
+    "RMSE": 30.537493370958163,
+    "R2": 0.807907105309099,
+    "WAPE_percent": 26.100119687250544
+  },
+  "test_overall_median": {
+    "n": 326,
+    "MAE": 16.87990797546012,
+    "RMSE": 32.11173397045007,
+    "R2": 0.787591425591082,
+    "WAPE_percent": 26.37902850815169
+  },
+  "no_production_model_change": true,
+  "caution": "Exploratory temporal selection, not external untouched validation; formal adoption requires confirmatory future/farm data."
+}
