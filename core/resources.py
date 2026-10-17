@@ -1,5 +1,3 @@
-from .water_norms import default_pumping_energy_kwh
-
 
 def calculate_resources(
     area_ha,
@@ -25,10 +23,8 @@ def calculate_resources(
             "farm_water_m3_per_ha": total / float(area_ha),
             "farm_freshwater_m3_per_ha": freshwater / float(area_ha),
             "farm_water_source": water_source,
-            # Scenario only: if this entire volume were pumped at the official
-            # Kazvodkhoz reference intensity. Never labelled as actual farm energy.
-            "reference_pumping_energy_kwh": default_pumping_energy_kwh(total),
-            "reference_pumping_energy_kwh_per_ha": default_pumping_energy_kwh(total) / float(area_ha),
+            # Unknown pumping electricity cannot be imputed without pump head,
+            # efficiency and confirmation of the water-service boundary.
         })
 
     if wapor_consumptive_water_m3 is not None and wapor_consumptive_water_m3 > 0:

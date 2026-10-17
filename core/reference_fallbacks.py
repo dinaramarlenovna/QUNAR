@@ -41,6 +41,26 @@ def irrigation_water_fallback(district, crop, area_ha, irrigation_method='unknow
         raise ValueError('Positive field area is required')
     if not crop:
         return ResolvedReference(None, 'unavailable', 'Crop not specified', '', 'field water')
+    # Zero irrigation is physically possible in rain-fed farming. This says
+    # nothing about effective precipitation or total crop water use.
+    if irrigation_method == 'rainfed':
+        return ResolvedReference(0.0, 'technology_configured_zero',
+            'Rain-fed technology declared by the farm', '',
+            'artificial irrigation only, m³/full crop cycle',
+            'The crop still uses rainfall/soil moisture; zero is not total crop water demand')
+    # Paddy irrigation needs seepage, percolation, land preparation and standing
+    # water; the general Turkestan 8,181.6 fallback would understate demand.
+    if crop == 'Rice':
+        from .evidence_registry import rice_regional_scenarios
+        value_per_ha, evidence = rice_regional_scenarios(irrigation_method)
+        if value_per_ha is None:
+            return ResolvedReference(None,'unavailable',
+                'Rice irrigation technique unspecified: no validated regional norm',
+                evidence.url,'paddy irrigation, m³/cycle',
+                'Choose flooded or documented drip; FAO rice balance requires percolation and puddling')
+        return ResolvedReference(value_per_ha*area,'regional_official_pilot',evidence.name,
+            evidence.url,'paddy irrigation scenario, m³/cycle',
+            'Local pilot/upper-bound published figure, NOT a universal district mean')
     ref = default_water_requirement(district, crop, irrigation_method)
     return ResolvedReference(ref.m3_ha * area, ref.source_tier, ref.source_label,
                              SOURCE_URL if ref.source_tier != 'regional_fallback' else '',
@@ -80,7 +100,7 @@ def livestock_drinking_fallback(species, heads, observed=None, *, measured_zero=
 
 
 def conditional_pumping_energy(water_m3, observed=None, *, measured_zero=False, pumping_confirmed=False,
-                               head_m=None, overall_efficiency=None):
+                               head_m=None, overall_efficiency=None, allow_technology_scenario=False):
     value = optional_observation(observed, measured_zero=measured_zero)
     if value is not None:
         return ResolvedReference(value, 'user_observed', 'User electricity meter', '', 'all farm operations')
@@ -96,6 +116,11 @@ def conditional_pumping_energy(water_m3, observed=None, *, measured_zero=False, 
                                  "physical_model", "FAO Pressurized Irrigation Techniques, hydraulic pumping formula",
                                  "https://www.fao.org/4/a1336e/a1336e03d.pdf",
                                  "pumping energy scenario, kWh", "Requires actual head and overall pump/motor efficiency")
+    if not allow_technology_scenario:
+        return ResolvedReference(None, 'unavailable',
+                                 'Pumping reported but head and efficiency are unknown', '',
+                                 'pumping energy, kWh',
+                                 'Set pump head and overall efficiency, or explicitly accept an illustrative scenario')
     return ResolvedReference(float(water_m3) * PUMPING_REFERENCE_KWH_PER_M3,
                              'technology_scenario', 'QŪNAR editable reference pumping intensity 0.70509 kWh/m³',
                              '', 'pumping scenario only',

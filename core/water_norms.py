@@ -1,7 +1,10 @@
 """Reference irrigation-water requirements for QŪNAR.
 
-Primary source: Order of the Minister of Water Resources and Irrigation of the
-Republic of Kazakhstan No. 108-NQ, 4 June 2025 (registered No. 36253), table 3.
+Historical source for the bundled coefficients: Order No. 108-NQ of 4 June 2025,
+table 3. Order No. 288-NQ of 9 September 2026 took effect on 16 September 2026.
+Do not label the 2025 numbers as values copied from Order 288-NQ unless a
+2026 item-by-item mapping has been completed. This preserves historical
+reproducibility and prevents inaccurate legal citations.
 
 The application default is deliberately conservative and transparent:
 - surface irrigation;
@@ -19,9 +22,9 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 REGIONAL_BENCHMARK_M3_HA = 8181.6
-PUMPING_REFERENCE_KWH_PER_M3 = 0.70509  # editable unverified energy scenario, NOT an official countrywide norm
+PUMPING_REFERENCE_KWH_PER_M3 = 0.70509  # ARCHIVAL opt-in scenario ONLY; not automatic or official reference
 SOURCE_URL = "https://adilet.zan.kz/rus/docs/V2500036253"
-SOURCE_LABEL = "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3"
+SOURCE_LABEL = "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3 (историческая справочная база; для 2026 г. требуется сверка с №288-НҚ)"
 
 # Values are the first numeric column for each row: surface irrigation,
 # automorphic soils, probability 50%.
@@ -193,5 +196,6 @@ def default_water_requirement(district: str, crop_code: str | None, irrigation_t
     return WaterDefault(val, tier, label, zone, norm_crop, reliability)
 
 
-def default_pumping_energy_kwh(water_m3: float) -> float:
-    return max(0.0, float(water_m3)) * PUMPING_REFERENCE_KWH_PER_M3
+def default_pumping_energy_kwh(water_m3: float) -> None:
+    """No universal pump kWh/m³: determine the energy from pump head and efficiency."""
+    return None

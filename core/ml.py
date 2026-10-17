@@ -2,6 +2,7 @@
 import pandas as pd
 import streamlit as st
 import json
+from math import isfinite
 from sklearn.compose import ColumnTransformer
 from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import OneHotEncoder, StandardScaler
@@ -111,21 +112,78 @@ def spatial_validation_summary():
 
 
 @st.cache_data(show_spinner=False)
+def forward_holdout_for_crop(crop):
+    """True forward-time test 2021-2025 of full RF pipeline, fitted only through 2020.
+
+    Returns diagnostic evidence, not the error bound of the current app model,
+    which is refitted on all bundled historical years.
+    """
+    path=DATA_DIR / "forecast_holdout_2021_2025_metrics.csv"
+    if not path.exists():
+        return None
+    df=pd.read_csv(path)
+    row=df[df["crop"].astype(str).eq(str(crop))]
+    if row.empty:
+        return None
+    r=row.iloc[0]
+    metric={"mae":float(r["MAE"]),"rmse":float(r["RMSE"]),
+            "r2":float(r["R2"]),"n":int(r["n"]),
+            "train_end":int(r["train_end"]),"test_start":int(r["test_start"]),
+            "test_end":int(r["test_end"]),"source":"forward-time test, NOT current farm validation"}
+    if (metric['n']<=0 or metric['train_end']>=metric['test_start'] or
+        not all(isfinite(metric[k]) for k in ('mae','rmse','r2'))):
+        raise ValueError('Invalid forward holdout metrics')
+    return metric
+
+
+@st.cache_data(show_spinner=False)
 def prediction_interval_for_crop(crop, coverage=0.90):
-    f = DATA_DIR / "scientific_validation.json"
+    """Return *retrospective* interval evidence, not a guaranteed future interval.
+
+    Preferred: earlier-period calibrated 90% error width and genuinely forward
+    tested 2021-2025 coverage. Fallback to old GroupKFold residual calibration
+    only with explicit in-sample diagnostic label. Does not modify prediction.
+    """
+    if abs(float(coverage)-0.90) > 1e-9:
+        return None
+    forward = DATA_DIR / "forecast_interval_backtest_2021_2025.csv"
+    if forward.exists():
+        df=pd.read_csv(forward)
+        row=df[df["crop"].astype(str).eq(str(crop))]
+        if not row.empty:
+            r=row.iloc[0]
+            width=float(r["calibration_halfwidth_centners_ha"])
+            observed=float(r["holdout_coverage"])
+            n=int(r["holdout_N"])
+            c_n=int(r["calibration_N"])
+            if not (isfinite(width) and width>=0 and isfinite(observed)
+                    and 0<=observed<=1 and n>0 and c_n>0):
+                raise ValueError("Invalid forward interval backtest file")
+            return {
+                "coverage_target":0.90,
+                "half_width_centners_ha":width,
+                "empirical_coverage":observed,
+                "n":n,
+                "calibration_n":c_n,
+                "is_forward_backtest":True,
+                "method":"2011-2020 prior-window calibration; coverage measured on 2021-2025",
+            }
+    f=DATA_DIR / "scientific_validation.json"
     if not f.exists():
         return None
-    data = json.loads(f.read_text(encoding="utf-8"))
-    block = data.get("prediction_intervals_90", {}) if abs(float(coverage)-0.90) < 1e-9 else {}
-    row = (block.get("by_crop", {}) or {}).get(str(crop))
+    data=json.loads(f.read_text(encoding="utf-8"))
+    block=data.get("prediction_intervals_90",{})
+    row=(block.get("by_crop",{}) or {}).get(str(crop))
     if not row:
         return None
     return {
-        "coverage_target": float(row.get("coverage_target", coverage)),
-        "half_width_centners_ha": float(row.get("half_width_centners_ha")),
-        "empirical_coverage": float(row.get("empirical_coverage")),
-        "n": int(row.get("N", 0)),
-        "method": row.get("method", "empirical grouped-OOS residual quantile"),
+        "coverage_target":float(row.get("coverage_target",coverage)),
+        "half_width_centners_ha":float(row.get("half_width_centners_ha")),
+        "empirical_coverage":float(row.get("empirical_coverage")),
+        "n":int(row.get("N",0)),
+        "calibration_n":int(row.get("N",0)),
+        "is_forward_backtest":False,
+        "method":"same-residual grouped-CV calibration; independent temporal coverage unavailable",
     }
 
 

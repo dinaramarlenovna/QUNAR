@@ -8,7 +8,10 @@ No emission reduction is claimed without matched baseline and proposal data.
 from dataclasses import dataclass
 from math import isfinite
 
-DEFAULT_N2O_N_PER_N=0.01  # 2019 Refinement to the 2006 IPCC Guidelines, generic EF1
+DEFAULT_N2O_N_PER_N=0.01  # IPCC 2019 Refinement Volume 4, Table 11.1, aggregated EF1
+# Rice paddies require a different EF1FR (flood regime) and methane accounting.
+RICE_N2O_FACTORS = {"unspecified_flooded":0.004, "continuous_flooding":0.003,
+                    "drained_once_or_more":0.005}  # kg N2O-N / kg N, IPCC 2019 Table 11.1
 DEFAULT_N2O_GWP100=273.0  # AR6 100-year N2O
 DEFAULT_CH4_GWP100=27.0  # AR6 biogenic CH4 100-year convention
 DEFAULT_DIESEL_CO2_KG_L=2.68  # illustrative combustion factor, must be checked for local fuel spec
@@ -23,7 +26,8 @@ class PartialGHG:
     accounting_period:str="user_defined"
 
 
-def partial_inventory(*, nitrogen_kg=None, diesel_litres=None,
+def partial_inventory(*, nitrogen_kg=None, rice_nitrogen_kg=None,
+                      rice_water_regime=None, diesel_litres=None,
                       electricity_kwh=None, grid_kg_co2e_kwh=None,
                       enteric_heads=None, enteric_kg_ch4_head_year=None,
                       enteric_year_fraction=None, diesel_factor=DEFAULT_DIESEL_CO2_KG_L,
@@ -32,6 +36,12 @@ def partial_inventory(*, nitrogen_kg=None, diesel_litres=None,
                       include_enteric=False, accounting_period="user_defined"):
     if accounting_period not in ('user_defined','apr_sep','calendar_year'):
         raise ValueError('Unrecognized GHG accounting period')
+    if rice_nitrogen_kg is not None:
+        if rice_water_regime not in RICE_N2O_FACTORS:
+            raise ValueError('Flooded rice nitrogen requires documented rice water regime')
+        if not isfinite(float(rice_nitrogen_kg)) or float(rice_nitrogen_kg)<0:
+            raise ValueError('Invalid rice nitrogen activity')
+        # nitrogen_kg excludes rice, otherwise nitrogen would be counted twice.
     values={"fertilizer_n2o":nitrogen_kg,"diesel":diesel_litres,
             "electricity":electricity_kwh}
     output={}
@@ -50,6 +60,9 @@ def partial_inventory(*, nitrogen_kg=None, diesel_litres=None,
         raise ValueError('Positive diesel use requires a positive combustion factor')
     if nitrogen_kg is not None:
         output['direct_fertilizer_n2o_kgco2e'] = float(nitrogen_kg)*n2o_factor*(44/28)*n2o_gwp
+    if rice_nitrogen_kg is not None:
+        output['flooded_rice_direct_n2o_kgco2e'] = (float(rice_nitrogen_kg)
+                    * RICE_N2O_FACTORS[rice_water_regime] * (44/28) * n2o_gwp)
     if diesel_litres is not None:
         output['diesel_combustion_kgco2'] = float(diesel_litres)*diesel_factor
     if electricity_kwh is not None:
@@ -77,6 +90,7 @@ def partial_inventory(*, nitrogen_kg=None, diesel_litres=None,
     signature = (float(n2o_factor),float(n2o_gwp),float(diesel_factor),
                  float(grid_kg_co2e_kwh) if grid_kg_co2e_kwh is not None else None,
                  float(ch4_gwp),bool(include_enteric),
+                 RICE_N2O_FACTORS.get(rice_water_regime) if rice_nitrogen_kg is not None else None,
                  float(enteric_kg_ch4_head_year) if enteric_kg_ch4_head_year is not None else None,
                  float(enteric_year_fraction) if enteric_year_fraction is not None else None)
     return PartialGHG(output,tuple(missing),total,len(missing)==0,signature,accounting_period)

@@ -9,7 +9,6 @@ References: FAO Irrigation Efficiencies (Table 8), FAO cb3844en real water
 savings, IPCC 2006 Guidelines + 2019 Refinement Vol 4 (emissions).
 """
 from __future__ import annotations
-from .green_guard import evaluate_green_guard
 from math import isfinite
 
 FAO_IRRIGATION = 'https://www.fao.org/4/t7202e/t7202e08.htm'
@@ -238,13 +237,7 @@ def compare_farm_scenario(*, farm_kind, period, evidence,
     stress_mb=(br*0.90-cost_b*1.10) if margin_allowed else None
     stress_mp=(pr*0.90-cost_p*1.10) if margin_allowed else None
     def change(b,a): return None if b is None else b-a
-    green_guard = evaluate_green_guard(
-        water_before_m3=bw, water_after_m3=pw,
-        ghg_before_kgco2e=base_ghg, ghg_after_kgco2e=next_ghg,
-        margin_before_kzt=mb, margin_after_kzt=mp, evidence=evidence,
-        emissions_scope='partial N2O / diesel / electricity / optional livestock, as entered')
     return {'scope':f'{farm_kind}: {period}', 'evidence':str(evidence).strip(),
-            'green_guard':green_guard,
             'water_boundary':water_boundary, 'electricity_boundary':electricity_boundary,
             'water_before_m3':bw,'water_after_m3':pw,'water_reduction_m3':change(bw,pw),
             'energy_before_kwh':be,'energy_after_kwh':pe,'energy_reduction_kwh':change(be,pe),

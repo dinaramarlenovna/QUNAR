@@ -14,7 +14,7 @@ def _reference_value(indicator: str, fallback: float) -> float:
     return float(fallback)
 
 
-DEFAULT_EF_KZ_KGCO2_PER_KWH = _reference_value("electricity_emission_factor", 0.6061)
+DEFAULT_EF_KZ_KGCO2_PER_KWH = _reference_value("electricity_emission_factor", 0.813)
 DEFAULT_ELECTRICITY_TARIFF_KZT_KWH = _reference_value("electricity_tariff", 45.9872)
 DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3 = _reference_value("irrigation_water_tariff", 0.845)
 DEFAULT_GREEN_SHARE_TARGET = 30.0
@@ -29,63 +29,61 @@ IRRIGATION_FACTORS = {
 }
 
 def economic_climate_effect(
-    *,
-    energy_kwh,
-    freshwater_m3,
-    electricity_tariff,
-    water_tariff,
-    emission_factor,
-    current_solar_share,
-    target_solar_share,
-    water_saving_target,
+    *, energy_kwh, freshwater_m3, electricity_tariff, water_tariff,
+    emission_factor, current_solar_share, target_solar_share, water_saving_target,
 ):
-    energy_kwh = float(energy_kwh or 0)
-    freshwater_m3 = float(freshwater_m3 or 0)
-    electricity_tariff = float(electricity_tariff or 0)
-    water_tariff = float(water_tariff or 0)
-    emission_factor = float(emission_factor or 0)
-    current_solar_share = max(0, min(float(current_solar_share or 0), 100)) / 100
-    target_solar_share = max(current_solar_share, min(float(target_solar_share or 0), 100) / 100)
-    water_saving_target = max(0, min(float(water_saving_target or 0), 100)) / 100
+    """Counterfactual savings with explicit missingness (None != measured zero).
 
-    current_grid_energy = energy_kwh * (1 - current_solar_share)
-    target_grid_energy = energy_kwh * (1 - target_solar_share)
-    green_energy_added = max(0, current_grid_energy - target_grid_energy)
-
-    current_energy_cost = current_grid_energy * electricity_tariff
-    target_energy_cost = target_grid_energy * electricity_tariff
-    energy_saving_kzt = max(0, current_energy_cost - target_energy_cost)
-
-    current_co2 = current_grid_energy * emission_factor
-    target_co2 = target_grid_energy * emission_factor
-    co2_reduction = max(0, current_co2 - target_co2)
-
-    current_water_cost = freshwater_m3 * water_tariff
-    target_freshwater = freshwater_m3 * (1 - water_saving_target)
-    target_water_cost = target_freshwater * water_tariff
-    water_saving_m3 = max(0, freshwater_m3 - target_freshwater)
-    water_saving_kzt = max(0, current_water_cost - target_water_cost)
-
-    total_saving_kzt = energy_saving_kzt + water_saving_kzt
-
+    Unknown electricity excludes energy cost, electricity emissions, and joint
+    savings from publication. Water-only savings remain reportable if known.
+    """
+    from math import isfinite
+    def available_nonnegative(v, label):
+        if v is None or v == '':
+            return None
+        x = float(v)
+        if not isfinite(x) or x < 0:
+            raise ValueError(f'{label} must be finite and nonnegative')
+        return x
+    energy = available_nonnegative(energy_kwh, 'energy_kwh')
+    water = available_nonnegative(freshwater_m3, 'freshwater_m3')
+    electricity_price = available_nonnegative(electricity_tariff,'electricity_tariff')
+    water_price = available_nonnegative(water_tariff,'water_tariff')
+    ef = available_nonnegative(emission_factor,'emission_factor')
+    current_pct = available_nonnegative(current_solar_share,'current_solar_share')
+    target_pct = available_nonnegative(target_solar_share,'target_solar_share')
+    water_saving_pct = available_nonnegative(water_saving_target,'water_saving_target')
+    current_share = min(current_pct or 0.,100.)/100.
+    target_share = max(current_share, min(target_pct or 0.,100.)/100.)
+    target_water_fraction = min(water_saving_pct or 0.,100.)/100.
+    grid_now = energy*(1-current_share) if energy is not None else None
+    grid_future = energy*(1-target_share) if energy is not None else None
+    green_added = max(0.,grid_now-grid_future) if grid_now is not None else None
+    energy_cost_now = grid_now*electricity_price if grid_now is not None and electricity_price is not None else None
+    energy_cost_future = grid_future*electricity_price if grid_future is not None and electricity_price is not None else None
+    energy_saving = max(0.,energy_cost_now-energy_cost_future) if energy_cost_now is not None else None
+    co2_now = grid_now*ef if grid_now is not None and ef is not None else None
+    co2_future = grid_future*ef if grid_future is not None and ef is not None else None
+    co2_reduction = max(0.,co2_now-co2_future) if co2_now is not None else None
+    water_target = water*(1-target_water_fraction) if water is not None else None
+    water_cost_now = water*water_price if water is not None and water_price is not None else None
+    water_cost_future = water_target*water_price if water_target is not None and water_price is not None else None
+    water_saving = max(0.,water-water_target) if water is not None else None
+    water_saving_money = max(0.,water_cost_now-water_cost_future) if water_cost_now is not None else None
+    total_saving = (energy_saving+water_saving_money
+                    if energy_saving is not None and water_saving_money is not None else None)
     return {
-        "current_grid_energy_kwh": current_grid_energy,
-        "target_grid_energy_kwh": target_grid_energy,
-        "green_energy_added_kwh": green_energy_added,
-        "current_energy_cost_kzt": current_energy_cost,
-        "target_energy_cost_kzt": target_energy_cost,
-        "energy_saving_kzt": energy_saving_kzt,
-        "current_co2_kg": current_co2,
-        "target_co2_kg": target_co2,
-        "co2_reduction_kg": co2_reduction,
-        "current_water_cost_kzt": current_water_cost,
-        "target_water_cost_kzt": target_water_cost,
-        "water_saving_m3": water_saving_m3,
-        "water_saving_kzt": water_saving_kzt,
-        "total_saving_kzt": total_saving_kzt,
-        "current_solar_share_pct": current_solar_share * 100,
-        "target_solar_share_pct": target_solar_share * 100,
-        "water_saving_target_pct": water_saving_target * 100,
+        'current_grid_energy_kwh':grid_now,'target_grid_energy_kwh':grid_future,
+        'green_energy_added_kwh':green_added,
+        'current_energy_cost_kzt':energy_cost_now,'target_energy_cost_kzt':energy_cost_future,
+        'energy_saving_kzt':energy_saving,'current_co2_kg':co2_now,
+        'target_co2_kg':co2_future,'co2_reduction_kg':co2_reduction,
+        'current_water_cost_kzt':water_cost_now,'target_water_cost_kzt':water_cost_future,
+        'water_saving_m3':water_saving,'water_saving_kzt':water_saving_money,
+        'total_saving_kzt':total_saving,'current_solar_share_pct':100*current_share,
+        'target_solar_share_pct':100*target_share,'water_saving_target_pct':100*target_water_fraction,
+        'data_completeness_status':'complete' if total_saving is not None else 'partial_unknown',
+        'missing_components':[k for k,v in [('electricity',energy_saving),('water',water_saving_money)] if v is None],
     }
 
 def payback_years(investment_kzt, seasonal_saving_kzt, seasons_per_year=1):

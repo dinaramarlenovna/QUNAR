@@ -31,6 +31,8 @@ def structure_inventory(areas_by_crop: dict, activity_per_ha: dict, *,
     grid_factor = _finite_nonnegative(grid_factor,'grid factor')
     diesel_factor = _finite_nonnegative(diesel_factor,'diesel factor')
     totals = {f: 0.0 for f in ACTIVITY_FIELDS}
+    rice_nitrogen_total = None
+    rice_regime = None
     areas = {}
     for crop, area_value in areas_by_crop.items():
         area = _finite_nonnegative(area_value,f'area of {crop}')
@@ -40,18 +42,33 @@ def structure_inventory(areas_by_crop: dict, activity_per_ha: dict, *,
         activity = activity_per_ha[crop]
         if not isinstance(activity,dict):
             raise ValueError(f'Invalid crop activity: {crop}')
+        is_rice = str(crop).strip().lower() in ('rice', 'рис')
+        if is_rice:
+            regime = activity.get('rice_water_regime')
+            if regime not in ('unspecified_flooded','continuous_flooding','drained_once_or_more'):
+                raise ValueError('Rice crop requires flooding/drainage regime for IPCC EF1FR')
+            if rice_regime is not None and rice_regime != regime:
+                raise ValueError('Mixed rice flooding regimes require separate inventories')
+            rice_regime = regime
         for f in ACTIVITY_FIELDS:
             if f not in activity: raise ValueError(f'Missing {f} for crop {crop}')
-            totals[f] += area * _finite_nonnegative(activity[f],f'{crop}: {f}')
+            activity_total = area * _finite_nonnegative(activity[f],f'{crop}: {f}')
+            if is_rice and f == 'nitrogen_kg_ha':
+                rice_nitrogen_total = (rice_nitrogen_total or 0.0) + activity_total
+            else:
+                totals[f] += activity_total
         areas[crop] = area
     if not areas: raise ValueError('At least one crop area required')
     inv = partial_inventory(nitrogen_kg=totals['nitrogen_kg_ha'],
+                            rice_nitrogen_kg=rice_nitrogen_total, rice_water_regime=rice_regime,
                             diesel_litres=totals['diesel_litres_ha'],
                             electricity_kwh=totals['electricity_kwh_ha'],
                             grid_kg_co2e_kwh=grid_factor,
                             accounting_period=accounting_period,
                             diesel_factor=diesel_factor)
     if not inv.complete: raise ValueError('Incomplete partial GHG factor/activity boundary')
+    if rice_nitrogen_total is not None:
+        totals['rice_nitrogen_kg'] = rice_nitrogen_total
     return {'inventory':inv,'crop_areas_ha':areas,'activities_total':totals,
             'evidence':evidence,'total_area_ha':sum(areas.values())}
 
