@@ -1,0 +1,24 @@
+{
+  "date": "2026-10-17",
+  "source_archive": "QUNAR_v0.8.1_FULL_AUDITED_2026-10-17.zip",
+  "source_files": 166,
+  "lost_existing_files": [],
+  "changed_existing_files": [
+    "app.py",
+    "РЕЕСТР_НОРМАТИВНЫХ_И_МЕТОДИЧЕСКИХ_ИСТОЧНИКОВ_2026-10-17.md"
+  ],
+  "new_files": [
+    "README_A8_ДАННЫЕ_ДЛЯ_CLAUDE_2026-10-17.md",
+    "core/a8_reproducible_case.py",
+    "examples/a8_maktaaral_100ha_inputs.json",
+    "examples/a8_output/a8_maktaaral_case_results.json",
+    "examples/a8_output/a8_maktaaral_for_claude.md",
+    "scripts/generate_a8_case.py",
+    "tests/test_a8_reproducible_case.py"
+  ],
+  "python_tests": "195 passed",
+  "browser_streamlit_qa": "not executed",
+  "live_nasa_qa": "not executed",
+  "status": "scenario demonstrator; NOT verified user farm result",
+  "visible_version": "v0.8.1"
+}

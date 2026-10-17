@@ -1,0 +1,77 @@
+[
+  {
+    "language": "Русский",
+    "mode": "mode1",
+    "exceptions": []
+  },
+  {
+    "language": "Русский",
+    "mode": "mode2",
+    "exceptions": []
+  },
+  {
+    "language": "Русский",
+    "mode": "mode3",
+    "exceptions": []
+  },
+  {
+    "language": "Русский",
+    "mode": "mode4",
+    "exceptions": []
+  },
+  {
+    "language": "Русский",
+    "mode": "mode5",
+    "exceptions": []
+  },
+  {
+    "language": "English",
+    "mode": "mode1",
+    "exceptions": []
+  },
+  {
+    "language": "English",
+    "mode": "mode2",
+    "exceptions": []
+  },
+  {
+    "language": "English",
+    "mode": "mode3",
+    "exceptions": []
+  },
+  {
+    "language": "English",
+    "mode": "mode4",
+    "exceptions": []
+  },
+  {
+    "language": "English",
+    "mode": "mode5",
+    "exceptions": []
+  },
+  {
+    "language": "Қазақша",
+    "mode": "mode1",
+    "exceptions": []
+  },
+  {
+    "language": "Қазақша",
+    "mode": "mode2",
+    "exceptions": []
+  },
+  {
+    "language": "Қазақша",
+    "mode": "mode3",
+    "exceptions": []
+  },
+  {
+    "language": "Қазақша",
+    "mode": "mode4",
+    "exceptions": []
+  },
+  {
+    "language": "Қазақша",
+    "mode": "mode5",
+    "exceptions": []
+  }
+]

@@ -1,0 +1,48 @@
+{
+  "base_archive": "QUNAR_v0_8_1_latest(1).zip",
+  "visible_version": "v0.8.1",
+  "headless_tests_passed": 50,
+  "streamlit_browser_tests": "NOT performed (Streamlit not installed; external package download blocked)",
+  "historical_files_identical_to_base": {
+    "core/ml.py": true,
+    "core/clrem.py": true,
+    "core/data.py": true,
+    "data/analytical_panel.csv": true,
+    "data/model_metrics_by_crop.csv": true,
+    "data/model_metrics_leave_one_district_out.csv": true,
+    "core/economics.py": true,
+    "core/reporting.py": true
+  },
+  "observed_holdout_2025": {
+    "n": 68,
+    "three_year_mean_mae_c_ha": 8.8132,
+    "last_year_mae_c_ha": 9.5588,
+    "CatBoost_mae_c_ha": 14.6852
+  },
+  "method_notes": [
+    "No retraining",
+    "CMIP6 is anomaly-only forward scenario",
+    "Carbon is partial inventory",
+    "NASA polygon is approximate grid weighting"
+  ],
+  "code_files": [
+    "app.py",
+    "core/carbon_scenarios.py",
+    "core/cmip6_scenarios.py",
+    "core/forecast_reliability.py",
+    "core/irrigation_economics.py",
+    "core/irrigation_report.py",
+    "core/nasa_polygon.py",
+    "core/optimization_guard.py",
+    "core/optimizer.py",
+    "core/water_climate.py",
+    "core/yield_reference.py",
+    "tests/test_cmip6_carbon_modules.py",
+    "tests/test_crossmodule_economic_qa.py",
+    "tests/test_final_integration_guards.py",
+    "tests/test_forecast_reliability.py",
+    "tests/test_nasa_polygon.py",
+    "tests/test_yield_reference.py"
+  ],
+  "added_qa_2026_10_17": "same-factor-and-period GHG comparison; annual vs Apr-Sep enteric prorating; 7 new tests"
+}

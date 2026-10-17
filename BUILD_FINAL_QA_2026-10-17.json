@@ -1,0 +1,31 @@
+{
+  "build_date": "2026-10-17",
+  "version": "v0.8.1",
+  "baseline_archive": "QUNAR_v0.8.1_FULL_A8_REPRODUCIBLE_2026-10-17.zip",
+  "baseline_files_preserved": 174,
+  "baseline_files_missing": [],
+  "changed_existing_files": [
+    "app.py",
+    "core/fao56_irrigation.py"
+  ],
+  "new_files": [
+    "README_ЗАПУСК_ИТОГОВОЙ_QA_2026-10-17.md",
+    "STATUS_A1_A9_AND_CLAUDE_HANDOFF_2026-10-17.md",
+    "data/survey_weight_sensitivity_17_regions.csv",
+    "examples/release_evidence/EVIDENCE_A1_A3_A4_A7_A8.json",
+    "examples/release_evidence/EVIDENCE_FOR_CLAUDE.md",
+    "scripts/build_evidence_bundle.py",
+    "tests/test_release_evidence_and_exports.py",
+    "РЕЕСТР_ИСТОЧНИКОВ_И_НОРМАТИВНЫХ_АКТОВ_2026-10-17.md"
+  ],
+  "new_files_count": 8,
+  "regression_result": "202 passed in 26.40s",
+  "python_compileall": "pass",
+  "offline_pdf_docx_xlsx_generation": "pass (7 focused tests, including bytes validity)",
+  "browser_streamlit": "not_run_streamlit_package_not_installed",
+  "live_nasa_power": "not_run_direct_external_network_unavailable",
+  "live_wapor": "not_run",
+  "price_cost_provenance": "A8 non-water costs are hypothetical inputs",
+  "scientific_a3_status": "blocked_pending_historical_NASA_power_weather_and_crop_calendar",
+  "user_intervention": "none for local code; farm measurements for verified field impact"
+}

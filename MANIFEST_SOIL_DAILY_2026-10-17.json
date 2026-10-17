@@ -1,0 +1,21 @@
+{
+  "base_archive": "QUNAR_v0.8.1_FULL_INTEGRATED_CROPMIX_WATER_2026-10-17.zip",
+  "snapshot": "2026-10-17",
+  "visible_version": "v0.8.1",
+  "test_command": "PYTHONPATH=. python -m pytest -q tests",
+  "test_result": "157 passed (2026-10-17; Python 3.13); Streamlit browser and live NASA not tested",
+  "changed_existing_files": [
+    "app.py",
+    "РЕЕСТР_НОРМАТИВНЫХ_И_МЕТОДИЧЕСКИХ_ИСТОЧНИКОВ_2026-10-17.md"
+  ],
+  "new_files": [
+    "README_A3_SOIL_DAILY_2026-10-17.md",
+    "core/soil_water_daily.py",
+    "tests/test_soil_water_daily.py"
+  ],
+  "removed_files": [],
+  "model_training_and_observed_panel": "byte-for-byte unchanged",
+  "research_scope": "historical daily single-Kc FAO56 root-zone scenario, not measured farm/basin savings",
+  "unverified": "Live NASA POWER daily response and real Streamlit interaction",
+  "source_registry": "РЕЕСТР_НОРМАТИВНЫХ_И_МЕТОДИЧЕСКИХ_ИСТОЧНИКОВ_2026-10-17.md"
+}

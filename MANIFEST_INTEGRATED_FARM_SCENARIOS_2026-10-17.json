@@ -1,0 +1,28 @@
+{
+  "build_date": "2026-10-17",
+  "visible_version": "v0.8.1",
+  "base_archive": "QUNAR_v0.8.1_FULL_WITH_DAILY_SOIL_FAO56_2026-10-17.zip",
+  "files_removed": [],
+  "files_changed": [
+    "README_CURRENT_BUILD.md",
+    "app.py",
+    "РЕЕСТР_НОРМАТИВНЫХ_И_МЕТОДИЧЕСКИХ_ИСТОЧНИКОВ_2026-10-17.md"
+  ],
+  "files_added": [
+    "README_ЕДИНЫЕ_СЦЕНАРИИ_2026-10-17.md",
+    "core/integrated_scenarios.py",
+    "core/scenario_ui.py",
+    "tests/test_integrated_scenarios.py"
+  ],
+  "protected_unchanged": [
+    "core/ml.py",
+    "data/analytical_panel.csv",
+    "CURRENT_VERSION.txt"
+  ],
+  "offline_tests": "182 passed (50+59+73, across 3 test runs); 25 are new scenario tests",
+  "mocked_ui_checks": "three languages, crop/mode4/livestock; real browser not tested",
+  "live_NASA": "not tested",
+  "real_Streamlit_UI": "not tested",
+  "public_deployment": "not performed",
+  "note": "All data and sources from base preserved; user must not apply previous patches to this full ZIP."
+}

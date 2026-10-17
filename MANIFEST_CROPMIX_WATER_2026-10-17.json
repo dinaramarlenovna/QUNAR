@@ -1,0 +1,25 @@
+{
+  "version_visible": "v0.8.1",
+  "date": "2026-10-17",
+  "base_archive": "QUNAR_v0.8.1_FULL_UNIFIED_A1_WATER_ACCOUNTING_2026-10-17.zip",
+  "new_or_changed_files": [
+    "app.py",
+    "core/optimizer.py",
+    "core/structure_water_scenarios.py",
+    "tests/test_structure_water_scenarios.py",
+    "tests/test_optimizer_water_override.py",
+    "README_ИНТЕГРАЦИЯ_СТРУКТУРЫ_И_ВОДЫ_2026-10-17.md",
+    "РЕЕСТР_НОРМАТИВНЫХ_И_МЕТОДИЧЕСКИХ_ИСТОЧНИКОВ_2026-10-17.md"
+  ],
+  "qa": {
+    "old_baseline": "125/125 passed before integration",
+    "current_split_suite": "31+74+37=142 passed",
+    "syntax": "pass",
+    "test_report_exports": "pdf docx xlsx passed via synthetic source-labelled payload",
+    "browser_streamlit": "not run, dependency unavailable",
+    "live_nasa": "not run",
+    "soil_daily_water_balance": "not implemented"
+  },
+  "normative_sources_file": "РЕЕСТР_НОРМАТИВНЫХ_И_МЕТОДИЧЕСКИХ_ИСТОЧНИКОВ_2026-10-17.md",
+  "caution": "No measured catchment depletion or actual achieved mitigation claims"
+}
