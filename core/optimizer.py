@@ -6,6 +6,7 @@ from scipy.optimize import linprog
 from itertools import combinations
 
 from .clrem import scenario_for_district, registry
+from .survey_weights import survey_proxy_profile
 
 
 def _normalize_positive_mapping(values: dict | None, *, allow_negative: bool = False) -> dict[str, float]:
@@ -29,7 +30,15 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
                        economic_margin_by_product: dict | None = None,
                        economic_weight: float = 0.35,
                        objective_mode: str = "resource",
-                       baseline_share_by_product: dict | None = None):
+                       baseline_share_by_product: dict | None = None,
+                       custom_climate_weight: float | None = None,
+                       water_requirement_by_product: dict | None = None,
+                       water_constraint_definition: str = 'field_delivery',
+                       water_requirement_evidence: str = '',
+                       water_requirement_confirmed: bool = False,
+                       ghg_kg_co2e_by_product: dict | None = None,
+                       sustainable_max_margin_decline_pct: float = 5.0,
+                       sustainable_absolute_ghg_cap_kg: float | None = None):
     """Constrained farm-structure allocation model for QŪNAR v0.8.1.
 
     objective_mode:
@@ -37,6 +46,9 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
       - ``balanced``: resource-climate utility + verified/scenario crop margins;
       - ``economic``: economic return receives a dominant weight, while resource
         and climate feasibility remain in the objective and hard constraints.
+      - ``sustainable``: maximize resource-climate/economic utility subject to
+        explicit baseline-relative hard caps on irrigation, partial GHG and
+        minimum contribution margin. All baseline and per-crop evidence required.
 
     QŪNAR never fabricates missing crop economics. For balanced/economic modes,
     only alternatives with a positive user/verified contribution margin are compared.
@@ -53,11 +65,47 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
     if df.empty:
         return pd.DataFrame(), {}
 
+    # Alternative, explicitly entered water-accounting boundary. Do not mix
+    # root-zone net demand, field delivery, source withdrawal or the official
+    # gross irrigation reference within a single hard water constraint.
+    custom_water_active = water_requirement_by_product is not None
+    water_basis = 'official_reference'
+    if custom_water_active:
+        if not water_requirement_confirmed or not str(water_requirement_evidence).strip():
+            raise ValueError('Custom water constraint needs a documented source and explicit confirmation')
+        if water_constraint_definition not in ('field_delivery', 'source_withdrawal'):
+            raise ValueError('Water constraint boundary must be field_delivery or source_withdrawal')
+        values = {}
+        for crop, amount in water_requirement_by_product.items():
+            try: val = float(amount)
+            except (ValueError,TypeError): raise ValueError('Invalid water requirement for '+str(crop)) from None
+            if not np.isfinite(val) or val < 0:
+                raise ValueError('Invalid water requirement for '+str(crop))
+            values[str(crop)] = val
+        if not values:
+            raise ValueError('No crop-specific water requirements supplied')
+        df = df[df['product'].astype(str).isin(values)].copy()
+        df['constraint_water_m3_ha'] = df['product'].astype(str).map(values).astype(float)
+        water_basis = water_constraint_definition
+    else:
+        df['constraint_water_m3_ha'] = df['official_water_default_m3_ha'].astype(float)
+
+    if df.empty:
+        return pd.DataFrame(), {'solver_status':'no_crops_with_supported_water',
+                                'water_feasible':False,'water_accounting_basis':water_basis}
+
     weights = {
         'balanced': (0.60, 0.40),
         'climate': (0.78, 0.22),
         'resource': (0.30, 0.70),
     }.get(profile, (0.60, 0.40))
+    if profile == "custom":
+        if custom_climate_weight is None or not 0.0 <= float(custom_climate_weight) <= 1.0:
+            raise ValueError("Custom climate weight must be in [0,1]")
+        weights = (float(custom_climate_weight), 1.0 - float(custom_climate_weight))
+    if profile == "survey_proxy":
+        _sp = survey_proxy_profile()
+        weights = (_sp["climate"], _sp["water"])
     wc, ww = weights
     df['utility'] = wc * df['Climate_score_0_100'] + ww * df['Water_pressure_score_0_100']
 
@@ -66,11 +114,11 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
     df['economic_data_available'] = df['product'].astype(str).isin(margins)
 
     requested_mode = str(objective_mode or 'resource').lower()
-    if requested_mode not in {'resource', 'balanced', 'economic'}:
+    if requested_mode not in {'resource', 'balanced', 'economic', 'sustainable'}:
         requested_mode = 'resource'
 
     economic_candidates = int(df['economic_data_available'].sum())
-    economic_active = requested_mode in {'balanced', 'economic'} and economic_candidates >= 2
+    economic_active = requested_mode in {'balanced', 'economic', 'sustainable'} and economic_candidates >= 2
     fallback_reason = None
     if requested_mode in {'balanced', 'economic'} and not economic_active:
         fallback_reason = 'insufficient_user_economic_data'
@@ -99,6 +147,68 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
         ew = 0.0
         effective_mode = 'resource'
 
+    # Sustainable-compromise mode is intentionally fail-closed. A single missing
+    # baseline, economic or emission activity invalidates a numerical claim of
+    # joint economic/environmental improvement. GHG represents a consistent,
+    # user-confirmed PARTIAL inventory in kg CO2e/ha, not a complete footprint.
+    baseline_sustainable = None
+    if requested_mode == 'sustainable':
+        try:
+            decline_pct = float(sustainable_max_margin_decline_pct)
+        except (ValueError, TypeError):
+            decline_pct = float('nan')
+        if not np.isfinite(decline_pct) or not 0 <= decline_pct <= 100:
+            return pd.DataFrame(), {'solver_status':'invalid_margin_tolerance', 'water_feasible':False}
+        bmap = _normalize_positive_mapping(baseline_share_by_product)
+        btotal = sum(bmap.values())
+        if not bmap or not (abs(btotal-1.0)<=0.005 or abs(btotal-100.0)<=0.5):
+            return pd.DataFrame(), {'solver_status':'sustainable_needs_complete_baseline', 'water_feasible':False}
+        bshares = {k:v/btotal for k,v in bmap.items()}
+        df_by_crop = df.drop_duplicates('product').set_index('product')
+        if not set(bshares).issubset(df_by_crop.index):
+            return pd.DataFrame(), {'solver_status':'sustainable_unknown_baseline_crop', 'water_feasible':False}
+        if not set(bshares).issubset(margins):
+            return pd.DataFrame(), {'solver_status':'sustainable_missing_baseline_margins', 'water_feasible':False}
+        if not economic_active:
+            return pd.DataFrame(), {'solver_status':'sustainable_insufficient_crop_margins', 'water_feasible':False}
+        ghg = {}
+        for crop, val in (ghg_kg_co2e_by_product or {}).items():
+            try: fl = float(val)
+            except (ValueError, TypeError): continue
+            if np.isfinite(fl) and fl>=0: ghg[str(crop)] = fl
+        if not set(bshares).issubset(ghg):
+            return pd.DataFrame(), {'solver_status':'sustainable_missing_baseline_ghg', 'water_feasible':False}
+        pool = pool[pool['product'].astype(str).isin(ghg)].copy()
+        if len(pool) < int(n_crops):
+            return pd.DataFrame(), {'solver_status':'sustainable_incomplete_crop_ghg', 'water_feasible':False}
+        pool['partial_ghg_kg_co2e_ha'] = pool['product'].astype(str).map(ghg).astype(float)
+        baseline_water_per_ha = sum(float(df_by_crop.loc[k,'constraint_water_m3_ha'])*v for k,v in bshares.items())
+        baseline_ghg_per_ha = sum(ghg[k]*v for k,v in bshares.items())
+        baseline_margin_per_ha = sum(margins[k]*v for k,v in bshares.items())
+        margin_floor_per_ha = baseline_margin_per_ha - abs(baseline_margin_per_ha)*decline_pct/100.0
+        if sustainable_absolute_ghg_cap_kg is not None:
+            try: absolute_cap=float(sustainable_absolute_ghg_cap_kg)
+            except (TypeError,ValueError):absolute_cap=float('nan')
+            if not np.isfinite(absolute_cap) or absolute_cap < 0:
+                return pd.DataFrame(), {'solver_status':'invalid_absolute_ghg_cap','water_feasible':False}
+            ghg_cap=min(absolute_cap,float(area_ha)*baseline_ghg_per_ha)
+        else:
+            ghg_cap=float(area_ha)*baseline_ghg_per_ha
+        baseline_sustainable = {
+            'effective_partial_ghg_cap_kg_co2e':ghg_cap,
+            'absolute_partial_ghg_cap_input_kg':sustainable_absolute_ghg_cap_kg,
+            'baseline_water_m3':float(area_ha)*baseline_water_per_ha,
+            'baseline_partial_ghg_kg_co2e':float(area_ha)*baseline_ghg_per_ha,
+            'baseline_margin_kzt':float(area_ha)*baseline_margin_per_ha,
+            'minimum_margin_kzt':float(area_ha)*margin_floor_per_ha,
+            'max_margin_decline_pct':decline_pct,
+            'baseline_feasible_under_current_water_budget': (baseline_water_per_ha*float(area_ha) <= float(available_water_m3)+1e-6) if available_water_m3 > 0 else None,
+        }
+        # If baseline is already ecologically efficient, equality is allowed.
+        # Demand no deterioration, rather than assuming all three objectives
+        # can always improve strictly.
+        effective_mode = 'sustainable'
+
     # Search combinations rather than choosing the top-ranked crops first: a top-N
     # prefilter can make a feasible water-constrained problem look infeasible.
     target_n = max(2, int(n_crops))
@@ -124,10 +234,24 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
     for ids in combinations(range(len(search_pool)), target_n):
         trial = search_pool.iloc[list(ids)].copy()
         bounds = [(min_share, requested)] * target_n
-        water = trial['official_water_default_m3_ha'].to_numpy(float)
+        water = trial['constraint_water_m3_ha'].to_numpy(float)
+        ub_rows=[]; ub_caps=[]
+        if available_water_m3:
+            ub_rows.append(water); ub_caps.append(float(available_water_m3)/float(area_ha))
+        if baseline_sustainable is not None:
+            ub_rows.extend([
+                water,
+                trial['partial_ghg_kg_co2e_ha'].to_numpy(float),
+                -trial['economic_margin_kzt_ha'].to_numpy(float),
+            ])
+            ub_caps.extend([
+                baseline_sustainable['baseline_water_m3']/float(area_ha),
+                baseline_sustainable['effective_partial_ghg_cap_kg_co2e']/float(area_ha),
+                -baseline_sustainable['minimum_margin_kzt']/float(area_ha),
+            ])
         res = linprog(-trial['objective_utility'].to_numpy(float),
-                      A_ub=water.reshape(1,-1) if available_water_m3 else None,
-                      b_ub=[float(available_water_m3)/float(area_ha)] if available_water_m3 else None,
+                      A_ub=np.vstack(ub_rows) if ub_rows else None,
+                      b_ub=np.array(ub_caps) if ub_rows else None,
                       A_eq=np.ones((1,target_n)), b_eq=[1.], bounds=bounds, method='highs')
         if res.success:
             score = float(np.dot(res.x, trial['objective_utility'].to_numpy(float)))
@@ -139,17 +263,26 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
             'water_feasible':False, 'available_water_m3':float(available_water_m3),
             'requested_max_share':requested, 'n_crops':target_n,
             'tested_candidate_crops':len(search_pool),
-            'minimum_uniform_water_m3':float(area_ha * ranked['official_water_default_m3_ha'].min()),
+            'minimum_uniform_water_m3':float(area_ha * ranked['constraint_water_m3_ha'].min()),
         }
     _, cand, shares = best
     cand = cand.copy()
     feasible = True
     solver_status = 'optimal_enumerated_candidates'
     cap = requested
+    cand['profile_score_0_100'] = cand['utility']
     cand['share'] = shares
     cand['area_ha'] = shares * float(area_ha)
-    cand['modelled_water_m3'] = cand['official_water_default_m3_ha'] * cand['area_ha']
+    cand['modelled_water_m3'] = cand['constraint_water_m3_ha'] * cand['area_ha']
     cand['economic_result_kzt'] = cand['economic_margin_kzt_ha'] * cand['area_ha']
+    if baseline_sustainable is not None:
+        cand['partial_ghg_kg_co2e_ha'] = cand['partial_ghg_kg_co2e_ha'].astype(float)
+        cand['partial_ghg_kg_co2e'] = cand['partial_ghg_kg_co2e_ha']*cand['area_ha']
+        # Post-solver guard: independent checks on the same accounting boundary.
+        if (cand['modelled_water_m3'].sum() > baseline_sustainable['baseline_water_m3'] + 1e-4
+            or cand['partial_ghg_kg_co2e'].sum() > baseline_sustainable['effective_partial_ghg_cap_kg_co2e'] + 1e-4
+            or cand['economic_result_kzt'].sum() < baseline_sustainable['minimum_margin_kzt'] - 1e-3):
+            raise AssertionError('Sustainable allocation failed a post-solver feasibility check')
 
     reg = registry()[['CLREM_product', 'RU', 'KK', 'EN']].dropna(subset=['CLREM_product']).drop_duplicates('CLREM_product')
     cand = cand.merge(reg, left_on='product', right_on='CLREM_product', how='left')
@@ -189,7 +322,7 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
                 baseline_status = 'unrecognized_baseline_crops'
             else:
                 baseline_available = True
-                baseline_water_m3 = float((b['baseline_share'] * float(area_ha) * b['official_water_default_m3_ha']).sum())
+                baseline_water_m3 = float((b['baseline_share'] * float(area_ha) * b['constraint_water_m3_ha']).sum())
                 budget_known = float(available_water_m3) > 0
                 baseline_water_feasible = (baseline_water_m3 <= float(available_water_m3) + 1e-6) if budget_known else None
                 if baseline_water_feasible is False:
@@ -210,16 +343,23 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
 
     summary = {
         'weighted_qunar': float(np.average(cand['QUNAR_score_0_100'], weights=shares)),
+        'weighted_profile_score': float(np.average(cand['profile_score_0_100'], weights=shares)),
         'weighted_climate': float(np.average(cand['Climate_score_0_100'], weights=shares)),
         'weighted_resource': float(np.average(cand['Water_pressure_score_0_100'], weights=shares)),
         'weighted_reliability': float(np.average(cand['Confidence_0_100'], weights=shares)),
-        'weighted_water_m3_ha': float(np.average(cand['official_water_default_m3_ha'], weights=shares)),
+        'weighted_water_m3_ha': float(np.average(cand['constraint_water_m3_ha'], weights=shares)),
         'modelled_total_water_m3': float(cand['modelled_water_m3'].sum()),
         'available_water_m3': float(available_water_m3 or 0.0),
         # None denotes unverified compliance when the water budget was not supplied.
         'water_feasible': bool(feasible and cand['modelled_water_m3'].sum() <= float(available_water_m3) + 1e-6) if available_water_m3 > 0 else None,
         'water_budget_verified': bool(available_water_m3 > 0),
+        'water_accounting_basis': water_basis,
+        'water_requirement_source': str(water_requirement_evidence).strip() if custom_water_active else 'official/reference irrigation crop norms',
+        'water_crop_coverage_n': len(df),
         'profile': profile,
+        'climate_weight': wc,
+        'water_weight': ww,
+        'profile_source': ('2026 survey Q3/Q7 cross-question frequency-ratio; exploratory sensitivity only, not elicited weights' if profile == 'survey_proxy' else 'user sensitivity, not survey-calibrated' if profile == 'custom' else 'QUNAR profile weights'),
         'requested_max_share': requested,
         'effective_max_share': cap,
         'solver_status': solver_status,
@@ -242,8 +382,18 @@ def optimize_structure(district: str, area_ha: float, profile: str = "balanced",
         'economic_gain_pct': economic_gain_pct,
         'water_change_m3': water_change_m3,
         'water_change_pct': water_change_pct,
+        'sustainable_comparison': ({
+            **baseline_sustainable,
+            'optimized_water_m3':float(cand['modelled_water_m3'].sum()),
+            'optimized_partial_ghg_kg_co2e':float(cand['partial_ghg_kg_co2e'].sum()),
+            'optimized_margin_kzt':float(cand['economic_result_kzt'].sum()),
+            'all_constraints_met':True,
+            'emission_boundary':'user-supplied partial kg CO2e/ha; same crop period and factor set required',
+            'method':'weighted utility maximum among enumerated candidate sets subject to margin floor, water and partial-GHG ceilings; not guaranteed globally Pareto-optimal in unmodelled dimensions',
+        } if baseline_sustainable is not None else None),
         'objective': (
             'linear_program_economic_priority' if effective_mode == 'economic' else
+            'linear_program_sustainable_compromise' if effective_mode == 'sustainable' else
             'linear_program_balanced_resource_economic' if effective_mode == 'balanced' else
             'linear_program_resource_climate_utility'
         ),

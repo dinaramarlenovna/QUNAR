@@ -1,4 +1,4 @@
-"""Official/default irrigation-water requirements for QŪNAR.
+"""Reference irrigation-water requirements for QŪNAR.
 
 Primary source: Order of the Minister of Water Resources and Irrigation of the
 Republic of Kazakhstan No. 108-NQ, 4 June 2025 (registered No. 36253), table 3.
@@ -16,12 +16,10 @@ specified by the order, it falls back to the regional irrigation benchmark
 """
 from __future__ import annotations
 
-from __future__ import annotations
-
 from dataclasses import dataclass
 
 REGIONAL_BENCHMARK_M3_HA = 8181.6
-PUMPING_REFERENCE_KWH_PER_M3 = 0.70509  # official Kazvodkhoz reference indicator; scenario only
+PUMPING_REFERENCE_KWH_PER_M3 = 0.70509  # editable unverified energy scenario, NOT an official countrywide norm
 SOURCE_URL = "https://adilet.zan.kz/rus/docs/V2500036253"
 SOURCE_LABEL = "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3"
 

@@ -30,6 +30,8 @@ def irrigation_export(comp, *, area_ha, input_yield_centners_ha,
             "fresh_total_new": "Смена полива: забор свежей воды новой технологии, м³",
             "reuse": "Повторное использование воды, % (сценарное допущение)",
             "water_cap": "Доступный лимит свежей воды, м³",
+            "water_balance_base": "Водный баланс исходной технологии (+ резерв / - дефицит), м³",
+            "water_balance_new": "Водный баланс новой технологии (+ резерв / - дефицит), м³",
             "base_water_status": "Водный лимит: исходная технология",
             "new_water_status": "Водный лимит: новая технология",
             "overall_margin": "Общий расчёт маржи и сравнение орошения имеют разные базы расхода воды",
@@ -67,6 +69,8 @@ def irrigation_export(comp, *, area_ha, input_yield_centners_ha,
             "fresh_total_new": "Жаңа суару: жаңа су алу, м³",
             "reuse": "Суды қайта пайдалану, % (сценарий шарты)",
             "water_cap": "Қолжетімді жаңа су лимиті, м³",
+            "water_balance_base": "Бастапқы суару су балансы (+ қор / - тапшылық), м³",
+            "water_balance_new": "Жаңа суару су балансы (+ қор / - тапшылық), м³",
             "base_water_status": "Бастапқы суару: су лимитінің сақталуы",
             "new_water_status": "Жаңа суару: су лимитінің сақталуы",
             "overall_margin": "Жалпы маржа есебі мен суару салыстыруының су негіздері бөлек",
@@ -104,6 +108,8 @@ def irrigation_export(comp, *, area_ha, input_yield_centners_ha,
             "fresh_total_new": "Proposed irrigation: external freshwater demand, m³",
             "reuse": "Water reuse, % (scenario assumption)",
             "water_cap": "Available freshwater budget, m³",
+            "water_balance_base": "Baseline freshwater balance (+ reserve / - deficit), m³",
+            "water_balance_new": "Proposed freshwater balance (+ reserve / - deficit), m³",
             "base_water_status": "Baseline irrigation: water feasibility",
             "new_water_status": "Proposed irrigation: water feasibility",
             "overall_margin": "Generic margin and irrigation comparison use different water bases",
@@ -161,6 +167,8 @@ def irrigation_export(comp, *, area_ha, input_yield_centners_ha,
         item("fresh_total_new", f"{new_fresh:,.0f}"),
         item("reuse", f"{float(reuse_pct):,.1f}"),
         item("water_cap", f"{available:,.0f}" if available else t["unknown"]),
+        item("water_balance_base", f"{available-base_fresh:+,.0f}" if available else t["unknown"]),
+        item("water_balance_new", f"{available-new_fresh:+,.0f}" if available else t["unknown"]),
         item("base_water_status", t["unknown"] if base_feasible is None else t["yes"] if base_feasible else t["no"]),
         item("new_water_status", t["unknown"] if new_feasible is None else t["yes"] if new_feasible else t["no"]),
         item("margin_base", f"{float(comp['baseline_margin_kzt_ha']):,.0f}"),
@@ -178,10 +186,25 @@ def irrigation_export(comp, *, area_ha, input_yield_centners_ha,
     # Water compliance comes before financial comparison: a high hypothetical margin
     # for a non-feasible technology is not an achievable baseline.
     if available and base_feasible is False and new_feasible is True:
+        # The feasibility recommendation must respect the *actual sign* of
+        # the margin change, rather than always claiming a reduction.
+        change_text = ({
+            "ru": "При заданных затратах маржа новой технологии снижается.",
+            "kk": "Берілген шығындар бойынша жаңа технология маржасы азаяды.",
+            "en": "Under the entered costs, the proposed margin decreases.",
+        } if change < -1e-7 else {
+            "ru": "При заданных затратах маржа новой технологии возрастает.",
+            "kk": "Берілген шығындар бойынша жаңа технология маржасы артады.",
+            "en": "Under the entered costs, the proposed margin increases.",
+        } if change > 1e-7 else {
+            "ru": "При заданных затратах маржа не меняется.",
+            "kk": "Берілген шығындар бойынша маржа өзгермейді.",
+            "en": "Under the entered costs, the margin is unchanged.",
+        })[lang]
         conclusion = {
-            "ru": "Исходный способ полива превышает лимит свежей воды, а новый укладывается. Новый вариант может обеспечить соблюдение водного ограничения, но при заданных затратах маржа уменьшается. Исходная маржа является условным сравнением, а не достижимым результатом в текущем водном бюджете.",
-            "kk": "Бастапқы суару жаңа су лимитінен асады, ал жаңа технология лимитке сәйкес келеді. Жаңа нұсқа су шектеуін орындауы мүмкін, бірақ енгізілген шығындарда маржа төмендейді. Бастапқы маржа қолжетімді бюджеттегі табыс емес, шартты салыстыру.",
-            "en": "The baseline exceeds the available freshwater budget; the new method meets it. The switch may be necessary for water feasibility although the modeled margin declines. The baseline margin is hypothetical, not achievable under this water budget.",
+            "ru": "Исходный способ полива превышает лимит свежей воды, новый соответствует ему. " + change_text + " Исходная маржа служит условным ориентиром и недостижима при текущем водном лимите.",
+            "kk": "Бастапқы суару жаңа су лимитінен асады, ал жаңа технология оған сәйкес келеді. " + change_text + " Бастапқы маржа - осы лимитте қолжетімсіз шартты салыстыру.",
+            "en": "The baseline exceeds the freshwater budget; the proposed method meets it. " + change_text + " Baseline margin is a hypothetical comparator, not feasible under the current water budget.",
         }[lang]
     elif available and new_feasible is False:
         conclusion = {

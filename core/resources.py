@@ -13,7 +13,7 @@ def calculate_resources(
 ):
     out = {}
 
-    if water_used_m3 is not None and water_used_m3 > 0:
+    if water_used_m3 is not None and water_used_m3 >= 0:
         reuse = max(0.0, min(float(reuse_percent or 0.0), 100.0)) / 100.0
         total = float(water_used_m3)
         reused = total * reuse
@@ -39,7 +39,7 @@ def calculate_resources(
             production_kg = float(predicted_yield_centners_ha) * 100.0 * float(area_ha)
             out["modelled_water_productivity_kg_m3"] = production_kg / cw
 
-    if energy_kwh is not None and energy_kwh > 0:
+    if energy_kwh is not None and energy_kwh >= 0:
         out["energy_kwh"] = float(energy_kwh)
         out["energy_kwh_per_ha"] = float(energy_kwh) / float(area_ha)
         if electricity_ef is not None and electricity_ef > 0:
