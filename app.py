@@ -21,7 +21,39 @@ from core.config import (
 )
 from core.data import load_centroids, district_climate, district_crop_context
 from core.nasa import fetch_growing_season
-from core.ml import predict_yield, rank_crops, validation_summary, validation_for_crop, spatial_validation_summary, prediction_interval_for_crop, forward_holdout_for_crop
+# DEPLOY_COMPAT_v0.8.1_2026-10-18: forward-validation import works with older ml.py files.
+from core.ml import predict_yield, rank_crops, validation_summary, validation_for_crop, spatial_validation_summary, prediction_interval_for_crop
+try:
+    from core.ml import forward_holdout_for_crop
+except ImportError as _forward_import_error:
+    if "forward_holdout_for_crop" not in str(_forward_import_error):
+        raise
+
+    def forward_holdout_for_crop(crop):
+        """Read the same validated forward-test file if deployed core/ml.py predates this function.
+
+        Compatibility only: no model retraining and no fabricated forecast metrics.
+        """
+        from math import isfinite as _isfinite
+        _path = DATA_DIR / "forecast_holdout_2021_2025_metrics.csv"
+        if not _path.exists():
+            return None
+        _df = pd.read_csv(_path)
+        _rows = _df[_df["crop"].astype(str).eq(str(crop))]
+        if _rows.empty:
+            return None
+        _r = _rows.iloc[0]
+        _metric = {"mae": float(_r["MAE"]), "rmse": float(_r["RMSE"]),
+                   "r2": float(_r["R2"]), "n": int(_r["n"]),
+                   "train_end": int(_r["train_end"]),
+                   "test_start": int(_r["test_start"]),
+                   "test_end": int(_r["test_end"]),
+                   "source": "forward-time test, NOT current farm validation"}
+        if (_metric["n"] <= 0 or _metric["train_end"] >= _metric["test_start"]
+                or not all(_isfinite(_metric[k]) for k in ("mae", "rmse", "r2"))):
+            raise ValueError("Invalid forward holdout metrics")
+        return _metric
+
 from core.resources import calculate_resources
 from core.reference_fallbacks import (optional_observation, irrigation_water_fallback,
                                       livestock_drinking_fallback, conditional_pumping_energy)
