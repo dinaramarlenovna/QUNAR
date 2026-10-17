@@ -6,6 +6,7 @@ All underlying hard water constraints remain unchanged unless separately opted i
 from __future__ import annotations
 import streamlit as st
 import pandas as pd
+from .green_guard import alert_text
 from .integrated_scenarios import (
     FIELD_ETA, FAO_IRRIGATION, FAO_WATER_ACCOUNTING, IPCC_AFOLU,
     irrigation_reference, linked_pump_electricity, compare_farm_scenario,
@@ -403,6 +404,16 @@ def render_integrated_scenario(*, lang, mode_key, district, crop, area_ha, irrig
                    'Stress margin: revenue −10%, costs +10%',
                    'Стресс-маржа: түсім −10%, шығын +10%',lang),
             results['stress_margin_before_kzt'],results['stress_margin_after_kzt'])
+        _green = results['green_guard']
+        _ghead, _gtext, _gaction = alert_text(_green, lang)
+        if _green['status'] == 'red':
+            st.error('### '+_ghead+'\n\n'+_gtext+'\n\n**'+_gaction+'**')
+        elif _green['status'] == 'amber':
+            st.warning('**'+_ghead+'** '+_gtext+' '+_gaction)
+        elif _green['status'] in ('incomplete','noncomparable'):
+            st.warning('**'+_ghead+'** '+_gtext)
+        elif _green['status'] == 'green_conditional':
+            st.info('**'+_ghead+'** '+_gtext)
         if rows:
             st.dataframe(pd.DataFrame(rows),hide_index=True,use_container_width=True)
         if results['margin_increase_kzt'] is None:
@@ -426,7 +437,10 @@ def render_integrated_scenario(*, lang, mode_key, district, crop, area_ha, irrig
                           'Only displayed emission components are covered. Missing is not zero. Electricity accounting is operational.',
                           'Тек көрсетілген шығарындылар қамтылған. Жоқ дерек нөл емес.',lang))
         st.caption('FAO: '+FAO_IRRIGATION+' | '+FAO_WATER_ACCOUNTING+' | IPCC: '+IPCC_AFOLU)
-        summary=[]
+        summary=[{'label':'Environmental safeguard status', 'value':_green['status'],
+                  'note':_ghead+' | '+_gtext+' | '+_gaction},
+                 {'label':'Environmental decision recommendation','value':_gaction,
+                  'note':'Incomplete partial GHG is never treated as a complete footprint'}]
         for tag,a,b,unit in [
             ('Integrated field water',results['water_before_m3'],results['water_after_m3'],'m3'),
             ('Integrated electricity',results['energy_before_kwh'],results['energy_after_kwh'],'kWh'),
@@ -451,7 +465,10 @@ def render_integrated_scenario(*, lang, mode_key, district, crop, area_ha, irrig
             summary.append({'label':'Integrated known operating cost reduction, KZT',
                             'value':f"{results['known_cost_reduction_kzt']:+.2f}",
                             'note':'Only priced components; not necessarily full contribution margin'})
-        inputs=[['Integrated intervention period',period,tr['figure']],
+        inputs=[['Environmental guard comparison basis',
+                 f"water_delta={_green['water_change_m3']}; partial_GHG_delta={_green['partial_ghg_change_kgco2e']}; margin_delta={_green['margin_change_kzt']}; classification={_green['status']}",
+                 'Partial matched-period scenario; missing data are unknown; no statutory threshold inferred'],
+                ['Integrated intervention period',period,tr['figure']],
                 ['Integrated scenario methods',f'{method_before} → {method_after}' if kind=='crop' else 'livestock user assumption',
                  water_note],
                 ['Integrated scenario electricity boundary',energy_boundary,'Pump source and total split'],
@@ -467,7 +484,7 @@ def render_integrated_scenario(*, lang, mode_key, district, crop, area_ha, irrig
                 ['Integrated scenario evidence',evidence,'FAO / IPCC / user assumptions'],
                 ['Integrated reference links',f'{FAO_IRRIGATION}; {FAO_WATER_ACCOUNTING}; {IPCC_AFOLU}','Scientific sources']]
         return {'summary':summary,'inputs':inputs,
-                'recommendation':{'title':tr['head'],
-                                  'text':tr['intro'],
+                'recommendation':{'title':_ghead if _green['status'] in ('red','amber','incomplete') else tr['head'],
+                                  'text':_gtext+' '+_gaction,
                                   'evidence':f"{results['scope']}; {evidence}; water={water_note}; energy={energy_boundary}",
-                                  'effect':f"Water field delivery Δ {_m(results['water_reduction_m3'])} m3 saved; energy Δ {_m(results['energy_reduction_kwh'])} kWh saved; partial GHG Δ {_m(results['partial_ghg_reduction_kgco2e'])} kg CO2e potentially reduced; margin change {_m(results['margin_increase_kzt'])} KZT. Not actual achieved effects."}}
+                                  'effect':f"After minus before: water {_m(_green['water_change_m3'])} m3; partial GHG {_m(_green['partial_ghg_change_kgco2e'])} kg CO2e; margin {_m(_green['margin_change_kzt'])} KZT. Conditional only; not achieved effects."}}

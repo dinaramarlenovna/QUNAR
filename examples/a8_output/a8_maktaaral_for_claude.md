@@ -36,6 +36,17 @@ Neither calculated contribution margins nor partial emissions are verified impac
 | Corn | 30.00 | 24.48 | 30.00 | 3.00 |
 | Wheat | 20.00 | 15.52 | 20.00 | 55.15 |
 
+## Environmental safeguard / decision support
+
+**ENVIRONMENTAL WARNING: rising resource burden**
+
+Both water use and included CO₂e emissions increase. Higher contribution margin does not offset increased environmental pressure. GHG covers only documented scenario components, not a full footprint or achieved mitigation.
+
+Compare the Sustainable compromise mode, constraining water and partial GHG at baseline and setting an explicit margin tolerance.
+
+Reported financial outcome is retained for transparency; it is NOT endorsed as a green recommendation.
+Stress baseline violates the water limit; a counterfactual comparison cannot certify achieved resource saving.
+
 ## Interpretation
 
 - In **normal water conditions**, both structures are feasible; scenario margin difference is 908 725 KZT and field-delivery water change is 24 500 m³.

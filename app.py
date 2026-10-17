@@ -62,6 +62,7 @@ from core.location import browser_geolocation, reverse_geocode
 from core.admin_boundaries import detect_point, detect_polygon, boundary_geojson
 from core.optimizer import optimize_structure
 from core.optimization_guard import validate_allocation
+from core.green_guard import evaluate_green_guard, alert_text
 from core.clrem import check_crop_codes, label as _original_crop_label, method as crop_method, scenario_for_crop, scenario_for_district, observed_for_crop, observed_extra_for_district, decision_table, registry as clrem_registry
 from core.reporting import build_excel_report, build_pdf_report, build_word_report, build_combined_excel_report, build_combined_pdf_report, build_combined_word_report
 from core.environment import environmental_diagnostics, diversification_metrics
@@ -3589,6 +3590,7 @@ if submitted:
                             st.warning({'ru':'Расчёт воды до/после недоступен: ',
                                         'kk':'Су есебі қолжетімсіз: ',
                                         'en':'Crop-mix water comparison unavailable: '}[lang]+str(_sw_err))
+            _a1_comp = None  # absent accounting data remain UNKNOWN, never zero
             with st.expander({'ru':'А1: выбросы исходной и оптимизированной структуры',
                               'kk':'A1: бастапқы және оңтайлы егіс құрылымының шығарындылары',
                               'en':'A1: baseline vs optimized crop-mix emissions'}[lang],expanded=False):
@@ -3648,6 +3650,87 @@ if submitted:
                             f'optimized areas={_a1_plan}',_a1_evidence])
                     except (ValueError,TypeError,KeyError) as _a1_err:
                         st.warning(str(_a1_err))
+            # Safeguard applies to EVERY objective, not only the green objective.
+            # Economic metrics remain visible for an auditable, informed choice.
+            if opt.get('baseline_available') or _a1_comp is not None:
+                _green_opt = evaluate_green_guard(
+                    water_before_m3=opt.get('baseline_water_m3'),
+                    water_after_m3=opt.get('modelled_total_water_m3') if opt.get('baseline_water_m3') is not None else None,
+                    ghg_before_kgco2e=_a1_comp['baseline_kgco2e'] if _a1_comp is not None else None,
+                    ghg_after_kgco2e=_a1_comp['scenario_kgco2e'] if _a1_comp is not None else None,
+                    margin_before_kzt=opt.get('baseline_contribution_margin_kzt'),
+                    margin_after_kzt=opt.get('optimized_contribution_margin_kzt') if opt.get('baseline_available') else None,
+                    water_cap_m3=_scenario_available_water if _scenario_available_water > 0 else None,
+                    comparable=opt.get('baseline_water_feasible') is not False,
+                    evidence='Matched before/after crop allocation; partial GHG only if crop activities confirmed')
+                _green_head, _green_message, _green_action = alert_text(_green_opt, lang)
+                _green_deltas = (f"Δ water: {_green_opt['water_change_m3']:+,.0f} m³; "
+                                 if _green_opt['water_change_m3'] is not None else '') + (
+                                 f"Δ partial CO₂e: {_green_opt['partial_ghg_change_kgco2e']:+,.1f} kg; "
+                                 if _green_opt['partial_ghg_change_kgco2e'] is not None else '') + (
+                                 f"Δ margin: {_green_opt['margin_change_kzt']:+,.0f} KZT"
+                                 if _green_opt['margin_change_kzt'] is not None else '')
+                if _green_opt['status'] == 'red':
+                    st.error('### '+_green_head+'\n\n'+_green_message+'\n\n**'+_green_deltas+'**\n\n'+_green_action)
+                elif _green_opt['status'] in ('amber','incomplete','noncomparable'):
+                    st.warning('**'+_green_head+'**\n\n'+_green_message+'\n\n'+_green_deltas+'\n\n'+_green_action)
+                elif _green_opt['status'] == 'green_conditional':
+                    st.info('**'+_green_head+'** '+_green_message)
+                if (_green_opt['status'] in ('red','amber')
+                    and _a1_comp is not None and opt.get('baseline_available')
+                    and optimization_economic_margins):
+                    if st.button({'ru':'Найти альтернативу: не увеличивать воду и CO₂e',
+                                  'kk':'Баламаны табу: су мен CO₂e артпасын',
+                                  'en':'Find alternative: no additional water or CO₂e'}[lang],
+                                 key='green_comparison_alternative'):
+                        try:
+                            from core.ghg_structure import structure_inventory
+                            _per_ha_ghg = {}
+                            for _crop_key, _crop_activity in _a1_acts.items():
+                                _g_inv = structure_inventory({_crop_key:1.0}, {_crop_key:_crop_activity},
+                                    grid_factor=float(ef), diesel_factor=float(DEFAULT_DIESEL_CO2_KG_L),
+                                    accounting_period='apr_sep', evidence=_a1_evidence, confirmed=True)
+                                _per_ha_ghg[_crop_key] = _g_inv['inventory'].known_total_kg_co2e
+                            _green_kwargs = dict(_opt_kwargs)
+                            _green_kwargs.update({
+                                'objective_mode':'sustainable',
+                                'economic_margin_by_product':optimization_economic_margins,
+                                'baseline_share_by_product':optimization_baseline_shares,
+                                'ghg_kg_co2e_by_product':_per_ha_ghg,
+                                'economic_weight':0.35,
+                                'sustainable_max_margin_decline_pct':5.0,
+                                'sustainable_absolute_ghg_cap_kg':None,
+                            })
+                            _alternative_df, _alternative_info = optimize_structure(**_green_kwargs)
+                            _alt_feas = validate_allocation(_alternative_df,_alternative_info,
+                                area_ha=area_ha, available_water_m3=_scenario_available_water,
+                                max_share=optimization_max_share,n_crops=optimization_n_crops)
+                            _alternative_sust = _alternative_info.get('sustainable_comparison')
+                            if _alternative_df.empty or not _alt_feas['ok'] or not _alternative_sust or not _alternative_sust.get('all_constraints_met'):
+                                st.warning({'ru':'При сохранении заданных лимитов альтернативу найти не удалось. Возможные причины: недостающие нормы CO₂e/маржа по культурам или несовместимые ограничения. Они не ослаблены автоматически.',
+                                            'kk':'Берілген шектеулерге сай балама табылмады. Шектеулер автоматты түрде жұмсартылмайды.',
+                                            'en':'No feasible alternative under these inputs and constraints. Missing GHG/margin entries or conflicting caps may be the cause; constraints are never relaxed silently.'}[lang])
+                            else:
+                                st.success({'ru':'Найден условный устойчивый вариант с сохранением экологических ограничений и допуска маржи 5%.',
+                                            'kk':'Экологиялық шектеулер мен маржаның 5% шегін сақтайтын шартты нұсқа табылды.',
+                                            'en':'A conditional alternative satisfies the environmental constraints and 5% margin tolerance.'}[lang])
+                                st.dataframe(_alternative_df[['product','area_ha','share']].copy(),hide_index=True)
+                                st.write(f"Water {_alternative_sust['optimized_water_m3']:,.0f} m³; partial CO₂e {_alternative_sust['optimized_partial_ghg_kg_co2e']:,.1f} kg; margin {_alternative_sust['optimized_margin_kzt']:,.0f} KZT")
+                                report_payload['summary'].append({'label':'Alternative under joint water/partial-GHG/margin constraints',
+                                    'value':'feasible conditional scenario',
+                                    'note':f"water={_alternative_sust['optimized_water_m3']:.2f} m3; GHG={_alternative_sust['optimized_partial_ghg_kg_co2e']:.2f} kgCO2e; margin={_alternative_sust['optimized_margin_kzt']:.2f} KZT; max margin decline=5%"})
+                        except (ValueError,KeyError,TypeError) as _green_err:
+                            st.warning(str(_green_err))
+                report_payload['summary'].append({'label':'Environmental safeguard / Экологическая проверка',
+                    'value':_green_opt['status'], 'note':_green_head+'; '+_green_message+'; '+_green_deltas})
+                report_payload['recommendations'].append({'title':_green_head,
+                    'text':_green_action,
+                    'evidence':_green_message+'; '+_green_opt['evidence'],
+                    'effect':_green_deltas+'; conditional comparison, no full footprint or observed mitigation'})
+                report_payload['inputs'].append(['Environmental safeguards and thresholds',
+                    f"water_cap_m3={_green_opt['explicit_water_cap_breached']} (user water budget {_scenario_available_water}); "
+                    f"partial_GHG_scope={_green_opt['comparison_scope']}; comparable={_green_opt['comparable']}",
+                    'Absolute carbon limit is NOT invented; partial inventory and baseline comparability must be verified'])
             s1,s2,s3,s4=st.columns(4)
             s1.metric({"kk":"Құрылымның QŪNAR бағасы","ru":"Оценка структуры QŪNAR","en":"Structure QŪNAR score"}[lang],f"{opt['weighted_qunar']:.1f}/100")
             if optimization_profile in ('survey_proxy','custom'):
@@ -4297,6 +4380,13 @@ if submitted:
                     'Contribution margin, KZT':round(part['contribution_margin_kzt']),
                     'Partial GHG, kg CO₂e':round(part['partial_ghg_kg_co2e']),
                 } for label, part in zip(_a8_labels,_a8_parts)]),hide_index=True)
+                _example_guard = _a8_demo.get('normal_environmental_guard')
+                if _example_guard:
+                    _eh, _em, _ea = alert_text(_example_guard, lang)
+                    if _example_guard['status'] == 'red':
+                        st.error('### '+_eh+'\n\n'+_em+'\n\n'+_ea)
+                    elif _example_guard['status'] == 'amber':
+                        st.warning(_eh+' '+_em+' '+_ea)
                 st.warning({
                     'ru':'При стрессе исходная структура нарушает водный лимит. Её маржу нельзя трактовать как допустимую альтернативу. CO₂e и вода — расчётные сценарии, не измеренная экономия.',
                     'kk':'Стресс кезінде бастапқы құрылым су шегінен асады. Оның маржасы жарамды балама емес. CO₂e және су көрсеткіштері - өлшенген үнем емес, сценарийлік есеп.',

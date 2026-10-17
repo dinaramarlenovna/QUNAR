@@ -6,6 +6,7 @@ other economic/activity assumption comes from an explicitly labelled JSON
 input. Never conflate an infeasible stressed baseline with a feasible choice.
 """
 from __future__ import annotations
+from .green_guard import evaluate_green_guard, alert_text
 
 import hashlib
 import json
@@ -209,10 +210,23 @@ def calculate_case(config: dict) -> dict:
     def areas_to_codes(areas):
         by_p={r['product']:r['code'] for r in rows}
         return {by_p[k]:v for k,v in areas.items()}
+    normal_green = evaluate_green_guard(
+        water_before_m3=b['water_field_delivery_m3'], water_after_m3=n['water_field_delivery_m3'],
+        ghg_before_kgco2e=b['partial_ghg_kg_co2e'], ghg_after_kgco2e=n['partial_ghg_kg_co2e'],
+        margin_before_kzt=b['contribution_margin_kzt'], margin_after_kzt=n['contribution_margin_kzt'],
+        water_cap_m3=normal_budget, evidence='A8: hypothetical 100 ha, fixed baseline, partial inventory')
+    stress_green = evaluate_green_guard(
+        water_before_m3=bs['water_field_delivery_m3'], water_after_m3=ss['water_field_delivery_m3'],
+        ghg_before_kgco2e=bs['partial_ghg_kg_co2e'], ghg_after_kgco2e=ss['partial_ghg_kg_co2e'],
+        margin_before_kzt=bs['contribution_margin_kzt'], margin_after_kzt=ss['contribution_margin_kzt'],
+        water_cap_m3=stress_budget, comparable=False,
+        evidence='Baseline is infeasible under stress, cannot claim measured green savings')
     config_sha256=hashlib.sha256(json.dumps(config,sort_keys=True,ensure_ascii=False).encode('utf-8')).hexdigest()
     return {
       'case_id':'A8_MAKTAARAL_100HA_2026', 'input_sha256':config_sha256,
       'case_type':'illustrative_hypothetical_not_observed_or_policy_impact',
+      'normal_environmental_guard':normal_green,
+      'stress_environmental_guard':stress_green,
       'area_ha':area,'district':config['district'],'assessment_year':config['assessment_year'],
       'accounting_period':'Apr-Sep','water_boundary':'field delivery; not water-source abstraction',
       'inputs':config,'crop_reference_rows':rows,
@@ -273,6 +287,11 @@ def report_markdown(r:dict) -> str:
     for code in [x['code'] for x in crops]:
         lines.append('| '+code+' | '+' | '.join(num(areas.get(code,0),2) for areas in
           [normal['baseline_areas_ha'],normal['optimized_areas_ha'],stress['baseline_areas_ha'],stress['optimized_areas_ha']])+' |')
+    alert_heading, alert_message, alert_action = alert_text(r['normal_environmental_guard'], 'en')
+    lines.extend(['', '## Environmental safeguard / decision support', '',
+        '**'+alert_heading+'**', '', alert_message, '', alert_action, '',
+        'Reported financial outcome is retained for transparency; it is NOT endorsed as a green recommendation.',
+        'Stress baseline violates the water limit; a counterfactual comparison cannot certify achieved resource saving.'])
     lines+=['','## Interpretation',
       '',f"- In **normal water conditions**, both structures are feasible; scenario margin difference is {num(normal['margin_change_same_conditions_kzt'])} KZT and field-delivery water change is {num(normal['water_change_same_conditions_m3'])} m³.",
       f"- Stress: water limit falls by 20% to {num(stress['water_budget_m3'])} m³; yields fall by 10%; **all variable costs**, including water and electricity, increase by 10%.",
