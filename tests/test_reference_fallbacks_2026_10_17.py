@@ -28,7 +28,10 @@ def test_missing_energy_is_not_zero_or_unsupported_pumping():
     assert conditional_pumping_energy(50000).value is None
     assert conditional_pumping_energy(50000,observed=0,measured_zero=True).value == 0
     p=conditional_pumping_energy(50000,pumping_confirmed=True)
-    assert p.value > 0 and p.source_tier == 'technology_scenario'
+    assert p.value is None and p.source_tier == 'unavailable'
+    # Explicit scenario opt-in preserves backward-compatible intensity, never automatic.
+    tentative=conditional_pumping_energy(50000,pumping_confirmed=True,allow_technology_scenario=True)
+    assert tentative.value > 0 and tentative.source_tier == 'technology_scenario'
 
 
 def test_resources_keep_confirmed_zero():

@@ -132,11 +132,13 @@ def test_soil_none_is_unknown_not_zero():
     with pytest.raises(ValueError):indicative_texture_from_soilgrids(p)
 
 
-def test_a8_uses_canonical_app_reference_not_old_illustration():
+def test_legacy_a8_is_preserved_for_reconciliation_after_updated_app_defaults():
     data=json.loads((Path(__file__).resolve().parents[1]/'examples'/'a8_maktaaral_100ha_inputs.json').read_text())
     t=data['technical_assumptions']
     assert t['pump_electricity_kwh_per_m3_field_delivery']==PUMPING_REFERENCE_KWH_PER_M3
-    assert t['grid_kg_co2e_per_kwh']==DEFAULT_EF_KZ_KGCO2_PER_KWH
+    # Historical A8 retains its reproducible inputs; current UI has a new factor.
+    assert t['grid_kg_co2e_per_kwh']==0.6061
+    assert DEFAULT_EF_KZ_KGCO2_PER_KWH==0.813
     assert t['pump_electricity_kwh_per_m3_field_delivery']!=.35
 
 
