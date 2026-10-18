@@ -79,6 +79,7 @@ EXACT={
 # Fragments that may appear alongside numeric values, URLs and scientific symbols.
 FRAGMENTS={
  'ru': [
+    ('Reference need, NOT measured water; historical 108-NQ, current 288-NQ from 16 Sep 2026 has not been crosswalked; check soil/method and crop mapping', 'Справочная потребность, не измеренный расход. Исторические нормы №108-НҚ не сопоставлены построчно с действующими №288-НҚ от 16.09.2026; проверьте категорию культуры, почву и способ полива.'),
     ('physical_model:', 'Расчётная физическая модель:'),('zone_fallback:', 'Подстановка по водохозяйственной зоне:'),('regional_fallback:', 'Среднее по региону:'),
     ('user_observed:', 'Показания пользователя:'), ('No verified pumping system and head', 'Параметры насосной системы не подтверждены'),
     ('water=','вода='), ('grid electricity=','сетевая электроэнергия='), ('EF=','коэффициент выбросов='),
@@ -99,6 +100,7 @@ FRAGMENTS={
     ('Reference price','Справочная цена'),
  ],
  'kk': [
+    ('Reference need, NOT measured water; historical 108-NQ, current 288-NQ from 16 Sep 2026 has not been crosswalked; check soil/method and crop mapping', 'Өлшенген су емес, анықтамалық қажеттілік. Тарихи №108-НҚ нормалары 16.09.2026 күнгі №288-НҚ нормаларымен толық салыстырылмаған; дақыл, топырақ пен суару әдісін тексеріңіз.'),
     ('physical_model:', 'Физикалық есептік модель:'),('zone_fallback:', 'Су шаруашылық аймағы бойынша мән:'),('user_observed:', 'Пайдаланушы өлшемі:'),
     ('water=','су='), ('grid electricity=','желілік электр='), ('EF=','шығарынды коэффициенті='),
     ('before=','дейін='), ('after=','кейін='), ('pumped_fraction=','сорғы суының үлесі='),

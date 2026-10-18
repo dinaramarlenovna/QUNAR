@@ -1,5 +1,6 @@
 
 from datetime import date, datetime, timedelta
+from pathlib import Path
 import uuid
 import time
 import html
@@ -94,6 +95,7 @@ from core.soil_water_daily import (
 from core.ghg_structure import compare_crop_structures
 from core.forecast_reliability import evaluate_forecast_support
 from core.forecast_quality import forward_yield_evidence, norm_vs_fao_comparison
+from core.yield_method_selection import route_yield, all_method_history, method_label, method_caveat
 from core.irrigation_economics import irrigation_comparison
 from core.irrigation_report import irrigation_export
 from core.uncertainty import support_score
@@ -2762,7 +2764,7 @@ if submitted:
         source_disclaimer(lang)
     ])
     report_payload['inputs'].append([
-        {'ru':'Вода: фактическое значение или подстановка',
+        {'ru':'Вода: измерение либо справочная потребность',
          'kk':'Су: нақты мән немесе алмастыру','en':'Water: observation or fallback'}[lang],
         'нет данных' if effective_water_used is None else f'{effective_water_used:,.2f} м³',
         water_reference.source_tier + ': ' + water_reference.source + ('; '+water_reference.url if water_reference.url else '')
@@ -3362,8 +3364,8 @@ if submitted:
                     'kk':f'Өнімділік болжамы: дәлелдік сенімділігі шектеулі ({_reason}). Экономикалық жоспарлау үшін шаруашылықтың өз өнімділік дерегін пайдаланыңыз.',
                     'en':f'Yield forecast: limited validation support ({_reason}). Use farm-entered yield for economic planning.'}[lang])
             _cross_module_summary_rows.append({
-                'label': {'kk':'ML болжамының дәлелдік шектеуі','ru':'Статус надёжности ML-прогноза','en':'ML forecast validation caution'}[lang],
-                'value': {'kk':'Төмен/шектеулі сенімділік','ru':'Низкая/ограниченная уверенность','en':'Low/limited support'}[lang] if _fc.low_confidence else {'kk':'Айқын ескерту жоқ','ru':'Без специфического предупреждения','en':'No specific warning'}[lang],
+                'label': {'kk':'ML болжамының дәлелдік шектеуі','ru':'Историческая пространственно-временная проверка ML','en':'ML forecast validation caution'}[lang],
+                'value': {'kk':'Төмен/шектеулі сенімділік','ru':'Низкая/ограниченная уверенность','en':'Low/limited support'}[lang] if _fc.low_confidence else {'kk':'Айқын ескерту жоқ','ru':'Нет дополнительного предупреждения по старой CV; см. временной тест','en':'No specific warning'}[lang],
                 'note':'; '.join(_fc.reasons) if _fc.reasons else f'Crop R²={_fc.crop_r2:.3f}; district leave-out R²={_fc.district_r2:.3f}; NOT a 2025 holdout test'})
             _forward_quality = forward_yield_evidence(DATA_DIR,crop)
             if _forward_quality.support != 'historically_supported':
@@ -3389,6 +3391,12 @@ if submitted:
                             + f"; N={_holdout_evidence['n']}; MAE={_holdout_evidence['mae']:.2f} centners/ha"
                 })
             _pi_evidence = prediction_interval_for_crop(crop)
+            if _pi_evidence and _pi_evidence.get('is_forward_backtest') and _pi_evidence['empirical_coverage'] < _pi_evidence['coverage_target']:
+                st.warning({'ru':'Независимое историческое покрытие интервала ниже целевых 90%. Не интерпретируйте интервал как гарантированную точность для нового сезона.',
+                            'kk':'Тарихи аралықты қамту 90% мақсаттан төмен; болашақ маусымға кепіл емес.',
+                            'en':'Forward interval coverage falls below its nominal 90% target; no future coverage guarantee.'}[lang])
+            if _pi_evidence and _pi_evidence.get('is_forward_backtest') and _pi_evidence['empirical_coverage'] < _pi_evidence['coverage_target']:
+                _cross_module_summary_rows.append({'label':{'ru':'Интервал ML: покрытие ниже цели 90%','kk':'ML аралығы: қамту 90%-дан төмен','en':'ML interval below 90% coverage target'}[lang], 'value':f"{100*_pi_evidence['empirical_coverage']:.1f}% / 90%", 'note':{'ru':'Исторический недоохват, не гарантия будущих прогнозов.','kk':'Тарихи қамту жеткіліксіз, болашаққа кепіл емес.','en':'Observed undercoverage, not a future guarantee.'}[lang]})
             if _pi_evidence and _pi_evidence.get('is_forward_backtest'):
                 _cross_module_summary_rows.append({
                     'label': {'ru':'Историческое покрытие ML-интервала 2021–2025',
@@ -3747,11 +3755,11 @@ if submitted:
 
         # Report payload keeps reference values and observed inputs distinguishable.
         report_payload["summary"] = [
-            {"label":{"kk":"Мал шаруашылығының үлесі","ru":"Доля животноводства","en":"Livestock share"}[lang],
+            {"label":{"kk":"Мал шаруашылығының үлесі","ru":"Доля животноводства в выпуске района","en":"Livestock share of district output"}[lang],
              "value":f"{float(lp.get('livestock_share_pct',0)):.1f}%"},
             {"label":{"kk":"Мал саны","ru":"Поголовье","en":"Herd"}[lang],
              "value":({"kk":"енгізілмеген", "ru":"не указано", "en":"not entered"}[lang] if heads_source == "unknown" else f"{effective_heads:,.0f} ({ {'user': {'kk':'пайдаланушы дерегі','ru':'данные пользователя','en':'user data'}, 'district_reference': {'kk':'аудандық анықтамалық мән','ru':'районное справочное значение','en':'district reference'} }.get(heads_source, {'kk':str(heads_source),'ru':str(heads_source),'en':str(heads_source)})[lang] })"),},
-            {"label":{"kk":"Машиналық оқыту болжамы","ru":"Прогноз машинного обучения","en":"Machine-learning forecast"}[lang],
+            {"label":{"kk":"Машиналық оқыту болжамы","ru":"Районный прогноз поголовья (ML)","en":"District herd forecast (ML)"}[lang],
              "value":f"{float(forecast.get('forecast_heads')):,.0f} ({forecast.get('forecast_year','—')})" if forecast.get("available") and forecast.get("publish_forecast") else {"kk":"жарияланбайды","ru":"не публикуется","en":"withheld"}[lang]},
             {"label":{"kk":"Шартты мал бірлігі","ru":"Условные единицы скота","en":"Livestock units (LU)"}[lang],
              "value":f"{float(livestock.get('livestock_units')):,.1f}" if livestock.get("livestock_units") is not None else "—"},
@@ -3843,6 +3851,38 @@ if submitted:
     elif mode_key == "mode1":
         with st.spinner(t["ml_loading"]):
             pred, used = timed_call("ML prediction", predict_yield, used_district, crop, area_ha, climate)
+        _original_rf_pred = pred
+        _yield_choice = route_yield(DATA_DIR, used_district, crop, calculation_year, rf_value=pred)
+        _active_yield = _yield_choice.active_value
+        if _active_yield is not None:
+            pred = _active_yield
+        # The RF remains the first computed model and is always reported separately;
+        # alternatives are only descriptive when its forward verification fails.
+        report_payload['summary'].append({
+            'label':{'ru':'Основной алгоритм проекта: Random Forest, ц/га','kk':'Жобаның негізгі алгоритмі: Random Forest, ц/га','en':'Project primary algorithm: Random Forest, c/ha'}[lang],
+            'value':f'{_original_rf_pred:.2f}',
+            'note':{'ru':'Отдельная оценка ML; проверка на будущих годах приведена ниже. Не измеренная урожайность поля.',
+                    'kk':'ML бағасы; кейінгі жылдардағы тексеру төменде. Танаптың нақты өнімі емес.',
+                    'en':'ML benchmark; later-year validation below, not observed field yield.'}[lang]})
+        report_payload['summary'].append({
+            'label':{'ru':'Метод, используемый в оценке урожайности','kk':'Өнімділікті бағалау үшін таңдалған әдіс','en':'Method selected for yield assessment'}[lang],
+            'value':({'Random Forest':'Random Forest', 'Historical district-crop median':{'ru':'Историческая медиана района и культуры','kk':'Аудан мен дақылдың тарихи медианасы','en':'Historical district-crop median'}[lang], 'Regional crop median (proxy)':{'ru':'Региональная медиана культуры (ориентир)','kk':'Дақылдың өңірлік медианасы (бағдар)','en':'Regional crop median (proxy)'}[lang], 'Not verified':{'ru':'Недостаточно данных','kk':'Деректер жеткіліксіз','en':'Insufficient data'}[lang]}.get(_yield_choice.active_method, _yield_choice.active_method)),
+            'note':method_caveat(_yield_choice,lang)})
+        if not _yield_choice.ml_supported:
+            st.warning({'ru':'ML по этой культуре не прошёл заданные критерии временной валидации. Для планирования показан исторический районный ориентир, который не является достоверным прогнозом следующего года.',
+                        'kk':'Бұл дақыл бойынша ML уақытша тексеру талаптарынан өтпеді. Жоспарлау үшін келесі жылдың кепілді болжамы емес, тарихи аудандық көрсеткіш қолданылады.',
+                        'en':'ML did not meet predeclared forward-year accuracy criteria. A descriptive district history is used for planning, NOT a validated next-year forecast.'}[lang])
+        if user_level == 'researcher':
+            _history_methods = all_method_history(Path(DATA_DIR).parent/'examples'/'stage2_evidence',crop)
+            if _history_methods:
+                with st.expander({'ru':'Сравнение альтернативных методов прогнозирования (валидация до 2021 г.)','kk':'Баламалы болжам әдістерін салыстыру (2021 жылға дейін)','en':'Alternative forecasting methods (pre-2021 validation)'}[lang]):
+                    _method_names={'Pooled RF':'Random Forest (общая модель)','Per-crop RF':'Random Forest (по культуре)','ExtraTrees':'ExtraTrees','CatBoost':'CatBoost','HistGradientBoosting':'Градиентный бустинг','Ridge':'Ridge (регрессия)','Historical median':'Историческая медиана'}
+                    st.dataframe(pd.DataFrame([{'Метод' if lang=='ru' else 'Method':_method_names.get(r['method'],r['method']),
+                          'MAE, ц/га' if lang=='ru' else 'MAE, c/ha':round(r['mae_c_ha'],2),
+                          'R²':round(r['r2'],3), 'N':r['n']} for r in _history_methods]),use_container_width=True,hide_index=True)
+                    st.caption({'ru':'Алгоритмы сравнивались на предшествующих годах, без обучения на тестовых годах. Выбор альтернативы по 2021–2025 задним числом запрещён; низкая ошибка на ранних годах не доказывает качество следующего сезона.',
+                                'kk':'Әдістер бұрынғы жылдарда сыналды. 2021–2025 жылдар бойынша кейіннен үздік әдісті таңдау ғылыми дәлел емес.',
+                                'en':'Methods compared on earlier years without using future observations in fitting. No post-hoc selection from 2021–2025.'}[lang])
 
         # WaPOR is retrieved after ML because water productivity uses predicted output.
         wapor_result = None
@@ -3904,14 +3944,16 @@ if submitted:
             historical_yield_median=(ctx_for_support or {}).get("historical_yield_median"),
         )
 
+        _active_yield_label=(t['baseline_label'] if _yield_choice.ml_supported else
+            {'ru':'Исторический ориентир (не прогноз), ц/га','kk':'Тарихи анықтама (болжам емес), ц/га','en':'Historical reference (not forecast), c/ha'}[lang])
         if user_level == "farmer":
             x,z=st.columns(2)
-            x.metric(t["baseline_label"], f"{pred:.1f} {UNITS['centner_ha']}")
+            x.metric(_active_yield_label, f"{pred:.1f} {UNITS['centner_ha']}")
             z.metric(t["climate"], climate_source)
             st.caption(t["scope_note"])
         else:
             x,y,z=st.columns(3)
-            x.metric(t["baseline_label"], f"{pred:.1f} {UNITS['centner_ha']}")
+            x.metric(_active_yield_label, f"{pred:.1f} {UNITS['centner_ha']}")
             y.metric(t["support_label"], f"{t[reliability['level']]} ({reliability['score']}/100)")
             z.metric(t["climate"], climate_source)
             st.caption(t["scope_note"] + " " + t["support_note"])
@@ -4170,7 +4212,31 @@ if submitted:
         if crop in CROPS:
             with st.spinner(t["ml_loading"]):
                 ml_pred, ml_used = timed_call("ML prediction", predict_yield, used_district, crop, area_ha, climate)
+            _mode2_rf_pred=ml_pred
+            _mode2_choice=route_yield(DATA_DIR,used_district,crop,calculation_year,rf_value=ml_pred)
+            if _mode2_choice.active_value is not None:
+                ml_pred=_mode2_choice.active_value
+            if not _mode2_choice.ml_supported:
+                st.warning({'ru':'Оценка урожайности: ML не прошёл временную проверку; активный ориентир — историческая медиана района и культуры, не прогноз следующего года.',
+                            'kk':'ML уақыттық тексеруден өтпеді. Белсенді көрсеткіш — аудан мен дақылдың тарихи медианасы, болашақ өнім болжамы емес.',
+                            'en':'ML did not pass forward validation; the active estimate is a descriptive historical district-crop median, not a next-year forecast.'}[lang])
+            report_payload['summary'].append({'label':{'ru':'Random Forest, ц/га (исследовательский ориентир)','kk':'Random Forest, ц/га (зерттеу нәтижесі)','en':'Random Forest, c/ha (research baseline)'}[lang],
+                  'value':f'{_mode2_rf_pred:.2f}', 'note':'Forward ML verification 2021–2025; not farm-observed'})
+            report_payload['summary'].append({'label':{'ru':'Метод оценки урожайности','kk':'Өнімділікті бағалау әдісі','en':'Yield estimate method'}[lang],
+                  'value':method_label(_mode2_choice.active_method,lang),'note':method_caveat(_mode2_choice,lang)})
             hist=district_crop_context(used_district,crop) or {}
+
+        if crop not in CROPS:
+            _nonml_yield=route_yield(DATA_DIR,used_district,crop,calculation_year)
+            if _nonml_yield.active_value is None:
+                st.caption({'ru':'Достоверный численный прогноз урожайности этой культуры недоступен; рейтинг QŪNAR рассчитывается отдельно по климату, водной нагрузке и источникам.',
+                            'kk':'Бұл дақылға расталған сандық өнімділік болжамы жоқ; QŪNAR рейтингі климат, су және дерек көздеріне негізделеді.',
+                            'en':'No validated numerical yield forecast for this crop. The QŪNAR suitability ranking uses climate, water and evidence separately.'}[lang])
+            else:
+                st.caption({'ru':f'Историческая медиана по району и культуре: {_nonml_yield.active_value:.1f} ц/га. Это справочный ориентир, а не прогноз следующего сезона.',
+                            'kk':f'Аудан мен дақылдың тарихи медианасы: {_nonml_yield.active_value:.1f} ц/га. Бұл болашақ өнім болжамы емес.',
+                            'en':f'Historical district-crop median: {_nonml_yield.active_value:.1f} c/ha. Descriptive reference, not a next-season forecast.'}[lang])
+            report_payload['inputs'].append([{'ru':'Метод оценки урожайности по культуре','kk':'Дақыл бойынша өнімділікті бағалау әдісі','en':'Crop yield-estimate method'}[lang],method_label(_nonml_yield.active_method,lang),method_caveat(_nonml_yield,lang)])
 
         # Main verdict is method-aware and never fabricates an ML forecast for non-ML crops.
         if scenario is not None:
@@ -4227,7 +4293,7 @@ if submitted:
                 else:
                     st.info({
                         "kk":"Бұл дақыл үшін аудандық көпкритерийлі профиль жоқ. Сондықтан бағалау машиналық оқыту арқылы алынған өнімділік қатары мен климаттық деректерге негізделеді.",
-                        "ru":"Для этой культуры пока нет районного многокритериального профиля. Поэтому оценка основана на ряду урожайности, полученном машинным обучением, и климатических данных.",
+                        "ru":"Для этой культуры нет районного многокритериального профиля. Исторический ориентир и климатическая пригодность показываются отдельно.",
                         "en":"No district multi-criteria profile is available for this crop yet. The assessment therefore uses the ML yield series and climate evidence."
                     }[lang])
             elif not observed_for_crop(used_district,crop).empty:
@@ -4245,18 +4311,18 @@ if submitted:
 
         if ml_pred is not None:
             if user_level == "researcher":
-                st.markdown("#### " + {"kk":"Машиналық оқыту бойынша өнімділік бағасы","ru":"Оценка урожайности машинным обучением","en":"ML yield evidence"}[lang])
+                st.markdown("#### " + {"kk":"Машиналық оқыту бойынша өнімділік бағасы","ru":"Оценка урожайности и выбор метода","en":"ML yield evidence"}[lang])
             else:
                 st.markdown("#### " + {"kk":"Күтілетін өнімділік","ru":"Ожидаемая урожайность","en":"Expected yield"}[lang])
             med=hist.get('historical_yield_median') if hist else None
             if med:
                 delta=(ml_pred-float(med))/float(med)*100
                 if user_level == "researcher":
-                    st.write({"kk":f"Аудан-дақыл бойынша машиналық оқыту базалық болжамы: {ml_pred:.1f} ц/га; тарихи медианаға қатысты {delta:+.1f}%.","ru":f"Базовый прогноз машинного обучения по району и культуре: {ml_pred:.1f} ц/га; относительно исторической медианы {delta:+.1f}%.","en":f"District-crop ML baseline: {ml_pred:.1f} c/ha; {delta:+.1f}% versus historical median."}[lang])
+                    st.write({"kk":f"Аудан-дақыл бойынша машиналық оқыту базалық болжамы: {ml_pred:.1f} ц/га; тарихи медианаға қатысты {delta:+.1f}%.","ru":f"Расчётный ориентир урожайности: {ml_pred:.1f} ц/га; относительно исторической медианы {delta:+.1f}%. Метод: {method_label(_mode2_choice.active_method,lang)}.","en":f"District-crop ML baseline: {ml_pred:.1f} c/ha; {delta:+.1f}% versus historical median."}[lang])
                 else:
                     st.write({"kk":f"Күтілетін деңгей: {ml_pred:.1f} ц/га, тарихи аудандық медианадан {delta:+.1f}%.","ru":f"Ожидаемый уровень: {ml_pred:.1f} ц/га, отклонение от исторической районной медианы {delta:+.1f}%.","en":f"Expected level: {ml_pred:.1f} c/ha, {delta:+.1f}% versus the historical district median."}[lang])
             else:
-                st.write({"kk":f"Аудан-дақыл бойынша машиналық оқыту базалық болжамы: {ml_pred:.1f} ц/га.","ru":f"Базовый прогноз машинного обучения по району и культуре: {ml_pred:.1f} ц/га.","en":f"District-crop ML baseline: {ml_pred:.1f} c/ha."}[lang])
+                st.write({"kk":f"Аудан-дақыл бойынша машиналық оқыту базалық болжамы: {ml_pred:.1f} ц/га.","ru":f"Расчётный ориентир урожайности: {ml_pred:.1f} ц/га. Метод: {method_label(_mode2_choice.active_method,lang)}.","en":f"District-crop ML baseline: {ml_pred:.1f} c/ha."}[lang])
         elif crop == 'Barley':
             st.warning({"kk":"Арпа үшін машиналық оқыту арқылы өнімділікті болжау әдейі қосылмады: берілген бастапқы панельде арпа өнімділігі бидай қатарын қайталайды және дереккөзді қайта тексеру қажет.","ru":"Модель машинного обучения для прогнозирования урожайности ячменя намеренно не включена: в предоставленной исходной панели ряд урожайности ячменя дублирует пшеницу и требует проверки источника.","en":"Barley yield ML is intentionally disabled: the supplied source panel duplicates the wheat yield series and needs source verification."}[lang])
 
@@ -4314,6 +4380,23 @@ if submitted:
         }[lang]
         st.markdown(f'<div class="qunar-key">{top_msg}</div>', unsafe_allow_html=True)
 
+        if user_level == "researcher":
+            with st.expander({'ru':'Доступность методов прогноза для всех культур','kk':'Барлық дақылдар бойынша болжам әдістері','en':'Forecast-method coverage for all crops'}[lang]):
+                _registry=clrem_registry()
+                _method_rows=[]
+                for _entry in _registry.itertuples(index=False):
+                    if pd.isna(_entry.CLREM_product): continue
+                    _status=route_yield(DATA_DIR,used_district,_entry.Code,calculation_year)
+                    _method_rows.append({
+                        {'ru':'Культура','kk':'Дақыл','en':'Crop'}[lang]:extended_crop_label(_entry.Code,lang),
+                        {'ru':'Статус методов','kk':'Әдістер мәртебесі','en':'Methods status'}[lang]:
+                            ({'ru':'ML + историческая альтернатива','kk':'ML және тарихи балама','en':'ML with historical alternative'}[lang]
+                             if _entry.Code in CROPS else {'ru':'Исторические данные / без проверенного ML','kk':'Тарихи деректер / тексерілген ML жоқ','en':'Historical data / no verified ML'}[lang]),
+                        {'ru':'Наблюдений в районе','kk':'Аудандағы бақылаулар','en':'District observations'}[lang]:_status.reference_n})
+                st.dataframe(pd.DataFrame(_method_rows),use_container_width=True,hide_index=True)
+                st.caption({'ru':'Отсутствующие урожайности не подменяются рейтингом QŪNAR. Рейтинг пригодности и прогноз урожайности — разные показатели.',
+                            'kk':'Жоқ өнімділік QŪNAR рейтингімен алмастырылмайды. Жарамдылық пен өнімділік болжамы бөлек.',
+                            'en':'Missing yield observations are not substituted with QŪNAR suitability scores.'}[lang])
         if user_level == "researcher":
             with st.expander({'kk':'Машиналық оқыту бойынша өнімділік бағасы - 6 калибрленген егістік дақыл','ru':'Оценка урожайности машинным обучением - 6 откалиброванных полевых культур','en':'ML yield evidence - 6 calibrated field crops'}[lang]):
                 with st.spinner(t['ml_loading']):
@@ -4979,7 +5062,8 @@ if submitted:
         ]
     elif mode_key == "mode1":
         if "pred" in locals():
-            report_payload["summary"].append({"label":t["baseline_label"], "value":f"{pred:.1f} {UNITS['centner_ha']}"})
+            report_payload["summary"].append({"label":_active_yield_label, "value":f"{pred:.1f} {UNITS['centner_ha']}",
+                  "note": _yield_choice.disclaimer})
         elif "scenario" in locals() and scenario is not None:
             report_payload["summary"].append({"label":{"kk":"QŪNAR бағасы","ru":"Оценка QŪNAR","en":"QŪNAR score"}[lang], "value":f"{float(scenario['QUNAR_score_0_100']):.1f}/100"})
         if "resource" in locals():
@@ -5032,7 +5116,14 @@ if submitted:
                 "value_label":"0-100","axis_label":"0-100"
             }
         elif "ml_pred" in locals() and ml_pred is not None:
-            report_payload["summary"] = [{"label":{"kk":"Күтілетін өнімділік","ru":"Ожидаемая урожайность","en":"Expected yield"}[lang],"value":f"{ml_pred:.1f} {UNITS['centner_ha']}"}]
+            report_payload["summary"] = [{"label":{"ru":"Расчётный ориентир урожайности","kk":"Өнімділік бағдары","en":"Reference yield estimate"}[lang],
+                "value":f"{ml_pred:.1f} {UNITS['centner_ha']}", "note":_mode2_choice.disclaimer}]
+        if "_mode2_choice" in locals():
+            report_payload['summary'].extend([
+                {'label':{'ru':'Метод оценки урожайности','kk':'Өнімділікті бағалау әдісі','en':'Yield method'}[lang],
+                  'value':method_label(_mode2_choice.active_method,lang),'note':method_caveat(_mode2_choice,lang)},
+                {'label':{'ru':'Оценка Random Forest, ц/га (отдельно)','kk':'Random Forest бағасы, ц/га','en':'Separate Random Forest estimate, c/ha'}[lang],
+                  'value':f'{_mode2_rf_pred:.2f}', 'note':'Research ML benchmark; validation diagnostics below'}])
     elif mode_key == "mode3" and "ranking" in locals():
         report_payload["table"] = ranking[keep].to_dict(orient="records")
         top_row = ranking.iloc[0]
@@ -5041,7 +5132,7 @@ if submitted:
         report_payload["recommendations"] = [{
             "title":{"kk":"Негізгі таңдау","ru":"Приоритетный выбор","en":"Priority choice"}[lang],
             "text":{"kk":f"{top_name} ағымдағы критерийлер бойынша бірінші орында. Оны автоматты шешім емес, бастапқы басым нұсқа ретінде қарастырыңыз.","ru":f"{top_name} занимает первое место по текущему набору критериев. Рассматривайте его как приоритетный вариант для дальнейшей проверки, а не как автоматическое решение.","en":f"{top_name} ranks first under the current criteria. Treat it as the priority option for further verification, not an automatic decision."}[lang],
-            "evidence":{"kk":f"QŪNAR жалпы бағасы {top_score:.1f}/100; рейтинг климатты, су тиімділігін және дерек сенімділігін бірге салыстырады.","ru":f"Общий балл QŪNAR {top_score:.1f}/100; рейтинг учитывает климат, водную эффективность и надежность исходных данных.","en":f"QŪNAR overall score is {top_score:.1f}/100; the ranking combines climate, water efficiency and evidence reliability."}[lang],
+            "evidence":{"kk":f"QŪNAR жалпы бағасы {top_score:.1f}/100; рейтинг климатты, су тиімділігін және дерек сенімділігін бірге салыстырады.","ru":f"Общий балл QŪNAR {top_score:.1f}/100; рейтинг учитывает климат, водную эффективность и надежность исходных данных, но не подтверждает экономическую маржу.","en":f"QŪNAR overall score is {top_score:.1f}/100; the ranking combines climate, water efficiency and evidence reliability."}[lang],
             "effect":{"kk":"Келесі қадам - топ-3 нұсқаны су қолжетімділігі, технология және нарықтық жағдай бойынша салыстыру.","ru":"Следующий шаг - сопоставить три лучших варианта по доступности воды, технологии выращивания и рыночным условиям.","en":"Next, compare the top three options against water availability, production technology and market conditions."}[lang],
             "evidence_label":{"kk":"Негіздеме","ru":"Основание","en":"Evidence"}[lang],
             "effect_label":{"kk":"Келесі қадам","ru":"Следующий шаг","en":"Next step"}[lang],
