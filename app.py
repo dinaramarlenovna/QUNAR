@@ -1006,6 +1006,10 @@ if _PREVIOUS_INPUT_MODE and _PREVIOUS_INPUT_MODE != mode_key:
             continue  # shared crop, canonical sidebar and reports have separate persistence
         if _widget_k in ('qunar_mode_input_snapshots_v1', 'qunar_last_input_mode_v1'):
             continue
+        # Button states are transient and cannot be assigned through session_state.
+        # In particular qmix_calculate is a Streamlit button, not a user input.
+        if _widget_k in ('qmix_calculate',):
+            continue
         if _widget_k.startswith(('qunar_', 'qmix_', 'tariff_basis_', 'confirm_', 'sust_')):
             try:
                 import copy as _copy
@@ -1013,12 +1017,18 @@ if _PREVIOUS_INPUT_MODE and _PREVIOUS_INPUT_MODE != mode_key:
             except Exception:
                 pass
     for _widget_k, _widget_v in _MODE_INPUT_SNAPSHOTS.get(mode_key, {}).items():
+        if _widget_k in ('qmix_calculate',):
+            continue  # Never restore Streamlit's read-only button state.
         if _widget_k not in st.session_state:
             try:
                 import copy as _copy
                 st.session_state[_widget_k] = _copy.deepcopy(_widget_v)
             except Exception:
                 pass
+# Clean up any transient button state left by an older deployed version.
+# This executes before the mixed-farm button is instantiated.
+if mode_key == 'mode6':
+    st.session_state.pop('qmix_calculate', None)
 st.session_state['qunar_last_input_mode_v1'] = mode_key
 
 if st.session_state.get("ga_last_mode") != mode_key:
