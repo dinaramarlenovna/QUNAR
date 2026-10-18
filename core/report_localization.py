@@ -5,6 +5,7 @@ Identifiers, references, numeric values and URLs remain unchanged.
 """
 from copy import deepcopy
 import re
+import math
 
 # Exact internal captions found in deployed versions and the sample user PDF.
 EXACT={
@@ -91,6 +92,16 @@ FRAGMENTS={
     ('Species reference; not actual observed consumption','Справочник по виду животных; не фактический расход'),
     ('Scenario result; not an observed effect','Сценарный результат; не измеренный эффект'),
     ('Reference price','Справочная цена'),
+    ('unavailable:', 'нет данных:'),
+    ('Crop not specified', 'культура не выбрана'),
+    ('No animals counted', 'поголовье хозяйства не введено'),
+    ('KZT/m³', 'тг/м³'), ('KZT/m3', 'тг/м³'),
+    ('None = unavailable, not 0', 'нет данных не означает ноль'),
+    ('district benchmark', 'районная справочная статистика'),
+    ('regional reference', 'региональная справочная оценка'),
+    ('not farm observations', 'не измерения хозяйства'),
+    ('No observations', 'Нет наблюдений'),
+
  ],
  'kk': [
     ('physical_model:', 'Физикалық есептік модель:'),('zone_fallback:', 'Су шаруашылық аймағы бойынша мән:'),('user_observed:', 'Пайдаланушы өлшемі:'),
@@ -103,6 +114,11 @@ FRAGMENTS={
     ('FAO reference efficiencies','FAO анықтамалық ПӘК көрсеткіштері'),
     ('Ember Yearly Electricity Data 2025, Kazakhstan generation intensity', 'Ember, Қазақстан генерациясының 2025 жылғы статистикасы'),
     ('Full crop season','Дақылдың толық маусымы'),
+    ('unavailable:', 'дерек жоқ:'),
+    ('Crop not specified', 'дақыл таңдалмаған'),
+    ('No animals counted', 'шаруашылықтың мал саны енгізілмеген'),
+    ('KZT/m³', 'тг/м³'),
+
  ],
  'en': [],
 }
@@ -114,6 +130,8 @@ def localize_string(obj, lang):
     if lang not in ('ru','kk','en'):
         lang='en'
     text=obj
+    if text.strip().lower() in ('nan', 'none', 'null', 'n/a'):
+        return {'ru':'нет данных', 'kk':'дерек жоқ', 'en':'not available'}[lang]
     pair=EXACT.get(text)
     if pair:
         return pair[{'ru':0,'kk':1,'en':2}[lang]]
@@ -125,6 +143,15 @@ def localize_string(obj, lang):
             part=part.replace(before,after)
         chunks[i]=part
     return ''.join(chunks)
+
+
+def _report_value(value, lang):
+    """Format missing numeric evidence without inventing zero; keep legitimate 0."""
+    if isinstance(value, float):
+        if not math.isfinite(value):
+            return {'ru':'нет данных', 'kk':'дерек жоқ', 'en':'not available'}[lang]
+        return round(value, 3) if abs(value) < 1e12 else value
+    return localize_string(value, lang) if isinstance(value, str) else value
 
 
 def prepare_report(payload):
@@ -146,14 +173,14 @@ def prepare_report(payload):
     if out.get('chart') and isinstance(out['chart'],dict):
         out['chart'].setdefault('section_title',defaults['chart_section_title'])
     if isinstance(out.get('table'),list):
-        out['table']=[{localize_string(k,lang):localize_string(v,lang)
+        out['table']=[{localize_string(k,lang):_report_value(v,lang)
                        for k,v in row.items()} if isinstance(row,dict) else row
                       for row in out['table']]
     for field in ('summary','recommendations','analysis','inputs','chart'):
         if field not in out:
             continue
         def walk(node):
-            if isinstance(node,str): return localize_string(node,lang)
+            if isinstance(node,(str,float)): return _report_value(node,lang)
             if isinstance(node,list): return [walk(v) for v in node]
             if isinstance(node,tuple): return tuple(walk(v) for v in node)
             if isinstance(node,dict): return {k:walk(v) for k,v in node.items()}

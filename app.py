@@ -870,6 +870,21 @@ elif user_level == "specialist":
 else:
     st.sidebar.caption(t["level_research_hint"])
 
+st.sidebar.caption({
+    "farmer": {
+        "ru":"Для фермера: район, площадь, культура, вода и обязательный источник энергии. Остальное - справочные расчёты.",
+        "kk":"Фермер үшін: аудан, жер көлемі, дақыл, су және міндетті энергия көзі. Қалғаны анықтамалық есеп.",
+        "en":"For farmers: district, area, crop, water and a required energy source; remaining inputs use references."}[lang],
+    "specialist": {
+        "ru":"Для агронома и экономиста: тарифы, полив, насосы, затраты и сценарии «до/после».",
+        "kk":"Агроном мен экономист үшін: тариф, суару, сорғы, шығын және «дейін/кейін» сценарийі.",
+        "en":"For specialists: tariffs, irrigation, pumps, costs and before/after scenarios."}[lang],
+    "researcher": {
+        "ru":"Для исследователя: источники данных, проверки ML, чувствительность, FAO-56 и CMIP6.",
+        "kk":"Зерттеуші үшін: деректер, ML тексерістері, сезімталдық, FAO-56 және CMIP6.",
+        "en":"For researchers: data provenance, ML diagnostics, sensitivity, FAO-56 and CMIP6."}[lang],
+}[user_level])
+
 def district_label(code):
     return DISTRICT_LABELS[lang].get(code, code)
 
@@ -2259,7 +2274,20 @@ with st.container():
                 float(_p),float(_start_frac),float(_runoff),float(_cr),
                 _daily_eta_method,_daily_sched,float(calc_lat),float(calc_lon))
 
+    # Scenario configuration belongs to the input area, not beneath Results.
+    # Streamlit's container allows us to fill this slot after the main model
+    # has produced the reference quantities needed by the comparison.
+    _scenario_inputs_slot = st.container() if (user_level != "farmer" and mode_key in ("mode1", "mode2", "mode5")) else None
     submitted = st.button(t["calculate"], type="primary", use_container_width=True, key="calculate_main")
+
+# Keep the optional scenario controls available while editing them after a run.
+# Changes to the inputs are reflected in a new calculation using the same model.
+if submitted:
+    st.session_state['qunar_calculated_mode'] = mode_key
+    st.session_state['qunar_calculated_level'] = user_level
+elif (st.session_state.get('qunar_calculated_mode') == mode_key
+      and st.session_state.get('qunar_calculated_level') == user_level):
+    submitted = True
 
 if submitted:
     if not selected_energy_sources:
@@ -2302,6 +2330,16 @@ if submitted:
             'en':'Mechanized water supply already includes supplier pumping. Automatic on-farm pump energy is disabled to avoid double charging; enter separately metered downstream pumping if present.'
         }[lang])
     _grid_known = energy_reference.value is not None
+    # A missing value is not measured zero. Use one shared source for all modes,
+    # including Selected Crop; otherwise mode2 previously raised NameError.
+    economic_energy_kwh = (float(observed_energy) if observed_energy is not None
+                           else float(energy_reference.value) if energy_reference.value is not None
+                           else None)
+    economic_energy_source = (
+        "user_observed" if observed_energy is not None else
+        f"{energy_reference.source_tier}: {energy_reference.source}" if energy_reference.value is not None
+        else "unknown_electricity_no_estimate"
+    )
     # Methodological references are not measurements; tariff and EF defaults
     # remain labelled scenarios unless an actual bill/factor is entered.
 
@@ -2429,7 +2467,7 @@ if submitted:
     if mode_key == "mode5":
         livestock_head_source_label = (
             t["source_user"] if livestock_heads > 0
-            else {"kk":"Аудандық ресми анықтамалық сценарий","ru":"Районный официальный справочный сценарий","en":"Official district reference scenario"}[lang]
+            else {"kk":"Енгізілмеген; аудан дерегі тек салыстыру үшін", "ru":"Не введено; районный показатель отдельно для справки", "en":"Not entered; district statistic is separate context"}[lang]
         )
         feed_source_label = (
             t["source_user"] if livestock_feed_source == "own"
@@ -3063,6 +3101,7 @@ if submitted:
             production_kind=livestock_production_kind,
             pasture_degraded_share_pct=pasture_degraded_share_pct,
             climate=climate,
+            use_district_reference_if_missing=False,
         )
         lp = district_livestock_profile(used_district)
         benchmark = livestock.get("district_benchmark", {}) or {}
@@ -3097,7 +3136,7 @@ if submitted:
         )
         r2.metric(
             {"kk":"Есепте қолданылған мал саны","ru":"Поголовье в расчете","en":"Herd used in calculation"}[lang],
-            f"{effective_heads:,.0f}"
+            f"{effective_heads:,.0f}" if heads_source == "user" else "—"
         )
         r3.metric(
             {"kk":"Соңғы ресми аудандық мән","ru":"Последнее официальное значение района","en":"Latest official district count"}[lang],
@@ -3118,6 +3157,11 @@ if submitted:
                 "ru":f"Поголовье конкретного хозяйства не введено. В справочном сценарии использовано последнее официальное районное значение за {benchmark.get('latest_year','последний доступный')} год: {effective_heads:,.0f} голов. В отчете оно отмечается как районное справочное значение.",
                 "en":f"No farm-specific herd count was entered. The reference scenario uses the latest official district value for {benchmark.get('latest_year','the latest available year')}: {effective_heads:,.0f} head, explicitly flagged as a district reference.",
             }[lang])
+        if heads_source == "unknown":
+            st.info({
+                "ru":"Поголовье хозяйства не введено. Районная статистика показана отдельно для справки. Потребность фермы в воде, кормах и нагрузка на пастбище не рассчитываются без поголовья.",
+                "kk":"Шаруашылықтың мал саны енгізілмеген. Аудандық статистика бөлек көрсетіледі. Мал саны жоқ кезде ферма суы, жемі және жайылым жүктемесі есептелмейді.",
+                "en":"Farm herd size was not entered. District statistics are context only. Farm water, feed and stocking pressure remain unavailable without farm animal counts."}[lang])
         benchmark_category = benchmark.get("benchmark_species")
         if benchmark_category and str(benchmark_category) != str(livestock_species):
             st.caption({
@@ -3139,65 +3183,67 @@ if submitted:
                 f"{livestock['lu_per_pasture_ha']:.3f} {UNITS['livestock_unit_ha']}"
             )
 
-        # 2. Historical dynamics and one-step ML forecast.
-        st.markdown("#### " + {
-            "kk":"Тарихи динамика және машиналық оқыту болжамы",
-            "ru":"Историческая динамика и прогноз машинного обучения",
-            "en":"Historical dynamics and ML forecast",
-        }[lang])
-        f1,f2,f3,f4 = st.columns(4)
-        f1.metric(
-            {"kk":"Соңғы бақылау","ru":"Последнее наблюдение","en":"Latest observation"}[lang],
-            f"{float(benchmark.get('latest_district_heads',0)):,.0f}" if benchmark.get("latest_district_heads") is not None else "—",
-            help=str(benchmark.get("latest_year",""))
-        )
-        f2.metric(
-            {"kk":"Келесі жылға машиналық оқыту болжамы","ru":"Прогноз машинного обучения на следующий год","en":"Next-year machine-learning forecast"}[lang],
-            f"{float(forecast.get('forecast_heads')):,.0f}" if forecast.get("available") and forecast.get("publish_forecast") else "—",
-            delta=(f"{float(forecast.get('forecast_change_pct')):+.1f}%" if forecast.get("publish_forecast") and forecast.get("forecast_change_pct") is not None else None)
-        )
-        f3.metric(
-            {"kk":"Санат бойынша R² (логарифмдік шкала)","ru":"R² по категории (логарифмическая шкала)","en":"Category R² (log scale)"}[lang],
-            f"{float(species_validation.get('r2_log')):.3f}" if species_validation.get("r2_log") is not None and pd.notna(species_validation.get("r2_log")) else "—"
-        )
-        f4.metric(
-            {"kk":"Медианалық абсолюттік пайыздық қате","ru":"Медианная абсолютная процентная ошибка","en":"Median absolute percentage error"}[lang],
-            f"{float(species_validation.get('median_ape_pct')):.1f}%" if species_validation.get("median_ape_pct") is not None and pd.notna(species_validation.get("median_ape_pct")) else "—"
-        )
+        # Detailed time-series ML diagnostics are for the research interface.
+        if user_level == "researcher":
+            # 2. Historical dynamics and one-step ML forecast.
+            st.markdown("#### " + {
+                "kk":"Тарихи динамика және машиналық оқыту болжамы",
+                "ru":"Историческая динамика и прогноз машинного обучения",
+                "en":"Historical dynamics and ML forecast",
+            }[lang])
+            f1,f2,f3,f4 = st.columns(4)
+            f1.metric(
+                {"kk":"Соңғы бақылау","ru":"Последнее наблюдение","en":"Latest observation"}[lang],
+                f"{float(benchmark.get('latest_district_heads',0)):,.0f}" if benchmark.get("latest_district_heads") is not None else "—",
+                help=str(benchmark.get("latest_year",""))
+            )
+            f2.metric(
+                {"kk":"Келесі жылға машиналық оқыту болжамы","ru":"Прогноз машинного обучения на следующий год","en":"Next-year machine-learning forecast"}[lang],
+                f"{float(forecast.get('forecast_heads')):,.0f}" if forecast.get("available") and forecast.get("publish_forecast") else "—",
+                delta=(f"{float(forecast.get('forecast_change_pct')):+.1f}%" if forecast.get("publish_forecast") and forecast.get("forecast_change_pct") is not None else None)
+            )
+            f3.metric(
+                {"kk":"Санат бойынша R² (логарифмдік шкала)","ru":"R² по категории (логарифмическая шкала)","en":"Category R² (log scale)"}[lang],
+                f"{float(species_validation.get('r2_log')):.3f}" if species_validation.get("r2_log") is not None and pd.notna(species_validation.get("r2_log")) else "—"
+            )
+            f4.metric(
+                {"kk":"Медианалық абсолюттік пайыздық қате","ru":"Медианная абсолютная процентная ошибка","en":"Median absolute percentage error"}[lang],
+                f"{float(species_validation.get('median_ape_pct')):.1f}%" if species_validation.get("median_ape_pct") is not None and pd.notna(species_validation.get("median_ape_pct")) else "—"
+            )
 
-        hist = district_species_history(used_district, livestock_species)
-        if not hist.empty:
-            observed_col = {"kk":"Нақты мән","ru":"Фактическое значение","en":"Observed"}[lang]
-            forecast_col = {"kk":"Болжам","ru":"Прогноз","en":"Forecast"}[lang]
-            hplot = hist.rename(columns={"Heads": observed_col}).set_index("Year")[[observed_col]]
-            hplot[forecast_col] = float("nan")
-            if forecast.get("available") and forecast.get("publish_forecast"):
-                fy = int(forecast["forecast_year"])
-                if fy not in hplot.index:
-                    hplot.loc[fy, observed_col] = float("nan")
-                hplot.loc[fy, forecast_col] = float(forecast["forecast_heads"])
-                # Retain the latest observed point in the forecast series so the one-step path is visible.
-                ly = int(forecast["previous_year"])
-                hplot.loc[ly, forecast_col] = float(forecast["previous_heads"])
-                hplot = hplot.sort_index()
-            st.line_chart(hplot)
-        if forecast.get("available") and not forecast.get("publish_forecast"):
-            st.warning({
-                "kk":f"Бұл санат бойынша машиналық оқыту болжамы жарияланбайды: уақыт бойынша кезеңдік тексерудің сапасы жеткіліксіз (R²={species_validation.get('r2_log', float('nan')):.3f}, медианалық абсолюттік пайыздық қате={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR тарихи динамика мен ресурстық диагностикаға сүйенеді.",
-                "ru":f"Для этой категории численный прогноз машинного обучения не публикуется: последовательная проверка по времени недостаточно надежна (R²={species_validation.get('r2_log', float('nan')):.3f}, медианная абсолютная процентная ошибка={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR сохраняет историческую динамику и ресурсную диагностику без выдачи слабого прогноза.",
-                "en":f"A numerical ML forecast is withheld for this category because category-level rolling-origin validation is not reliable enough (R²={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR retains history and resource diagnostics without publishing a weak forecast.",
-            }[lang])
-        if forecast.get("available"):
-            climate_flag = {
-                "kk":"аймақтық медианамен толықтырылған" if forecast.get("climate_imputed") else "аудандық",
-                "ru":"дополнен региональной медианой" if forecast.get("climate_imputed") else "районный",
-                "en":"regional-median imputed" if forecast.get("climate_imputed") else "district",
-            }[lang]
-            st.caption({
-                "kk":f"Кездейсоқ орман алгоритмінің белгілері: аудан, мал санаты, алдыңғы жылғы мал саны, жыл, сәуір-қыркүйек температурасы, жауын-шашын, тамыр аймағының ылғалы және күн радиациясы. Уақыт бойынша кезеңдік тексеру жылдары: {', '.join(map(str, forecast.get('validation_years', [])))}; жалпы бақылау саны={forecast.get('validation_n',0)}, жалпы R²={forecast.get('r2_log', float('nan')):.3f}; таңдалған санаттағы бақылау саны={species_validation.get('n',0)}, R²={species_validation.get('r2_log', float('nan')):.3f}, медианалық абсолюттік пайыздық қате={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климаттық анықтама: {forecast.get('climate_reference_year','—')} жыл, {climate_flag}.",
-                "ru":f"Алгоритм случайного леса использует район, категорию животных, поголовье предыдущего года, год, температуру апреля-сентября, осадки, влажность корневой зоны и солнечную радиацию. Последовательная проверка по времени охватывает {', '.join(map(str, forecast.get('validation_years', [])))} годы; общее число наблюдений={forecast.get('validation_n',0)}, общий R²={forecast.get('r2_log', float('nan')):.3f}; для выбранной категории число наблюдений={species_validation.get('n',0)}, R²={species_validation.get('r2_log', float('nan')):.3f}, медианная абсолютная процентная ошибка={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климатическая опора прогноза: {forecast.get('climate_reference_year','—')} год, профиль {climate_flag}.",
-                "en":f"Random Forest uses district, livestock category, previous-year herd size, year, Apr-Sep temperature, precipitation, root-zone wetness and solar radiation. Rolling-origin validation covers {', '.join(map(str, forecast.get('validation_years', [])))}; overall n={forecast.get('validation_n',0)}, overall R²(log)={forecast.get('r2_log', float('nan')):.3f}; selected-category n={species_validation.get('n',0)}, R²(log)={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%. Forecast climate reference: {forecast.get('climate_reference_year','—')}, {climate_flag} profile.",
-            }[lang])
+            hist = district_species_history(used_district, livestock_species)
+            if not hist.empty:
+                observed_col = {"kk":"Нақты мән","ru":"Фактическое значение","en":"Observed"}[lang]
+                forecast_col = {"kk":"Болжам","ru":"Прогноз","en":"Forecast"}[lang]
+                hplot = hist.rename(columns={"Heads": observed_col}).set_index("Year")[[observed_col]]
+                hplot[forecast_col] = float("nan")
+                if forecast.get("available") and forecast.get("publish_forecast"):
+                    fy = int(forecast["forecast_year"])
+                    if fy not in hplot.index:
+                        hplot.loc[fy, observed_col] = float("nan")
+                    hplot.loc[fy, forecast_col] = float(forecast["forecast_heads"])
+                    # Retain the latest observed point in the forecast series so the one-step path is visible.
+                    ly = int(forecast["previous_year"])
+                    hplot.loc[ly, forecast_col] = float(forecast["previous_heads"])
+                    hplot = hplot.sort_index()
+                st.line_chart(hplot)
+            if forecast.get("available") and not forecast.get("publish_forecast"):
+                st.warning({
+                    "kk":f"Бұл санат бойынша машиналық оқыту болжамы жарияланбайды: уақыт бойынша кезеңдік тексерудің сапасы жеткіліксіз (R²={species_validation.get('r2_log', float('nan')):.3f}, медианалық абсолюттік пайыздық қате={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR тарихи динамика мен ресурстық диагностикаға сүйенеді.",
+                    "ru":f"Для этой категории численный прогноз машинного обучения не публикуется: последовательная проверка по времени недостаточно надежна (R²={species_validation.get('r2_log', float('nan')):.3f}, медианная абсолютная процентная ошибка={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR сохраняет историческую динамику и ресурсную диагностику без выдачи слабого прогноза.",
+                    "en":f"A numerical ML forecast is withheld for this category because category-level rolling-origin validation is not reliable enough (R²={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%). QŪNAR retains history and resource diagnostics without publishing a weak forecast.",
+                }[lang])
+            if forecast.get("available"):
+                climate_flag = {
+                    "kk":"аймақтық медианамен толықтырылған" if forecast.get("climate_imputed") else "аудандық",
+                    "ru":"дополнен региональной медианой" if forecast.get("climate_imputed") else "районный",
+                    "en":"regional-median imputed" if forecast.get("climate_imputed") else "district",
+                }[lang]
+                st.caption({
+                    "kk":f"Кездейсоқ орман алгоритмінің белгілері: аудан, мал санаты, алдыңғы жылғы мал саны, жыл, сәуір-қыркүйек температурасы, жауын-шашын, тамыр аймағының ылғалы және күн радиациясы. Уақыт бойынша кезеңдік тексеру жылдары: {', '.join(map(str, forecast.get('validation_years', [])))}; жалпы бақылау саны={forecast.get('validation_n',0)}, жалпы R²={forecast.get('r2_log', float('nan')):.3f}; таңдалған санаттағы бақылау саны={species_validation.get('n',0)}, R²={species_validation.get('r2_log', float('nan')):.3f}, медианалық абсолюттік пайыздық қате={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климаттық анықтама: {forecast.get('climate_reference_year','—')} жыл, {climate_flag}.",
+                    "ru":f"Алгоритм случайного леса использует район, категорию животных, поголовье предыдущего года, год, температуру апреля-сентября, осадки, влажность корневой зоны и солнечную радиацию. Последовательная проверка по времени охватывает {', '.join(map(str, forecast.get('validation_years', [])))} годы; общее число наблюдений={forecast.get('validation_n',0)}, общий R²={forecast.get('r2_log', float('nan')):.3f}; для выбранной категории число наблюдений={species_validation.get('n',0)}, R²={species_validation.get('r2_log', float('nan')):.3f}, медианная абсолютная процентная ошибка={species_validation.get('median_ape_pct', float('nan')):.1f}%. Климатическая опора прогноза: {forecast.get('climate_reference_year','—')} год, профиль {climate_flag}.",
+                    "en":f"Random Forest uses district, livestock category, previous-year herd size, year, Apr-Sep temperature, precipitation, root-zone wetness and solar radiation. Rolling-origin validation covers {', '.join(map(str, forecast.get('validation_years', [])))}; overall n={forecast.get('validation_n',0)}, overall R²(log)={forecast.get('r2_log', float('nan')):.3f}; selected-category n={species_validation.get('n',0)}, R²(log)={species_validation.get('r2_log', float('nan')):.3f}, median APE={species_validation.get('median_ape_pct', float('nan')):.1f}%. Forecast climate reference: {forecast.get('climate_reference_year','—')}, {climate_flag} profile.",
+                }[lang])
 
         # 3. Biological/resource reference layer.
         st.markdown("#### " + {
@@ -4353,7 +4399,7 @@ if submitted:
                 variable_cost_kzt_ha=(variable_cost_kzt_ha if variable_cost_kzt_ha > 0 else None),
                 water_m3_ha=(effective_water_used/area_ha if effective_water_used is not None and area_ha > 0 else None),
                 water_tariff_kzt_m3=water_tariff,
-                energy_kwh_ha=(economic_energy_kwh/area_ha if economic_energy_source != "unknown_electricity_no_estimate" and area_ha > 0 else None),
+                energy_kwh_ha=(economic_energy_kwh/area_ha if economic_energy_kwh is not None and area_ha > 0 else None),
                 electricity_tariff_kzt_kwh=electricity_tariff,
                 variable_cost_includes_water_energy=False,  # field explicitly describes OTHER variable costs
             )
@@ -4368,7 +4414,11 @@ if submitted:
                 "ru":"Этот результат не равен чистой прибыли: это сценарная маржа на основе введенной цены, переменных затрат и учтенных расходов на воду и энергию.",
                 "en":"This is not net profit. It is a scenario contribution margin based on the entered price, variable costs, water and energy costs."
             }[lang])
-            if irrigation_compare_enabled:
+            if irrigation_compare_enabled and economic_energy_kwh is None:
+                st.info({"ru":"Сравнение стоимости энергии недоступно: потребление электроэнергии не введено и параметры насоса неизвестны.",
+                         "kk":"Энергия құнын салыстыру мүмкін емес: электр тұтынуы мен сорғы сипаттары белгісіз.",
+                         "en":"Energy-cost comparison unavailable: neither measured electricity nor a documented pumping estimate is available."}[lang])
+            if irrigation_compare_enabled and economic_energy_kwh is not None:
                 if not irrigation_evidence.strip() or not (variable_cost_kzt_ha > 0) or irrigation_type == "unknown":
                     st.warning({"kk":"Сценарий үшін бастапқы суару түрі, шығындар және өнімділік өзгерісінің негіздемесі қажет.","ru":"Для сравнения нужны исходный тип орошения, переменные затраты и источник/явное допущение для изменения урожайности.","en":"Comparison requires known baseline irrigation, variable costs and a documented yield-effect assumption."}[lang])
                 elif irrigation_target == irrigation_type:
@@ -4924,24 +4974,31 @@ if submitted:
     # This scenario uses the same underlying inputs/period and is deliberately
     # separate from the constrained crop allocation unless user explicitly
     # changes and re-runs the optimizer.
-    _integrated_fragment = render_integrated_scenario(
-        lang=lang, mode_key=mode_key, district=used_district,
-        crop=crop, area_ha=area_ha, irrigation_type=irrigation_type,
-        observed_water_m3=observed_water, observed_energy_kwh=observed_energy,
-        grid_factor=ef, water_tariff=water_tariff,
-        electricity_tariff=electricity_tariff,
-        expected_yield_c_ha=expected_yield_c_ha,
-        selling_price_kzt_t=selling_price_kzt_t,
-        other_cost_kzt_ha=variable_cost_kzt_ha,
-        livestock_heads=livestock_heads, livestock_species=livestock_species,
-        livestock_production_amount=livestock_production_amount,
-        livestock_production_kind=livestock_production_kind,
-        livestock_reference=locals().get('livestock'),
-        assessment_year=calculation_year,
-        main_pump_confirmed=(pumping_confirmed and pump_head_m is not None and pump_efficiency is not None),
-        main_pump_head_m=pump_head_m, main_pump_efficiency=pump_efficiency,
-        purchased_mechanized_water=(_tariff_water_ref == 'kazvodkhoz_irrigation_pumped_2026'),
-    )
+    _integrated_fragment = None
+    if _scenario_inputs_slot is not None:
+        with _scenario_inputs_slot:
+            st.markdown("#### " + {
+                "ru":"Дополнительный сценарий «до / после» (параметры)",
+                "kk":"«Дейін / кейін» қосымша сценарийі (параметрлер)",
+                "en":"Optional before/after scenario (inputs)"}[lang])
+            _integrated_fragment = render_integrated_scenario(
+                lang=lang, mode_key=mode_key, district=used_district,
+                crop=crop, area_ha=area_ha, irrigation_type=irrigation_type,
+                observed_water_m3=observed_water, observed_energy_kwh=observed_energy,
+                grid_factor=ef, water_tariff=water_tariff,
+                electricity_tariff=electricity_tariff,
+                expected_yield_c_ha=expected_yield_c_ha,
+                selling_price_kzt_t=selling_price_kzt_t,
+                other_cost_kzt_ha=variable_cost_kzt_ha,
+                livestock_heads=livestock_heads, livestock_species=livestock_species,
+                livestock_production_amount=livestock_production_amount,
+                livestock_production_kind=livestock_production_kind,
+                livestock_reference=locals().get('livestock'),
+                assessment_year=calculation_year,
+                main_pump_confirmed=(pumping_confirmed and pump_head_m is not None and pump_efficiency is not None),
+                main_pump_head_m=pump_head_m, main_pump_efficiency=pump_efficiency,
+                purchased_mechanized_water=(_tariff_water_ref == 'kazvodkhoz_irrigation_pumped_2026'),
+            )
     if _integrated_fragment is not None:
         report_payload['summary'].extend(_integrated_fragment['summary'])
         report_payload['inputs'].extend(_integrated_fragment['inputs'])
