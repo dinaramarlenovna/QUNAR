@@ -30,14 +30,14 @@ def _crop_label(c,lang):
 def render_mixed_mode(*, lang: str, district: str, district_title: str,
                       assessment_year: int, render_export_panel):
     """Render self-contained comparative annual accounting and exportable results."""
-    title=_get('Сравнить растениеводство и животноводство',
-               'Өсімдік және мал шаруашылығын салыстыру',
-               'Compare crops and livestock', lang)
+    title=_get('Сравнить растениеводство и животноводство (бета-версия)',
+               'Өсімдік және мал шаруашылығын салыстыру (бета-нұсқа)',
+               'Compare crops and livestock (beta)', lang)
     st.header(title)
     st.caption(_get(
-        'Исследовательский расчёт «что, если». Данные учебного примера можно менять. Это НЕ подтверждённый результат внедрения и НЕ юридическое заключение о переводе земель.',
-        '«Не болса» сценарийлік ғылыми есеп. Бастапқы мәндер оқу мысалы. Нақты енгізу әсері де, жер мәртебесін өзгерту рұқсаты да расталмайды.',
-        'Research what-if exercise. Defaults are illustrative; neither realized effects nor authorization to convert land are established.',lang))
+        'Экспериментальный сценарный модуль: научная апробация продолжается. Параметры примера являются допущениями. Сравнение не подтверждает фактическую экономию, полное экологическое превосходство или право изменить назначение земель.',
+        'Эксперименттік сценарийлік модуль: ғылыми сынақ жалғасуда. Мысал деректері — болжамдар. Нәтиже нақты үнемді, толық экологиялық артықшылықты немесе жердің мақсатын өзгерту құқығын растамайды.',
+        'Experimental scenario module under scientific evaluation. Example inputs are assumptions. Results do not establish realized savings, overall environmental superiority or permission to change land use.',lang))
     st.info(_get('Первый вариант сохраняет исходную структуру. В двух следующих можно перевести часть выбранной культуры в пастбище и задать поголовье КРС. Общая площадь при этом не меняется.',
         'Бастапқы нұсқа өзгеріссіз қалады. Кейінгі нұсқаларда дақыл жерінің бір бөлігін жайылым ретінде тексеруге болады. Жалпы аумақ өзгермейді.',
         'The first option is the unchanged baseline. In the following two, part of a crop area can be assessed as converted pasture; total land is conserved.',lang))

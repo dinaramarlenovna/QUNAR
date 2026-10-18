@@ -808,9 +808,11 @@ _MODE_LABEL_FALLBACK = {
     "ru": {"mode5": "Оценить ресурсы животноводства"},
     "en": {"mode5": "Assess livestock resources"},
 }
-_MODE_LABEL_FALLBACK['ru']['mode6'] = 'Сравнить растениеводство и животноводство'
-_MODE_LABEL_FALLBACK['kk']['mode6'] = 'Өсімдік және мал шаруашылығын салыстыру'
-_MODE_LABEL_FALLBACK['en']['mode6'] = 'Compare crops and livestock'
+# Keep mode6 experimental status visible in the sidebar in all three languages.
+# This is a display-only change: stable mode key remains 'mode6'.
+_MODE_LABEL_FALLBACK['ru']['mode6'] = 'Сравнить растениеводство и животноводство (бета-версия)'
+_MODE_LABEL_FALLBACK['kk']['mode6'] = 'Өсімдік және мал шаруашылығын салыстыру (бета-нұсқа)'
+_MODE_LABEL_FALLBACK['en']['mode6'] = 'Compare crops and livestock (beta)'
 for _key, _label in _MODE_LABEL_FALLBACK[lang].items():
     t.setdefault(_key, _label)
 
