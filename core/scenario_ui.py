@@ -10,7 +10,7 @@ from .integrated_scenarios import (
     FIELD_ETA, FAO_IRRIGATION, FAO_WATER_ACCOUNTING, IPCC_AFOLU,
     irrigation_reference, linked_pump_electricity, compare_farm_scenario,
 )
-from .water_norms import default_water_requirement, PUMPING_REFERENCE_KWH_PER_M3
+from .water_norms import default_water_requirement
 from .producer_prices import reference_producer_price
 from .irrigation_evidence import mixed_efficiency
 
@@ -66,7 +66,9 @@ def render_integrated_scenario(*, lang, mode_key, district, crop, area_ha, irrig
                                selling_price_kzt_t, other_cost_kzt_ha,
                                livestock_heads, livestock_species, livestock_production_amount,
                                livestock_production_kind, livestock_reference=None,
-                               assessment_year=2026, crop_label=None):
+                               assessment_year=2026, crop_label=None, main_pump_confirmed=False,
+                               main_pump_head_m=None, main_pump_efficiency=None,
+                               purchased_mechanized_water=False):
     """Return report fragment or None. Values are recomputed on every rerun.
 
     This is a stand-alone counterfactual; it never writes crop-optimizer budgets
@@ -183,23 +185,46 @@ def render_integrated_scenario(*, lang, mode_key, district, crop, area_ha, irrig
             _label('Доля воды, которую подают НАСОСОМ, % (0 = не подтверждена/самотёк)',
                    'Share of delivered water PUMPED, % (0 = unknown/gravity)',
                    'СОРҒЫМЕН жеткізілетін су үлесі, % (0 = белгісіз/өздігінен ағу)',lang),
-            0.,'integrated_pumped_share',step=10.,maximum=100.)
+            100. if main_pump_confirmed and not purchased_mechanized_water else 0.,
+            'integrated_pumped_share',step=10.,maximum=100.)
         if pump_share==0:
             st.caption(_label('Без подтверждения насосной подачи снижение электроэнергии из экономии воды НЕ предполагается.',
                               'Water savings do not imply electricity savings without pumping evidence.',
                               'Сорғы көрсетілмесе, су үнемінен электр үнемі есептелмейді.',lang))
+        # Physical FAO-style hydraulic estimate, never the archival 0.70509 kWh/m³.
+        # It is applicable ONLY when the farm's own pump is confirmed and
+        # its head and combined efficiency have been entered.
+        pump_reference = (0.002725 * float(main_pump_head_m) / float(main_pump_efficiency)
+                          if main_pump_confirmed and not purchased_mechanized_water
+                          and main_pump_head_m is not None and main_pump_efficiency
+                          and float(main_pump_head_m)>0 else 0.0)
+        if purchased_mechanized_water:
+            st.info(_label('Тариф механизированной подачи уже включает перекачку поставщика. Собственную насосную энергию без подтверждённого отдельного насоса повторно не начисляем.',
+                           'Mechanized-delivery tariff includes supplier pumping. Do not add an unverified separate pump charge.',
+                           'Механикаландырылған су жеткізу тарифінде жеткізуші сорғысы қамтылған. Бөлек сорғы расталмаса, екінші рет қоспаймыз.',lang))
         c1,c2,c3=st.columns(3)
         with c1:
             pump_b=_number(_label('Насос сейчас, кВт·ч/м³','Current pump, kWh/m³','Қазіргі сорғы, кВт·сағ/м³',lang),
-                           PUMPING_REFERENCE_KWH_PER_M3 if kind=='crop' else 0.,'integrated_pump_b',step=.05,
-                           help='Scenario engineering assumption, not a farm meter reading.')
+                           pump_reference,'integrated_pump_b',step=.01,
+                           help=_label('Расчёт по напору и КПД вашего насоса. Ноль означает, что нет подтверждённых параметров: электроэнергия не считается равной нулю.', 'Estimate from your pump head and efficiency. Zero means no confirmed data, not zero electricity.', 'Сорғы тегеуріні мен ПӘК бойынша есеп. Нөл - дерек жоқ, нақты тұтыну нөл емес.',lang))
         with c2:
             pump_p=_number(_label('Насос после, кВт·ч/м³','Proposed pump, kWh/m³','Жаңа сорғы, кВт·сағ/м³',lang),
-                           PUMPING_REFERENCE_KWH_PER_M3 if kind=='crop' else 0.,'integrated_pump_p',step=.05)
+                           pump_reference,'integrated_pump_p',step=.01,
+                           help=_label('Предполагаемый расход насоса после изменений. Если данных нет, не задавайте произвольную экономию.', 'Expected pumping electricity after intervention; do not assume an unsupported improvement.', 'Өзгерістен кейінгі сорғы энергиясы; негізсіз үнемді болжауға болмайды.',lang))
         with c3:
             efficiency_pct=_number(_label('Экономия прочей электроэнергии, %','Other electricity efficiency improvement, %',
                                           'Басқа электр энергиясын үнемдеу, %',lang),10. if kind=='livestock' else 0.,'integrated_power_cut',step=5.,maximum=90.)
         observed_kwh=observed_energy_kwh if observed_energy_kwh and observed_energy_kwh>0 else None
+        if purchased_mechanized_water and pump_share>0 and not observed_kwh:
+            st.warning(_label('Чтобы считать собственный насос при оплаченной механизированной подаче, нужно отдельно подтвердить его потребление. Пока неизвестное электричество не включено в оценку.',
+                              'Separately metered downstream pumping is required when mechanized delivery is already purchased.',
+                              'Жеткізуші сорғысы төленген жағдайда танаптағы жеке сорғы энергиясы бөлек расталуы тиіс.',lang))
+            pump_share=0.0
+        if pump_share>0 and (pump_b<=0 or pump_p<=0) and observed_kwh is None:
+            st.warning(_label('Для расчёта энергии насоса требуются напор и КПД либо фактическое потребление. Отсутствие данных не равно нулю.',
+                              'Pumping needs head and efficiency or measured electricity. Missing is not zero.',
+                              'Сорғы энергиясын есептеуге тегеурін, ПӘК немесе нақты тұтыну қажет. Деректің жоқтығы нөл емес.',lang))
+            pump_share=0.0
         if pump_share==0 or bw is None:
             pb=observed_kwh
             pp=observed_kwh*(1-efficiency_pct/100) if observed_kwh is not None else None
@@ -347,7 +372,7 @@ def render_integrated_scenario(*, lang, mode_key, district, crop, area_ha, irrig
                                          'Айнымалы шығындардың толықтығын растаймын',lang),value=False,key='integrated_costs_complete')
             evidence=st.text_input(_label('Основание допущений/источник (при необходимости уточните)','Assumptions and evidence',
                                            'Дереккөз және жорамалдар',lang),
-                                   value='FAO reference irrigation; user-entered scenario assumptions',
+                                   value=_label('FAO: справочное орошение; допущения пользователя','FAO reference irrigation; user-entered scenario assumptions','FAO: анықтамалық суару; пайдаланушы жорамалдары',lang),
                                    key='integrated_evidence')
         if not evidence.strip():
             st.warning(_label('Нужно указать источник или допущение.','Evidence/assumption is required.',
@@ -426,48 +451,61 @@ def render_integrated_scenario(*, lang, mode_key, district, crop, area_ha, irrig
                           'Only displayed emission components are covered. Missing is not zero. Electricity accounting is operational.',
                           'Тек көрсетілген шығарындылар қамтылған. Жоқ дерек нөл емес.',lang))
         st.caption('FAO: '+FAO_IRRIGATION+' | '+FAO_WATER_ACCOUNTING+' | IPCC: '+IPCC_AFOLU)
+        # Export-ready localised text: the same fragment feeds PDF, Word and Excel.
+        def label3(ru,en,kk): return _label(ru,en,kk,lang)
         summary=[]
         for tag,a,b,unit in [
-            ('Integrated field water',results['water_before_m3'],results['water_after_m3'],'m3'),
-            ('Integrated electricity',results['energy_before_kwh'],results['energy_after_kwh'],'kWh'),
-            ('Integrated partial operational GHG',results['ghg_before_kgco2e'],results['ghg_after_kgco2e'],'kg CO2e'),
-            ('Integrated indicative margin',results['margin_before_kzt'],results['margin_after_kzt'],'KZT'),
+            (label3('Единый сценарий: подача воды','Integrated scenario: water delivered','Біріктірілген сценарий: берілген су'), results['water_before_m3'],results['water_after_m3'],label3('м³','m³','м³')),
+            (label3('Единый сценарий: электроэнергия','Integrated scenario: electricity','Біріктірілген сценарий: электр энергиясы'),results['energy_before_kwh'],results['energy_after_kwh'],label3('кВт·ч','kWh','кВт·сағ')),
+            (label3('Единый сценарий: частичные выбросы','Integrated scenario: partial emissions','Біріктірілген сценарий: ішінара шығарындылар'),results['ghg_before_kgco2e'],results['ghg_after_kgco2e'],'кг CO₂e'),
+            (label3('Единый сценарий: ориентировочная маржа','Integrated scenario: indicative margin','Біріктірілген сценарий: есептік маржа'),results['margin_before_kzt'],results['margin_after_kzt'],label3('тг','KZT','тг')),
         ]:
-            if a is not None:
-                summary.extend([
-                    {'label':tag+' baseline, '+unit,'value':f'{a:.2f}', 'note':tr['figure']},
-                    {'label':tag+' after, '+unit,'value':f'{b:.2f}', 'note':tr['figure']},
-                    {'label':tag+' difference after-baseline, '+unit,'value':f'{b-a:+.2f}','note':tr['figure']},
-                ])
+            if a is not None and b is not None:
+                for suffix, val in [
+                    (label3('до изменений','before','өзгеріске дейін'),a),
+                    (label3('после изменений','after','өзгерістен кейін'),b),
+                    (label3('разность (после − до)','difference (after − before)','айырма (кейін − бұрын)'),b-a)]:
+                    summary.append({'label':f'{tag}: {suffix}, {unit}', 'value':f'{val:+.2f}' if suffix==label3('разность (после − до)','difference (after − before)','айырма (кейін − бұрын)') else f'{val:.2f}', 'note':tr['figure']})
+        components={
+            'grid':label3('Электросеть','Grid electricity','Электр желісі'),
+            'diesel':label3('Дизель','Diesel','Дизель'),
+            'fertilizer':label3('Азотные удобрения','Nitrogen fertilizers','Азот тыңайтқыштары'),
+            'enteric':label3('Метан пищеварения','Enteric methane','Ішек метаны'),
+            'manure':label3('Метан навоза','Manure methane','Көң метаны'),
+        }
         for source,(bkg,pkg) in results['ghg_components_kgco2e'].items():
-            summary.append({'label':'Integrated GHG source: '+source+' difference after-baseline, kg CO2e',
+            name=components.get(str(source).lower(),str(source))
+            summary.append({'label':f"{label3('Единый сценарий: изменение выбросов', 'Integrated scenario: emission change', 'Біріктірілген сценарий: шығарындылар өзгерісі')} ({name}), кг CO₂e",
                             'value':f'{pkg-bkg:+.2f}',
-                            'note':'Partial IPCC-based scenario only; not full life-cycle or observed emissions'})
+                            'note':label3('Частичный сценарный учёт IPCC; не полный жизненный цикл и не фактические выбросы', 'IPCC-based partial scenario, not lifecycle or measured GHG', 'IPCC бойынша ішінара сценарий; нақты өлшенген шығарындылар емес')})
         if results['stress_margin_increase_kzt'] is not None:
-            summary.append({'label':'Integrated stress margin difference after-baseline, KZT',
+            summary.append({'label':label3('Единый сценарий: изменение маржи при стрессе (тг)','Integrated scenario: stress margin change (KZT)','Біріктірілген сценарий: стресс-маржа өзгерісі (тг)'),
                             'value':f"{results['stress_margin_increase_kzt']:+.2f}",
-                            'note':'Stylized sensitivity: revenue −10%, costs +10%; not a probabilistic interval'})
+                            'note':label3('Допущение: выручка −10%, расходы +10%; не вероятностный интервал', 'Assumption: revenue −10%, costs +10%; not a confidence interval', 'Жорамал: түсім −10%, шығын +10%; сенімділік аралығы емес')})
         if results['known_cost_components_kzt']:
-            summary.append({'label':'Integrated known operating cost reduction, KZT',
+            summary.append({'label':label3('Единый сценарий: изменение известных текущих затрат, тг','Integrated scenario: change in known operating costs, KZT','Біріктірілген сценарий: белгілі ағымдағы шығын өзгерісі, тг'),
                             'value':f"{results['known_cost_reduction_kzt']:+.2f}",
-                            'note':'Only priced components; not necessarily full contribution margin'})
-        inputs=[['Integrated intervention period',period,tr['figure']],
-                ['Integrated scenario methods',f'{method_before} → {method_after}' if kind=='crop' else 'livestock user assumption',
-                 water_note],
-                ['Integrated scenario electricity boundary',energy_boundary,'Pump source and total split'],
-                ['Integrated emission components',', '.join(results['ghg_components_kgco2e']) or 'none',
-                 'IPCC partial boundary; none = unavailable, not 0'],
-                ['Integrated scenario economic cost confirmation',str(bool(completed)),'User confirmation'],
-                ['Integrated water source and volume',f'{water_note}; before={bw}, after={pw}',
-                 'FAO normative reconstruction or user scenario; field delivery for crop'],
-                ['Integrated pumping parameters',f'pumped_fraction={pump_share}%; before={pump_b}, after={pump_p} kWh/m3',
-                 'Editable engineering assumptions, not instrument measurements'],
-                ['Integrated unit prices',f'water={water_tariff} KZT/m3; grid electricity={electricity_tariff} KZT/kWh; EF={grid_factor} kgCO2e/kWh',
-                 'Editable reference assumptions; verify applicable billing point and reporting year'],
-                ['Integrated scenario evidence',evidence,'FAO / IPCC / user assumptions'],
-                ['Integrated reference links',f'{FAO_IRRIGATION}; {FAO_WATER_ACCOUNTING}; {IPCC_AFOLU}','Scientific sources']]
+                            'note':label3('Только известные статьи; это не обязательно полная экономия или маржа', 'Known items only, not necessarily total savings or margin', 'Тек белгілі шығындар; толық үнем немесе маржа емес')})
+        source_boundary=label3('Границы расчёта насосной энергии','Pumping electricity accounting boundary','Сорғы электр энергиясын есептеу шекарасы')
+        inputs=[
+          [label3('Единый сценарий: период','Integrated scenario: period','Біріктірілген сценарий: кезең'),period,tr['figure']],
+          [label3('Способы орошения: до → после','Irrigation methods: before → after','Суару тәсілі: дейін → кейін'),
+           f'{METHODS[lang].get(method_before,method_before)} → {METHODS[lang].get(method_after,method_after)}' if kind=='crop' else label3('Допущение животноводства','Livestock scenario assumption','Мал шаруашылығы жорамалы'), water_note],
+          [source_boundary, label3('Измеренное сетевое электричество; экономия насоса не предполагалась','Metered electricity; pumping savings not inferred','Өлшенген электр; сорғы үнемі болжанбады') if energy_boundary=='observed electricity; pumping savings not inferred' else label3('Расчётный насос без других видов энергопотребления','Calculated pump only, other electricity excluded','Тек есептік сорғы; өзге электр шығыны кірмейді') if energy_boundary=='pumping_only' else str(energy_boundary),label3('Измеренная энергия и собственный насос учитываются раздельно','Metered electricity and farm pumps require separate boundaries','Өлшенген электр мен жеке сорғы бөлек есептеледі')],
+          [label3('Учтённые компоненты выбросов','Included emission components','Есептелген шығарындылар'),', '.join(components.get(str(k).lower(),str(k)) for k in results['ghg_components_kgco2e']) or label3('нет подтверждённых компонентов','no confirmed components','расталған құрам жоқ'),label3('Частичный учёт IPCC; отсутствие данных не означает нулевые выбросы','Partial IPCC scope; missing is not zero','IPCC ішінара есебі; дерек жоқтығы нөл емес')],
+          [label3('Подтверждена полнота переменных затрат','Variable costs completeness confirmed','Айнымалы шығын толықтығы расталды'),label3('Да','Yes','Иә') if completed else label3('Нет','No','Жоқ'),label3('Подтверждение пользователя','User confirmation','Пайдаланушы растауы')],
+          [label3('Основание подачи воды и объём','Water basis and volume','Су көлемі мен негізі'),f'{water_note}; {label3("до","before","дейін")}={_m(bw)} м³, {label3("после","after","кейін")}={_m(pw)} м³',label3('Нормативная реконструкция или данные хозяйства; не фактическая экономия бассейна','Reference or farm scenario; not basin-scale verified water savings','Нормативтік немесе шаруашылық сценарийі; нақты үнем емес')],
+          [label3('Насос: доля воды и расход энергии','Pump: water fraction and electricity','Сорғы: су үлесі мен электр шығыны'),f'{pump_share:.1f}%; {label3("до","before","дейін")}={_m(pump_b)}, {label3("после","after","кейін")}={_m(pump_p)} {label3("кВт·ч/м³","kWh/m³","кВт·сағ/м³")}',label3('Физическая оценка по напору и КПД при наличии этих данных; иначе параметры неизвестны','Engineering calculation with confirmed pump head and efficiency; otherwise unknown','Тегеурін және ПӘК расталса инженерлік есеп; әйтпесе белгісіз')],
+          [label3('Сценарные тарифы и сетевой коэффициент','Scenario tariffs and grid factor','Тарифтер мен желілік коэффициент'),f'{label3("вода","water","су")}={water_tariff} {label3("тг/м³","KZT/m³","тг/м³")}; {label3("электричество","electricity","электр")}={electricity_tariff} {label3("тг/кВт·ч","KZT/kWh","тг/кВт·сағ")}; {label3("коэффициент","factor","коэффициент")}={grid_factor} кг CO₂/кВт·ч',label3('Проверяйте поставщика, НДС и год тарифа; сценарий не заменяет счёт хозяйства','Check supplier, VAT basis and period; not a farm invoice','Жеткізуші, ҚҚС және тариф кезеңін тексеріңіз')],
+          [label3('Основание допущений','Scenario evidence','Сценарий негізі'),evidence,label3('FAO/IPCC и допущения пользователя','FAO/IPCC and user assumptions','FAO/IPCC және пайдаланушы жорамалдары')],
+          [label3('Ссылки на методики','Methodology references','Әдістемелік сілтемелер'),f'{FAO_IRRIGATION}; {FAO_WATER_ACCOUNTING}; {IPCC_AFOLU}',label3('Научные источники','Scientific sources','Ғылыми дереккөздер')],
+        ]
         return {'summary':summary,'inputs':inputs,
                 'recommendation':{'title':tr['head'],
                                   'text':tr['intro'],
-                                  'evidence':f"{results['scope']}; {evidence}; water={water_note}; energy={energy_boundary}",
-                                  'effect':f"Water field delivery Δ {_m(results['water_reduction_m3'])} m3 saved; energy Δ {_m(results['energy_reduction_kwh'])} kWh saved; partial GHG Δ {_m(results['partial_ghg_reduction_kgco2e'])} kg CO2e potentially reduced; margin change {_m(results['margin_increase_kzt'])} KZT. Not actual achieved effects."}}
+                                  'evidence':f"{evidence}; {label3('основание воды','water basis','су негізі')}: {water_note}",
+                                  'effect':(f"{label3('Изменение подачи воды','Change in field water delivery','Су беру өзгерісі')}: {_m(results['water_reduction_m3'])} м³; "
+                                            f"{label3('изменение электроэнергии','change in electricity','электр өзгерісі')}: {_m(results['energy_reduction_kwh'])} {label3('кВт·ч','kWh','кВт·сағ')}; "
+                                            f"{label3('возможное сокращение учтённых выбросов','possible reduction of included emissions','есептелген шығарындылардың ықтимал азаюы')}: {_m(results['partial_ghg_reduction_kgco2e'])} кг CO₂e; "
+                                            f"{label3('изменение маржи','change in margin','маржа өзгерісі')}: {_m(results['margin_increase_kzt'])} {label3('тг','KZT','тг')}. "
+                                            f"{label3('Это сценарий, не измеренный эффект. Не суммируйте его с другими отдельными сценариями.','Scenario only; not a measured effect. Do not add it to separate scenarios.','Бұл сценарий, өлшенген әсер емес. Басқа сценарийлермен қоспаңыз.')}")}}

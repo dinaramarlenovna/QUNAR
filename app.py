@@ -65,7 +65,7 @@ from core.evidence_registry import (ENERGY_SOURCES, SOURCE_LABELS,
     EMBer_KZ_GRID_GENERATION_CO2_KG_PER_KWH,
     FERTILIZER_GOST_MIN_N_FRACTION, FERTILIZER_GOST_SOURCES,
     fertilizer_nitrogen_kg)
-from core.water_norms import default_water_requirement, PUMPING_REFERENCE_KWH_PER_M3
+from core.water_norms import default_water_requirement
 from core.economics import DEFAULT_EF_KZ_KGCO2_PER_KWH, DEFAULT_ELECTRICITY_TARIFF_KZT_KWH, DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3, DEFAULT_GREEN_SHARE_TARGET, DEFAULT_WATER_SAVING_TARGET, economic_climate_effect, payback_years
 from core.economic_feasibility import economic_feasibility
 from core.yield_reference import trailing_three_year_yield
@@ -276,6 +276,60 @@ def _send_bug_report(description: str, contact: str = "", error_text: str = "", 
 def _default_widget_help(label):
     text = str(label or "").lower()
     lang_hint = globals().get("lang", "ru")
+    # Field-specific everyday explanations precede the broad keyword fallbacks.
+    detailed = [
+        (("тариф воды", "water tariff", "су тарифі"),
+         "Сколько хозяйство платит за подачу 1 м³ воды. Выберите поставщика: самотечная и механизированная подача оплачиваются по-разному. Если известен договорной тариф, внесите его; не включайте стоимость перекачки дважды.",
+         "1 м³ су жеткізу үшін төлем. Жеткізушіні және су беру түрін таңдаңыз. Нақты шарттағы баға белгілі болса, оны енгізіңіз; сорғы ақысын екі рет қоспаңыз.",
+         "Cost to deliver one cubic metre of water. Choose your provider and delivery type. Use your actual contract rate if available, and do not charge pumping twice."),
+        (("тариф электроэнерг", "electricity tariff", "электр тариф"),
+         "Сколько платите за 1 кВт·ч электроэнергии. Лучше взять цену из счёта поставщика; справочный тариф может не совпадать с вашим договором.",
+         "1 кВт·сағ электр энергиясының бағасы. Мүмкін болса, келісімшарттағы тарифті көрсетіңіз; анықтамалық баға шарттағы бағамен бірдей болмауы мүмкін.",
+         "Price of 1 kWh of electricity. Prefer your electricity bill; reference prices may differ from your contract."),
+        (("энергоэффектив", "efficient pump", "тиімді сорғы"),
+         "Есть ли оборудование, которое потребляет меньше энергии при той же работе? Это не означает, что известен фактический расход электричества.",
+         "Бірдей жұмыс үшін энергияны аз пайдаланатын жабдық бар ма? Бұл нақты тұтыну белгілі дегенді білдірмейді.",
+         "Does your equipment use less energy for the same work? This does not establish actual kWh consumption."),
+        (("суммарный напор", "total dynamic pumping head", "жиынтық тегеурін"),
+         "На какую высоту и с каким сопротивлением насос подаёт воду, в метрах. Возьмите из паспорта насоса или расчёта инженера. Если неизвестно, не придумывайте число.",
+         "Сорғы суды қандай биіктікке және кедергімен жеткізеді, метрмен. Паспорттан немесе инженер есебінен алыңыз; белгісіз болса, ойдан енгізбеңіз.",
+         "Total pumping head in metres, including friction losses. Use pump specifications or an engineer's estimate; do not invent a value."),
+        (("суммарный кпд", "combined pump", "жалпы пәк"),
+         "Какую долю затраченной энергии насос и двигатель превращают в полезную работу. Например, 65% вводят как 65. Если неизвестно, расчёт насосной энергии нельзя считать подтверждённым.",
+         "Сорғы мен қозғалтқыш энергиясының пайдалы үлесі. Мысалы, 65% үшін 65 енгізіңіз. Белгісіз болса, энергия есебі расталмаған болып қалады.",
+         "Combined pump and motor efficiency as a percentage: enter 65 for 65%. If unknown, pump energy cannot be verified."),
+        (("сезонов в год", "seasons per year", "жылына маусым"),
+         "Сколько раз в год выращивается культура на том же участке. Для одного урожая введите 1. Показатель влияет на годовые расходы, а не на площадь поля.",
+         "Бір алқаптан бір жылда неше рет өнім алынады? Бір өнім болса, 1 енгізіңіз. Бұл жылдық шығынға әсер етеді.",
+         "Number of production seasons on the same land each year. Enter 1 for one harvest; used for annual costs, not field area."),
+        (("снижение потребности", "water saving target", "су үнемдеу"),
+         "На сколько процентов предполагается уменьшить потребность в воде в отдельном сценарии. Например, 20 означает 20%. Это гипотеза, а не уже достигнутая экономия.",
+         "Сценарий бойынша су қажеттілігі қанша пайызға азаяды? 20 дегеніміз - 20%. Бұл расталған үнем емес, болжам.",
+         "Hypothetical percentage reduction in water use. Enter 20 for 20%. This is a scenario, not measured savings."),
+        (("доля электроэнергии", "solar share", "күн энергиясы үлесі"),
+         "Какая часть электричества поступает от солнечных или других возобновляемых источников. Например, 30 означает 30%. Выбирайте фактическую или явно сценарную долю.",
+         "Электрдің қанша бөлігі күн не өзге жаңартылатын көздерден келеді? 30 дегеніміз 30%. Нақты немесе сценарийлік үлесті белгілеңіз.",
+         "Share of electricity from solar or other renewables. Enter 30 for 30%. Distinguish actual and proposed shares."),
+        (("расчётный год", "calculation year", "есептік жыл"),
+         "Год, для которого оцениваете хозяйство. Прошедший сезон - ретроспективная оценка, будущий - сценарный прогноз.",
+         "Шаруашылық бағаланатын жыл. Өткен маусым - тарихи бағалау, болашақ маусым - сценарийлік есеп.",
+         "Year being assessed. Past seasons are retrospective; future seasons are scenarios."),
+        (("поголов", "headcount", "мал саны"),
+         "Сколько голов животных действительно содержится в вашем хозяйстве. Не вводите поголовье всего района вместо своего.",
+         "Өз шаруашылығыңыздағы нақты мал басы. Ауданның жалпы мал санын өз шаруашылығыңыздікі деп енгізбеңіз.",
+         "Actual number of animals kept by the farm, not the district total."),
+        (("урожайност", "yield", "өнімділік"),
+         "Сколько урожая получаете с одного гектара (центнеров на гектар). Если не знаете, программа использует отдельно подписанную районную справочную урожайность.",
+         "Бір гектардан алынатын өнім мөлшері (ц/га). Белгісіз болса, аудандық анықтамалық мән бөлек көрсетіледі.",
+         "Harvest per hectare, in centners/ha. If unknown, the tool may use an explicitly labelled district reference."),
+        (("стоимость инвестиц", "инвест", "investment", "инвестици"),
+         "Единовременные затраты на новое оборудование, если хотите оценить окупаемость. При отсутствии проекта не нужно подставлять произвольную сумму.",
+         "Жаңа жабдықтың біржолғы құны. Жоба жоқ болса, ойдан сома енгізбеңіз.",
+         "One-time cost of new equipment, for optional payback calculations. Do not invent a cost if there is no project."),
+    ]
+    for keys, ru, kk, en in detailed:
+        if any(k in text for k in keys):
+            return {"ru": ru, "kk": kk, "en": en}[lang_hint]
     rules = [
         (("коэффициент эмиссии", "emission factor", "эмисси"), "Показывает, сколько кг CO₂e связано с потреблением 1 кВт·ч электроэнергии. Используется для оценки углеродной нагрузки.", "Amount of CO₂e associated with 1 kWh of electricity; used to estimate operational carbon load."),
         (("площад", "area", "алаң"), "Площадь участка или производственной территории, для которой выполняется расчёт.", "Area of the field or production unit used in the calculation."),
@@ -409,15 +463,12 @@ def smart_resource_scenario(lang, irrigation_type, actual_water_m3, area_ha, ref
     water=max(float(actual_water_m3 or 0.0),0.0)
     if water<=0 and ref_water>0 and water_source != "user":
         water=ref_water; water_source="district_crop_reference"
-    energy=max(float(energy_kwh or 0.0),0.0)
-    pumping_energy=max(water*float(PUMPING_REFERENCE_KWH_PER_M3),0.0) if water>0 else 0.0
-    if energy<=0 and pumping_energy>0 and energy_source != "user":
-        energy=pumping_energy; energy_source="pumping_reference"; pumping_baseline=energy
-    elif energy>0:
-        pumping_baseline=min(energy,pumping_energy) if pumping_energy>0 else 0.0
-        energy_source="user_total_with_pumping_estimate"
-    else:
-        pumping_baseline=0.0
+    # Never invent pumping kWh from an unsupported universal intensity.
+    # Observed grid kWh alone does not prove that it was used for pumping.
+    energy=float(energy_kwh) if energy_kwh is not None else None
+    pumping_baseline=(energy if energy is not None and energy_source == 'physical_model' else 0.0)
+    if energy is not None and energy<0:
+        raise ValueError('Electricity consumption cannot be negative')
     wt=max(float(DEFAULT_IRRIGATION_WATER_TARIFF_KZT_M3 if water_tariff is None else water_tariff),0.0)
     et=max(float(DEFAULT_ELECTRICITY_TARIFF_KZT_KWH if electricity_tariff is None else electricity_tariff),0.0)
     saving=max(0.0,min(float(saving_target_pct or DEFAULT_WATER_SAVING_TARGET),100.0))/100.0
@@ -436,11 +487,13 @@ def smart_resource_scenario(lang, irrigation_type, actual_water_m3, area_ha, ref
     before_water_cost=water*wt; after_water_cost=after_water*wt
     water_saving_cost=max(before_water_cost-after_water_cost,0.0)
     pumping_after=max(pumping_baseline*(1.0-saving),0.0)
-    non_pumping=max(energy-pumping_baseline,0.0)
-    after_energy=non_pumping+pumping_after
-    before_energy_cost=energy*et; after_energy_cost=after_energy*et
-    energy_saving_cost=max(before_energy_cost-after_energy_cost,0.0)
-    total_saving=water_saving_cost+energy_saving_cost
+    non_pumping=max(energy-pumping_baseline,0.0) if energy is not None else None
+    after_energy=non_pumping+pumping_after if non_pumping is not None else None
+    before_energy_cost=energy*et if energy is not None else None
+    after_energy_cost=after_energy*et if after_energy is not None else None
+    energy_saving_cost=max(before_energy_cost-after_energy_cost,0.0) if before_energy_cost is not None else None
+    # Only cost components with a valid input are included. Never claim total farm saving.
+    total_saving=water_saving_cost+(energy_saving_cost or 0.0)
     annual_saving=total_saving*max(float(seasons_per_year or 1.0),1.0)
     inv=max(float(investment or 0.0),0.0)
     pb=inv/annual_saving if inv>0 and annual_saving>0 else None
@@ -459,9 +512,9 @@ def smart_resource_scenario(lang, irrigation_type, actual_water_m3, area_ha, ref
     else:
         recommendation={'kk':f'Су шығынын азайту мақсаты болса, QŪNAR {tech} сценарийін салыстыруды ұсынады.','ru':f'Если цель - снизить водные затраты, QŪNAR предлагает сравнить сценарий: {tech}.','en':f'If reducing water use is a priority, QŪNAR suggests comparing a {tech} scenario.'}[lang]
     labels={
-      'kk':{'user':'пайдаланушы деректері','district_crop_reference':'аудан-дақыл анықтамасы','pumping_reference':'су айдау коэффициенті бойынша бағалау','user_total_with_pumping_estimate':'пайдаланушының жалпы энергиясы; суару үлесі айдау коэффициентімен бағаланды','unavailable':'дерек жоқ'},
-      'ru':{'user':'данные пользователя','district_crop_reference':'районно-культурный справочник','pumping_reference':'оценка по коэффициенту перекачки воды','user_total_with_pumping_estimate':'общая энергия пользователя; насосная доля оценена по коэффициенту перекачки','unavailable':'нет данных'},
-      'en':{'user':'user data','district_crop_reference':'district-crop reference','pumping_reference':'estimate from pumping-energy coefficient','user_total_with_pumping_estimate':'user total energy; pumping share estimated from water-pumping coefficient','unavailable':'unavailable'}}[lang]
+      'kk':{'user':'пайдаланушы деректері','district_crop_reference':'аудан-дақыл анықтамасы','pumping_reference':'су айдау коэффициенті бойынша бағалау','user_total_with_pumping_estimate':'пайдаланушының жалпы энергиясы; суару үлесі айдау коэффициентімен бағаланды','physical_model':'сорғының тегеуріні мен ПӘК бойынша есеп','unknown':'белгісіз','unavailable':'дерек жоқ'},
+      'ru':{'user':'данные пользователя','district_crop_reference':'районно-культурный справочник','pumping_reference':'оценка по коэффициенту перекачки воды','user_total_with_pumping_estimate':'общая энергия пользователя; насосная доля оценена по коэффициенту перекачки','physical_model':'по напору и КПД насоса (сценарий)','unknown':'неизвестно','unavailable':'нет данных'},
+      'en':{'user':'user data','district_crop_reference':'district-crop reference','pumping_reference':'estimate from pumping-energy coefficient','user_total_with_pumping_estimate':'user total energy; pumping share estimated from water-pumping coefficient','physical_model':'physical pumping model (scenario)','unknown':'unknown','unavailable':'unavailable'}}[lang]
     if water_source == 'user' and str(energy_source).startswith('user'):
         evidence_grade = {'kk':'жоғары','ru':'высокая','en':'high'}[lang]
     elif water_source == 'user' or str(energy_source).startswith('user'):
@@ -651,8 +704,15 @@ def render_export_panel(report_payload: dict, lang: str):
                 clicked = st.download_button(labels["down_word"], data=st.session_state["qunar_word"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key=f"download_word_{report_id}")
                 if clicked: ga_event("download_word", report_scope="single", mode_key=report_payload.get("mode_key"))
 
-lang_label = st.sidebar.selectbox("Тіл / Язык / Language", list(LANGUAGES.keys()), index=0, help="Интерфейс тілі / Язык интерфейса / Interface language")
+_prior_lang = st.session_state.get("qunar_preferred_lang")
+_lang_select_caption = {'ru':'Язык интерфейса','kk':'Интерфейс тілі','en':'Interface language'}.get(_prior_lang, 'Тіл / Язык / Language')
+lang_label = st.sidebar.selectbox(_lang_select_caption, list(LANGUAGES.keys()), index=0,
+    help={'ru':'Выберите язык. Все названия и пояснения отчёта будут на выбранном языке.',
+          'kk':'Тілді таңдаңыз. Есептегі атаулар мен түсіндірмелер сол тілде болады.',
+          'en':'Choose the language used by the interface and downloadable reports.'}.get(_prior_lang,
+          'Тілді / язык / language select'))
 lang = LANGUAGES[lang_label]
+st.session_state['qunar_preferred_lang']=lang
 if st.session_state.get("ga_last_language") != lang:
     if st.session_state.get("ga_last_language") is not None:
         ga_event("change_language", language=lang)
@@ -743,7 +803,7 @@ user_level = st.sidebar.radio(
     ["farmer", "specialist", "researcher"],
     format_func=lambda x: {"farmer": t["level_farmer"], "specialist": t["level_specialist"], "researcher": t["level_researcher"]}[x],
     index=0,
-    help={"kk":"Интерфейс күрделілігін таңдаңыз: базалық, кеңейтілген немесе зерттеушілік параметрлер.","ru":"Выберите уровень интерфейса: базовые, расширенные или исследовательские параметры.","en":"Choose the interface depth: basic, advanced or research parameters."}[lang],
+    help={"kk":"Базалық: жылдам есеп. Кеңейтілген: тарифтер, сорғылар, технология және сценарийлер. Зерттеуші: дереккөздер мен модель сапасын тексеру. Есептік нормативтер деңгейге қарай өзгермейді.","ru":"Базовый: минимум полей и быстрый результат. Расширенный: тарифы, насосы, технологии и сценарии. Исследовательский: источники данных, диагностика машинного обучения и научные проверки. Расчётные нормативы между уровнями не меняются.","en":"Basic: quick assessment with fewer inputs. Advanced: costs, pumping, technologies and scenarios. Research: source data and model diagnostics. The reference norms do not change between levels."}[lang],
 )
 if user_level == "farmer":
     st.sidebar.caption(t["level_basic_hint"])
@@ -1121,6 +1181,7 @@ with st.container():
     water_tariff = REGIONAL_TARIFF_REFERENCES['kazvodkhoz_irrigation_gravity_2026'].value_kzt_unit
     electricity_tariff_doc = None
     water_tariff_doc = None
+    _tariff_water_ref = 'custom'  # basic and livestock modes have no supplier selector
     water_saving_target = float(DEFAULT_WATER_SAVING_TARGET)
     investment = 0.0
     seasons_per_year = 1.0
@@ -1228,8 +1289,11 @@ with st.container():
                 _water_tariff_options,
                 format_func=lambda k: ({'ru':'Собственный тариф / сценарий','kk':'Өз тарифі / сценарий',
                     'en':'Own tariff / scenario'}[lang] if k=='custom'
-                    else REGIONAL_TARIFF_REFERENCES[k].provider+' ('+k.split('_')[-2]+')'),
-                key='tariff_basis_water')
+                    else REGIONAL_TARIFF_REFERENCES[k].provider+' ('+({'gravity':{'ru':'самотёк','kk':'өздігінен ағу','en':'gravity'},'pumped':{'ru':'механизированная подача','kk':'сорғымен жеткізу','en':'pumped'},'canal':{'ru':'канал','kk':'арна','en':'canal'}}.get(k.split('_')[-2],{}).get(lang,k.split('_')[-2]))+')'),
+                key='tariff_basis_water',
+                help={'ru':'Это цена услуги по доставке 1 м³ воды. Самотечная подача и подача насосами стоят по-разному. Проверьте название поставщика в договоре. Если перекачка включена в тариф, не добавляйте те же насосные затраты повторно.',
+                      'kk':'Бұл 1 м³ суды жеткізу қызметінің бағасы. Өздігінен ағу мен сорғымен жеткізу тарифтері әртүрлі. Келісімшарттағы жеткізушіні тексеріп, сорғы шығынын екі рет қоспаңыз.',
+                      'en':'Delivery charge per m³. Gravity and pumped supply have different prices. Confirm the provider and avoid double counting supplier pumping.'}[lang])
             if _tariff_water_ref != 'custom':
                 water_tariff_doc = supplier_tariff(_tariff_water_ref,provider_confirmed=True)
                 water_tariff = water_tariff_doc.value_kzt_unit
@@ -1259,17 +1323,20 @@ with st.container():
          'en':'Grid emission factor basis (reference scenario)'}[lang],
         ['ember2025','ember2024','model_scenario'],
         format_func=lambda code: {'ember2025':{
-            'ru':'Средняя генерация Казахстана, 2025 (Ember)',
+            'ru':'Средняя генерация Казахстана, 2025 (данные Ember)',
             'kk':'Қазақстандағы орташа электр өндіру, 2025 (Ember)',
             'en':'Kazakhstan generation mix 2025 (Ember)'},
             'ember2024':{
-            'ru':'Средняя генерация Казахстана, 2024 (Ember)',
+            'ru':'Средняя генерация Казахстана, 2024 (данные Ember)',
             'kk':'Қазақстандағы орташа электр өндіру, 2024 (Ember)',
             'en':'Kazakhstan generation mix 2024 (Ember)'},
             'model_scenario':{
             'ru':'Сценарий QŪNAR / введённый коэффициент',
             'kk':'QŪNAR сценарийі / енгізілген коэффициент',
             'en':'QŪNAR assumption / user-entered factor'}}[code][lang],
+        help={'ru':'Ember - международная аналитическая организация, публикующая данные об электроэнергетике. Здесь использован средний показатель выбросов CO₂ при выработке электричества в Казахстане, не измерение вашей фермы и не официальный договорной коэффициент.',
+              'kk':'Ember - электр энергетикасы бойынша халықаралық деректерді жариялайтын зерттеу ұйымы. Көрсеткіш Қазақстан генерациясының орташа CO₂ шығарындылары, шаруашылықтың өлшемі емес.',
+              'en':'Ember is an international energy-data research organisation. This is a national generation-average CO₂ figure, not a farm-specific or contract-specific emission factor.'}[lang],
         key='grid_ef_method')
     if _grid_ef_source in ('ember2025','ember2024'):
         ef = EMBer_KZ_GRID_GENERATION_CO2_KG_PER_KWH[int(_grid_ef_source[-4:])]
@@ -2014,7 +2081,10 @@ with st.container():
                 'ru':'Вода действительно подаётся насосом',
                 'kk':'Су шынында да сорғымен беріледі',
                 'en':'The farm actually pumps this water'}[lang], value=False,
-                key='pumping_is_used')
+                key='pumping_is_used',
+                help={'ru':'Отметьте только если хозяйство само перекачивает воду насосом. Для расчёта электричества потребуются напор и КПД. Если услугу перекачки выполняет поставщик по отдельному тарифу, её не нужно учитывать второй раз.',
+                      'kk':'Шаруашылық өзі сорғы пайдаланғанда ғана таңдаңыз. Энергия есебіне тегеурін мен ПӘК керек. Жеткізуші сорғысы тарифке кірсе, қайта қоспаңыз.',
+                      'en':'Confirm an on-farm pump. Head and efficiency are needed to estimate electricity; do not count supplier pumping twice.'}[lang])
             if pumping_confirmed:
                 _h = q_number_input({'ru':'Суммарный напор насоса, м',
                     'kk':'Сорғының жиынтық тегеуріні, м',
@@ -2059,8 +2129,14 @@ if submitted:
     water_input_source = 'user' if water_reference.source_tier == 'user_observed' else water_reference.source_tier
     energy_reference = conditional_pumping_energy(effective_water_used,
         observed=observed_energy, measured_zero=energy_zero_confirmed,
-        pumping_confirmed=(pumping_confirmed and 'grid_electricity' in selected_energy_sources),
+        pumping_confirmed=(pumping_confirmed and 'grid_electricity' in selected_energy_sources and _tariff_water_ref != 'kazvodkhoz_irrigation_pumped_2026'),
         head_m=pump_head_m, overall_efficiency=pump_efficiency)
+    if pumping_confirmed and _tariff_water_ref == 'kazvodkhoz_irrigation_pumped_2026':
+        st.warning({
+            'ru':'Выбран тариф механизированной подачи воды: перекачка поставщика уже включена в эту услугу. Автоматический расчёт энергии собственного насоса отключён, чтобы не начислять одни расходы дважды. Если есть отдельный насос на поле, укажите его фактическую электроэнергию отдельно.',
+            'kk':'Механикаландырылған су беру тарифінде жеткізушінің сорғы қызметі бар. Қосарлы есеп болмас үшін жеке сорғы энергиясы автоматты түрде есептелмейді. Танапта бөлек сорғы болса, оның нақты энергиясын жеке енгізіңіз.',
+            'en':'Mechanized water supply already includes supplier pumping. Automatic on-farm pump energy is disabled to avoid double charging; enter separately metered downstream pumping if present.'
+        }[lang])
     _grid_known = energy_reference.value is not None
     # Methodological references are not measurements; tariff and EF defaults
     # remain labelled scenarios unless an actual bill/factor is entered.
@@ -3404,11 +3480,11 @@ if submitted:
             ref_m3_ha = float(water_default_info.m3_ha) if water_default_info is not None else 0.0
             smart = smart_resource_scenario(
                 lang=lang, irrigation_type=irrigation_type, actual_water_m3=effective_water_used if effective_water_used is not None else 0.0,
-                area_ha=area_ha, reference_water_m3_ha=ref_m3_ha, energy_kwh=energy,
+                area_ha=area_ha, reference_water_m3_ha=ref_m3_ha, energy_kwh=energy_reference.value,
                 water_tariff=water_tariff, electricity_tariff=electricity_tariff,
                 saving_target_pct=water_saving_target, investment=investment, seasons_per_year=seasons_per_year,
                 water_source=("user" if water_input_source == "user" else "district_crop_reference"),
-                energy_source=("user" if observed_energy is not None else "pumping_scenario_unverified"),
+                energy_source=(energy_reference.source_tier if energy_reference.value is not None else "unknown"),
             )
             st.markdown("### " + {"kk":"Ақылды ресурс үнемдеу ұсынысы","ru":"Умная рекомендация по экономии ресурсов","en":"Smart resource-saving recommendation"}[lang])
             st.caption({"kk":f"Сценарий дәлелінің деңгейі: {smart.get('evidence_grade','—')}.","ru":f"Уровень доказательности сценария: {smart.get('evidence_grade','—')}.","en":f"Scenario evidence grade: {smart.get('evidence_grade','—')}."}[lang])
@@ -3421,8 +3497,8 @@ if submitted:
             sc4.metric({"kk":"Ресурстық шығын үнемі","ru":"Экономия ресурсных затрат","en":"Resource-cost saving"}[lang], f"{smart['total_saving_kzt']:,.0f} {UNITS['currency']}")
             st.caption({"kk":f"Дереккөздер: су - {smart['water_source']}; энергия - {smart['energy_source']}; тариф - {smart['tariff_source']}.","ru":f"Источники: вода - {smart['water_source']}; энергия - {smart['energy_source']}; тариф - {smart['tariff_source']}.","en":f"Sources: water - {smart['water_source']}; energy - {smart['energy_source']}; tariff - {smart['tariff_source']}."}[lang])
             e1,e2=st.columns(2)
-            e1.metric({"kk":"Энергия, бастапқы","ru":"Энергия, исходно","en":"Energy, baseline"}[lang], f"{smart['before_energy_kwh']:,.0f} kWh")
-            e2.metric({"kk":"Энергия, сценарий","ru":"Энергия, сценарий","en":"Energy, scenario"}[lang], f"{smart['after_energy_kwh']:,.0f} kWh")
+            e1.metric({"kk":"Энергия, бастапқы","ru":"Энергия, исходно","en":"Energy, baseline"}[lang], (f"{smart['before_energy_kwh']:,.0f} {UNITS['kwh']}" if smart['before_energy_kwh'] is not None else "—"))
+            e2.metric({"kk":"Энергия, сценарий","ru":"Энергия, сценарий","en":"Energy, scenario"}[lang], (f"{smart['after_energy_kwh']:,.0f} {UNITS['kwh']}" if smart['after_energy_kwh'] is not None else "—"))
             if smart['investment_used_kzt'] > 0:
                 i1,i2=st.columns(2)
                 i1.metric({"kk":"Сценарийлік инвестиция","ru":"Сценарная инвестиция","en":"Scenario investment"}[lang], f"{smart['investment_used_kzt']:,.0f} {UNITS['currency']}")
@@ -3432,7 +3508,7 @@ if submitted:
                 st.caption({"kk":"Технология құны енгізілмеген: инвестиция мен өтелу мерзімі автоматты түрде ойдан шығарылмайды.","ru":"Стоимость технологии не введена: инвестиция и срок окупаемости автоматически не подставляются.","en":"Technology cost was not entered: investment and payback are not auto-filled."}[lang])
             report_payload["summary"].extend([
                 {"label":{"kk":"Бөлек ресурс үнемдеу сценарийі: су","ru":"Отдельный сценарий ресурсосбережения: вода","en":"Separate resource-saving scenario: water"}[lang],"value":f"{smart['saved_water_m3']:,.0f} m³"},
-                {"label":{"kk":"Бөлек ресурс үнемдеу сценарийі: шығын үнемі","ru":"Отдельный сценарий ресурсосбережения: экономия затрат","en":"Separate resource-saving scenario: cost savings"}[lang],"value":f"{smart['total_saving_kzt']:,.0f} {UNITS['currency']}"},
+                {"label":{"kk":"Бөлек сценарий: тек есептелген шығын үнемі","ru":"Отдельный сценарий: снижение только рассчитанных затрат","en":"Separate scenario: known cost reductions only"}[lang],"value":f"{smart['total_saving_kzt']:,.0f} {UNITS['currency']}"},
             ])
 
         analysis = build_analysis(
@@ -4664,12 +4740,12 @@ if submitted:
                 _a8_parts=[_a8_normal['baseline'], _a8_normal['optimized'],
                            _a8_stress['baseline_counterfactual'], _a8_stress['optimized']]
                 st.dataframe(pd.DataFrame([{
-                    'Scenario':label,
-                    'Water, m³':round(part['water_field_delivery_m3']),
-                    'Water feasible':part['water_feasible'],
-                    'Electricity, kWh':round(part['pump_energy_kwh']),
-                    'Contribution margin, KZT':round(part['contribution_margin_kzt']),
-                    'Partial GHG, kg CO₂e':round(part['partial_ghg_kg_co2e']),
+                    {'ru':'Сценарий','kk':'Сценарий','en':'Scenario'}[lang]:label,
+                    {'ru':'Вода, м³','kk':'Су, м³','en':'Water, m³'}[lang]:round(part['water_field_delivery_m3']),
+                    {'ru':'Уложился в водный лимит','kk':'Су лимитіне сәйкес','en':'Water feasible'}[lang]:part['water_feasible'],
+                    {'ru':'Электроэнергия, кВт·ч','kk':'Электр энергиясы, кВт·сағ','en':'Electricity, kWh'}[lang]:round(part['pump_energy_kwh']),
+                    {'ru':'Маржа, тг','kk':'Маржа, тг','en':'Contribution margin, KZT'}[lang]:round(part['contribution_margin_kzt']),
+                    {'ru':'Учтённые выбросы, кг CO₂e','kk':'Есептелген шығарындылар, кг CO₂e','en':'Partial GHG, kg CO₂e'}[lang]:round(part['partial_ghg_kg_co2e']),
                 } for label, part in zip(_a8_labels,_a8_parts)]),hide_index=True)
                 st.warning({
                     'ru':'При стрессе исходная структура нарушает водный лимит. Её маржу нельзя трактовать как допустимую альтернативу. CO₂e и вода — расчётные сценарии, не измеренная экономия.',
@@ -4704,21 +4780,21 @@ if submitted:
                 _a8_economic_ref=_cross_a8['ordinary_economic_optimum']['optimized']
                 _a8_sust_ref=_cross_a8['sustainable_current']['optimized']
                 _a8_stressed_ref=_cross_a8['stress']['optimized']
-                _cross_a8_rows=[('Baseline / Исходная',_a8_normal_ref),
-                     ('Economic optimum / Экономический',_a8_economic_ref),
-                     ('Sustainable / Устойчивый',_a8_sust_ref)]
+                _cross_a8_rows=[({'ru':'Исходная','kk':'Бастапқы','en':'Baseline'}[lang],_a8_normal_ref),
+                     ({'ru':'Экономический оптимум','kk':'Экономикалық оңтайлы','en':'Economic optimum'}[lang],_a8_economic_ref),
+                     ({'ru':'Устойчивый компромисс','kk':'Тұрақты ымыра','en':'Sustainable compromise'}[lang],_a8_sust_ref)]
                 for _name,_scenario in _cross_a8['climate_scenarios'].items():
-                    _cross_a8_rows.append((_name+' reoptimized / proxy',
+                    _cross_a8_rows.append((_name+' '+{'ru':'(пересчитано, приближение)','kk':'(қайта есептелген, жуық)','en':'(reoptimized proxy)'}[lang],
                         _scenario['reoptimized'].get('optimized')))
-                    _cross_a8_rows.append((_name+' present-CO₂e ceiling',
+                    _cross_a8_rows.append((_name+' '+{'ru':'(лимит текущих выбросов)','kk':'(ағымдағы шығарындылар шегі)','en':'(present-day CO₂e cap)'}[lang],
                         _scenario['reoptimized_with_absolute_present_carbon_cap'].get('optimized')))
-                _cross_a8_rows.append(('Joint stress / Совместный стресс',_a8_stressed_ref))
+                _cross_a8_rows.append(({'ru':'Комбинированный стресс','kk':'Біріктірілген стресс','en':'Joint stress'}[lang],_a8_stressed_ref))
                 st.dataframe(pd.DataFrame([{
-                    'Scenario':_name,
-                    'Water, m³':round(_values['water_field_delivery_m3']) if _values else None,
-                    'Margin, KZT':round(_values['contribution_margin_kzt']) if _values else None,
-                    'Partial GHG, kg CO₂e':round(_values['partial_ghg_kg_co2e']) if _values else None,
-                    'Status': ('scenario' if _values else 'no feasible allocation'),
+                    {'ru':'Сценарий','kk':'Сценарий','en':'Scenario'}[lang]:_name,
+                    {'ru':'Вода, м³','kk':'Су, м³','en':'Water, m³'}[lang]:round(_values['water_field_delivery_m3']) if _values else None,
+                    {'ru':'Маржа, тг','kk':'Маржа, тг','en':'Margin, KZT'}[lang]:round(_values['contribution_margin_kzt']) if _values else None,
+                    {'ru':'Учтённые выбросы, кг CO₂e','kk':'Есептелген шығарындылар, кг CO₂e','en':'Partial GHG, kg CO₂e'}[lang]:round(_values['partial_ghg_kg_co2e']) if _values else None,
+                    {'ru':'Статус','kk':'Мәртебе','en':'Status'}[lang]:({'ru':'Расчётный сценарий','kk':'Есептік сценарий','en':'Scenario result'}[lang] if _values else {'ru':'Нет допустимого решения','kk':'Жарамды шешім жоқ','en':'No feasible allocation'}[lang]),
                 } for _name,_values in _cross_a8_rows]),hide_index=True)
                 st.caption({'ru':'SSP: только отношение температурного члена Харгривса (T+17,8). Пересчитаны насосная энергия, затраты и частичные выбросы; это НЕ FAO-56 и НЕ прогноз фактической урожайности.',
                             'kk':'SSP: Харгривс (T+17,8) температура мүшесінің сценарийі, толық FAO-56 емес; сорғы энергиясы, шығындар, шығарындылар қайта есептелді.',
@@ -4746,6 +4822,9 @@ if submitted:
         livestock_production_kind=livestock_production_kind,
         livestock_reference=locals().get('livestock'),
         assessment_year=calculation_year,
+        main_pump_confirmed=(pumping_confirmed and pump_head_m is not None and pump_efficiency is not None),
+        main_pump_head_m=pump_head_m, main_pump_efficiency=pump_efficiency,
+        purchased_mechanized_water=(_tariff_water_ref == 'kazvodkhoz_irrigation_pumped_2026'),
     )
     if _integrated_fragment is not None:
         report_payload['summary'].extend(_integrated_fragment['summary'])

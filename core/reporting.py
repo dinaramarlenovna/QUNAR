@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from io import BytesIO
+from .report_localization import prepare_report
 from datetime import datetime
 import html
 import re
@@ -163,21 +164,25 @@ def _write_payload_sheet(writer, sheet_name: str, payload: dict, include_inputs:
 
 
 def build_excel_report(payload: dict) -> bytes:
+    payload = prepare_report(payload)
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
-        _write_payload_sheet(writer, "QUNAR_Report", payload, include_inputs=True)
+        _write_payload_sheet(writer, {'ru':'QUNAR_Отчёт','kk':'QUNAR_Есеп','en':'QUNAR_Report'}.get(payload.get('lang'),'QUNAR_Report'), payload, include_inputs=True)
     output.seek(0)
     return output.getvalue()
 
 
 def build_combined_excel_report(payloads: list[dict]) -> bytes:
+    payloads = [prepare_report(p) for p in payloads if p]
     payloads = [p for p in payloads if p]
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         wb = writer.book
         fm = _xlsx_formats(wb)
-        summary_ws = wb.add_worksheet("Summary")
-        writer.sheets["Summary"] = summary_ws
+        lang = (payloads[0].get("lang") if payloads else "en") or "en"
+        summary_sheet = {'ru':'Сводка','kk':'Жиынтық','en':'Summary'}.get(lang,'Summary')
+        summary_ws = wb.add_worksheet(summary_sheet)
+        writer.sheets[summary_sheet] = summary_ws
         summary_ws.hide_gridlines(2)
         summary_ws.set_column("A:A", 31)
         summary_ws.set_column("B:B", 54)
@@ -204,8 +209,9 @@ def build_combined_excel_report(payloads: list[dict]) -> bytes:
 
         inputs = _unique_inputs(payloads)
         if inputs:
-            src = wb.add_worksheet("Sources")
-            writer.sheets["Sources"] = src
+            sources_sheet = {'ru':'Источники','kk':'Дереккөздер','en':'Sources'}.get(lang,'Sources')
+            src = wb.add_worksheet(sources_sheet)
+            writer.sheets[sources_sheet] = src
             src.hide_gridlines(2)
             src.set_column("A:A", 35); src.set_column("B:B", 30); src.set_column("C:C", 72)
             src.write_row(0, 0, [{"kk":"Көрсеткіш","ru":"Показатель","en":"Parameter"}.get(lang,"Parameter"), {"kk":"Мәні","ru":"Значение","en":"Value"}.get(lang,"Value"), {"kk":"Дереккөз / рөл","ru":"Источник / роль","en":"Source / role"}.get(lang,"Source / role")], fm["header"])
@@ -368,6 +374,7 @@ def _append_payload_pdf(story, payload: dict, styles, include_inputs: bool = Tru
 
 
 def build_pdf_report(payload: dict) -> bytes:
+    payload = prepare_report(payload)
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate
@@ -383,6 +390,7 @@ def build_pdf_report(payload: dict) -> bytes:
 
 
 def build_combined_pdf_report(payloads: list[dict]) -> bytes:
+    payloads = [prepare_report(p) for p in payloads if p]
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
@@ -542,12 +550,14 @@ def _word_document_base(title='QŪNAR report'):
 
 
 def build_word_report(payload: dict) -> bytes:
+    payload = prepare_report(payload)
     doc = _word_document_base('QŪNAR report')
     _word_add_payload(doc, payload, include_inputs=True, include_brand=True)
     out = BytesIO(); doc.save(out); out.seek(0); return out.getvalue()
 
 
 def build_combined_word_report(payloads: list[dict]) -> bytes:
+    payloads = [prepare_report(p) for p in payloads if p]
     payloads = [p for p in payloads if p]
     lang = (payloads[0].get('lang') if payloads else 'en') or 'en'
     title = {'kk':'Біріктірілген аналитикалық есеп','ru':'Сводный аналитический отчет','en':'Integrated analytical report'}.get(lang,'Integrated analytical report')
