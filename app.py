@@ -1901,7 +1901,7 @@ with st.container():
     fao56_target_method = 'none'
     fao56_rain_method = 'none'
     climate_water_proxy_enabled = False
-    if user_level == "researcher" and mode_key in ("mode1", "mode2", "mode4"):
+    if (user_level == "researcher" and mode_key == "mode4") or (user_level in ("specialist", "researcher") and mode_key in ("mode1", "mode2")):
         with st.expander({"kk":"CMIP6 климаттық сценарийі (2040-2059)","ru":"Климатический сценарий CMIP6 (2040-2059)","en":"CMIP6 climate scenario (2040-2059)"}[lang], expanded=False):
             climate_future_scenario = st.selectbox(
                 {"kk":"Болашақ климат сценарийі","ru":"Сценарий будущего климата","en":"Future climate scenario"}[lang],
@@ -1946,7 +1946,8 @@ with st.container():
                             'kk':'Дақыл коэффициенті Kc дереккөзі',
                             'ru':'Источник коэффициентов культуры Kc',
                             'en':'Crop coefficient Kc source'}[lang],
-                            _available_kc_modes, format_func=lambda m:{
+                            _available_kc_modes, index=(_available_kc_modes.index('fao_crop_stages')
+                                  if 'fao_crop_stages' in _available_kc_modes else 0), format_func=lambda m:{
                                 'none':{'kk':'Kc жоқ: тек ET₀','ru':'Kc не задан: только ET₀','en':'No Kc: ET0 only'},
                                 'manual':{'kk':'6 айлық Kc қолмен','ru':'Ввести 6 месячных Kc вручную','en':'Enter six monthly Kc'},
                                 'fao_crop_stages':{'kk':'FAO фазалары бойынша (анықтамалық)','ru':'Рассчитать по фазам роста FAO (справочно)','en':'FAO crop stages (reference scenario)'}
@@ -1975,6 +1976,7 @@ with st.container():
                             'kk':'Тиімді жауын-шашынды есептеу',
                             'ru':'Метод оценки эффективных осадков',
                             'en':'Effective rainfall method'}[lang], ['none','fao_training'],
+                            index=(1 if fao56_kc_mode!='none' else 0),
                             format_func=lambda x: ({
                                 'none':{'kk':'Есептемеу (тек ET₀/ETc)','ru':'Не оценивать (только ET₀/ETc)','en':'Not estimated (ET0/ETc only)'},
                                 'fao_training':{'kk':'FAO оқу әдістемесі, шартты','ru':'Эмпирический метод FAO, допущение','en':'FAO empirical training formula (assumed)'}}[x][lang]))
@@ -2097,6 +2099,120 @@ with st.container():
                     key='farm_pump_efficiency')
                 if _h > 0 and _eta > 0:
                     pump_head_m, pump_efficiency = float(_h), float(_eta)/100.0
+    # Daily FAO-56 inputs are intentionally ABOVE the Calculate button; outputs
+    # appear below the Results heading after the main calculation is submitted.
+    _daily_enabled = False
+    if mode_key in ('mode1','mode2') and crop in CROP_ROOT_P:
+        with st.expander({
+            'ru':'FAO-56: суточный баланс влаги почвы и график полива (сценарий)',
+            'kk':'FAO-56: топырақтың тәуліктік су балансы және суару күнтізбесі (сценарий)',
+            'en':'FAO-56: historical daily root-zone balance and irrigation schedule (scenario)'
+        }[lang],expanded=False):
+            st.caption({
+                'ru':'Это исторический расчёт по ежедневным данным NASA POWER, а не прогноз погоды на 2050 год. Тип почвы и глубина корней — справочные допущения, которые можно изменить. Для риса нужна отдельная модель затопления.',
+                'kk':'NASA POWER тарихи тәуліктік деректері: бұл 2050 жылғы ауа райы болжамы емес. Топырақ пен тамыр параметрлері анықтамалық жорамалдар, оларды өзгертуге болады.',
+                'en':'Historical NASA POWER daily weather, NOT a 2050 daily forecast. Soil and root values are illustrative, editable assumptions. Paddy rice requires a separate flooded-soil model.'
+            }[lang])
+            _daily_enabled=st.checkbox({
+                'ru':'Включить исторический суточный расчёт FAO-56 при нажатии «Рассчитать»',
+                'kk':'«Есептеу» батырмасымен тарихи FAO-56 тәуліктік есебін қосу',
+                'en':'Include historical daily FAO-56 balance when calculating'}[lang],
+                value=False,key='daily_soil_enable',
+                help={'ru':'Суточный расчёт берёт погоду выбранного прошлого года. Не является прогнозом 2040–2059. Для будущих сценариев выберите CMIP6 и месячный FAO-56 выше.',
+                      'kk':'Тәуліктік есеп өткен жылдың ауа райын пайдаланады. 2040–2059 болжамы емес; болашақ үшін жоғарыдағы CMIP6 айлық есебін таңдаңыз.',
+                      'en':'Daily calculation uses a past weather year, not 2040–2059. For future scenarios use the monthly NASA+CMIP6 comparison above.'}[lang])
+            _daily_year=st.selectbox({'ru':'Год исторической погоды','kk':'Тарихи ауа райы жылы','en':'Historical weather year'}[lang],
+                                    [2025,2024,2023],key='daily_soil_year')
+            _daily_sow=st.date_input({'ru':'Дата посева в выбранном году','kk':'Егу күні','en':'Sowing date'}[lang],
+                value=date(_daily_year,4,1),min_value=date(_daily_year,4,1),
+                max_value=date(_daily_year,9,15),key=f'daily_soil_sow_{_daily_year}_{crop}')
+            _daily_stages=CROP_KC_STAGES[crop][1]
+            _daily_stage_text=st.text_input({'ru':'Длительность четырёх фаз роста, дней',
+                'kk':'Төрт өсу кезеңінің ұзақтығы, күн','en':'Four crop-stage durations, days'}[lang],
+                value=', '.join(map(str,_daily_stages)),key=f'daily_soil_stage_lengths_{crop}')
+            _map_soil_state=st.session_state.get('soilgrids_last')
+            _mapped_soil_available=bool(_map_soil_state and _map_soil_state[0]==(
+                round(float(calc_lat),5),round(float(calc_lon),5)))
+            _soil_modes=['fao_reference','measured']+(['mapped_soilgrids'] if _mapped_soil_available else [])
+            _daily_soil_mode=st.selectbox({'ru':'Источник параметров почвы','kk':'Топырақ деректерінің көзі',
+                'en':'Soil data source'}[lang],_soil_modes,
+                format_func=lambda x:{'fao_reference':{'ru':'Справочный профиль FAO AquaCrop',
+                    'kk':'FAO AquaCrop анықтамалық топырағы','en':'FAO AquaCrop reference profile'},
+                    'measured':{'ru':'Ввести собственные измерения','kk':'Өз өлшемдерін енгізу',
+                    'en':'Enter field-measured values'},
+                    'mapped_soilgrids':{'ru':'Карта SoilGrids: приблизительная текстура + FAO-параметры',
+                    'kk':'SoilGrids: топырақ текстурасы + FAO бағалары',
+                    'en':'SoilGrids: mapped indicative texture + FAO parameters'}}[x][lang],key='daily_soil_profile_mode')
+            _daily_soil_tex=st.selectbox({'ru':'Тип почвы (для справочного сценария)',
+                'kk':'Топырақ түрі','en':'Indicative soil texture'}[lang],list(SOIL_PRESETS),index=list(SOIL_PRESETS).index('loam'),
+                format_func=lambda x:{'sand':{'ru':'Песок','kk':'Құм','en':'Sand'},
+                  'sandy_loam':{'ru':'Супесь','kk':'Құмдақ','en':'Sandy loam'},
+                  'loam':{'ru':'Суглинок','kk':'Саздақ','en':'Loam'},
+                  'silt_loam':{'ru':'Пылеватый суглинок','kk':'Шаңды саздақ','en':'Silt loam'},
+                  'clay_loam':{'ru':'Глинистый суглинок','kk':'Сазды саздақ','en':'Clay loam'}}[x][lang],
+                key='daily_soil_texture')
+            _fc,_wp=SOIL_PRESETS[_daily_soil_tex]
+            if _daily_soil_mode=='mapped_soilgrids':
+                try:
+                    _mapped_texture=indicative_texture_from_soilgrids(_map_soil_state[1])
+                    _daily_soil_tex=_mapped_texture['faopreset']
+                    _fc,_wp=SOIL_PRESETS[_daily_soil_tex]
+                    st.caption({'ru':f"SoilGrids: предварительная категория {_daily_soil_tex}, θFC={_fc:.2f}, θWP={_wp:.2f} по FAO. Это не измерения поля!",
+                        'kk':f"SoilGrids: {_daily_soil_tex} болжамды текстурасы, FAO θFC={_fc:.2f}, θWP={_wp:.2f}. Өлшем емес!",
+                        'en':f"SoilGrids indicative {_daily_soil_tex} texture; FAO θFC={_fc:.2f}, θWP={_wp:.2f}; NOT measured!"}[lang])
+                except ValueError as _texture_err:
+                    st.error(str(_texture_err))
+                    st.stop()
+            if _daily_soil_mode=='measured':
+                _fc=st.number_input('Field capacity / Полевая влагоёмкость (m³/m³)',
+                    min_value=.05,max_value=.70,value=float(_fc),step=.01,key='daily_soil_fc')
+                _wp=st.number_input('Wilting point / Влажность завядания (m³/m³)',
+                    min_value=0.0,max_value=.65,value=float(_wp),step=.01,key='daily_soil_wp')
+            else:
+                st.caption(f'FAO AquaCrop scenario θFC={_fc:.2f}, θWP={_wp:.2f} m³/m³. '+FAO_SOIL_PROFILE_SOURCE)
+            _root_fao,_p_fao=CROP_ROOT_P[crop]
+            _root=st.number_input({'ru':'Глубина корневой зоны, м (справочный максимум FAO)',
+                'kk':'Тамыр тереңдігі, м (FAO)','en':'Rooting depth, m (FAO reference)'}[lang],
+                min_value=.10,max_value=3.0,value=float(_root_fao),step=.1,key=f'daily_soil_root_{crop}')
+            _p=st.number_input({'ru':'Доля доступной влаги до стресса p (FAO-56)',
+                'kk':'Стресс басталуындағы ылғал үлесі p','en':'Depletion fraction p (FAO-56)'}[lang],
+                min_value=.10,max_value=.80,value=float(_p_fao),step=.05,key=f'daily_soil_p_{crop}')
+            _start_frac=st.slider({'ru':'Начальная степень иссушения корневой зоны, % TAW',
+                'kk':'Бастапқы ылғал тапшылығы, % TAW','en':'Initial root-zone depletion, % of TAW'}[lang],
+                min_value=0,max_value=100,value=50,step=5,key='daily_soil_initial')/100.
+            _runoff=st.slider({'ru':'Доля стока при осадках, % (сценарное допущение)',
+                'kk':'Жауыннан ағып кететін су, %','en':'Rainfall runoff share, % (assumption)'}[lang],
+                0,100,0,5,key='daily_soil_runoff')/100.
+            _cr=st.number_input({'ru':'Капиллярное поступление из грунтовых вод, мм/сутки (0 — допущение)',
+                'kk':'Жерасты суынан көтерілу, мм/тәулік (0 — жорамал)',
+                'en':'Groundwater capillary rise, mm/day (0 is an assumption)'}[lang],
+                min_value=0.,max_value=20.,value=0.,step=.5,key='daily_soil_cr')
+            _daily_eta_method=st.selectbox({'ru':'Способ полива (справочная эффективность FAO)',
+                'kk':'Суару түрі (FAO анықтамалығы)','en':'Irrigation type (FAO reference)'}[lang],
+                list(FIELD_EFFICIENCIES),key='daily_soil_irrigation')
+            _daily_eta=field_efficiency(_daily_eta_method)
+            _daily_sched=st.selectbox({'ru':'Режим расчёта','kk':'Есептеу режимі','en':'Daily schedule mode'}[lang],
+                ['auto','rainfed'],format_func=lambda x:{'auto':{'ru':'Иллюстративный автоматический полив по порогу RAW',
+                   'kk':'RAW шегіне сай шартты суару','en':'Illustrative RAW-threshold automatic irrigation'},
+                   'rainfed':{'ru':'Без орошения (проверка водного стресса)',
+                   'kk':'Суарусыз (ылғал тапшылығы)','en':'No irrigation (soil stress case)'}}[x][lang],
+                key='daily_soil_sched')
+            st.caption({'ru':'После выбора параметров нажмите основную кнопку «Рассчитать» ниже. Суточная модель не изменяет прогноз Random Forest и водный лимит.',
+                        'kk':'Параметрлерді таңдағаннан кейін төмендегі «Есептеу» батырмасын басыңыз. Есеп Random Forest пен су лимитін өзгертпейді.',
+                        'en':'After setting inputs, click the main Calculate button below. This does not change RF forecasts or water caps.'}[lang])
+            _daily_confirm=st.checkbox({'ru':'Подтверждаю: все почвенные параметры, дата посева и потери воды — мои сценарные допущения либо измерения, а не автоматически установленные факты',
+                'kk':'Топырақ, егу күні және шығындар өлшенген немесе сценарийлік жорамал екенін растаймын',
+                'en':'I confirm soil parameters, crop calendar and water losses are measured or scenario assumptions, not automatically verified facts'}[lang],
+                key='daily_soil_assumptions')
+            import json as _daily_json
+            _daily_geometry_string=(_daily_json.dumps(calc_geojson,sort_keys=True)
+                  if location_source=='map' and calc_geojson is not None else None)
+            _daily_fingerprint=(crop,_daily_year,str(_daily_sow),_daily_stage_text,
+                _daily_geometry_string,
+                _daily_soil_mode,_daily_soil_tex,float(_fc),float(_wp),float(_root),
+                float(_p),float(_start_frac),float(_runoff),float(_cr),
+                _daily_eta_method,_daily_sched,float(calc_lat),float(calc_lon))
+
     submitted = st.button(t["calculate"], type="primary", use_container_width=True, key="calculate_main")
 
 if submitted:
@@ -2471,6 +2587,56 @@ if submitted:
                 area_ha=(float(area_ha) if _kc is not None and fao56_rain_method=='fao_training' else None),
                 weather_source=_geo_note+'; NASA POWER historical 1995-2014')
             _summary56=_v56['totals']
+            # Both scenarios are derived from the same historical NASA reference
+            # and are not merged into the historical observations or RF features.
+            _fao56_compare = {}
+            for _ssp_name in ('SSP2-4.5', 'SSP5-8.5'):
+                _ssp_eval = (_v56 if _ssp_name == climate_future_scenario else
+                    evaluate_irrigation_scenario(_w56,load_scenario(DATA_DIR/'cmip6',_ssp_name),
+                        float(calc_lat),kc_monthly=_kc,
+                        effective_rainfall=('fao_training' if _kc is not None and fao56_rain_method=='fao_training' else None),
+                        application_efficiency=(float(fao56_efficiency) if _kc is not None and fao56_rain_method=='fao_training' else None),
+                        area_ha=(float(area_ha) if _kc is not None and fao56_rain_method=='fao_training' else None),
+                        weather_source=_geo_note+'; NASA POWER historical 1995-2014'))
+                _fao56_compare[_ssp_name] = _ssp_eval['totals']
+            st.markdown('##### '+{'ru':'Сравнение FAO-56: оба климатических сценария 2040–2059',
+                'kk':'FAO-56 салыстыруы: екі климат сценарийі, 2040–2059',
+                'en':'FAO-56 comparison: both 2040–2059 climate scenarios'}[lang])
+            _cols56={
+                'name':{'ru':'Климатический вариант','kk':'Климат нұсқасы','en':'Climate option'}[lang],
+                'et0':{'ru':'ET₀, мм за апрель–сентябрь','kk':'ET₀, мм, сәуір–қыркүйек','en':'ET₀, Apr–Sep, mm'}[lang],
+                'etc':{'ru':'ETc культуры, мм','kk':'ETc, мм','en':'Crop ETc, mm'}[lang],
+                'water':{'ru':'Подача воды, м³/га','kk':'Су беру, м³/га','en':'Field delivery, m³/ha'}[lang],
+            }
+            _reference56 = {k:v for k,v in {
+                'baseline_et0_mm':_summary56['baseline_et0_mm'],
+                'baseline_etc_mm':_summary56.get('baseline_etc_mm'),
+                'baseline_gross_irrigation_m3_ha':_summary56.get('baseline_gross_irrigation_m3_ha')
+            }.items() if v is not None}
+            _cmp_rows=[]
+            for _caption,_metric_values,_suffix in [
+                ({'ru':'Историческая база NASA 1995–2014','kk':'NASA тарихи базасы 1995–2014','en':'NASA 1995–2014 baseline'}[lang],_reference56,'baseline'),
+                ('SSP2-4.5',_fao56_compare['SSP2-4.5'],'future'),
+                ('SSP5-8.5',_fao56_compare['SSP5-8.5'],'future')]:
+                _cmp_rows.append({
+                    _cols56['name']:_caption,
+                    _cols56['et0']:round(_metric_values[f'{_suffix}_et0_mm'],1),
+                    _cols56['etc']:(round(_metric_values[f'{_suffix}_etc_mm'],1) if f'{_suffix}_etc_mm' in _metric_values else None),
+                    _cols56['water']:(round(_metric_values[f'{_suffix}_gross_irrigation_m3_ha'],1) if f'{_suffix}_gross_irrigation_m3_ha' in _metric_values else None),
+                })
+            st.dataframe(pd.DataFrame(_cmp_rows),hide_index=True,use_container_width=True)
+            st.caption({'ru':'Единая база NASA POWER 1995–2014 и помесячные аномалии World Bank CCKP. Влажность, ветер, радиация и давление в будущих сценариях сохранены на историческом уровне. ETc требует Kc, а подача воды - дополнительно эффективных осадков и КПД полива. Прочерк означает неизвестное, а не ноль. Это сценарий, не прогноз погоды 2050 года.',
+                'kk':'NASA POWER 1995–2014 негізі мен CCKP айлық аномалиялары. Болашақта ылғалдылық, жел, радиация мен қысым өзгермейді деп алынған. ETc үшін Kc, ал су беру үшін тиімді жауын мен ПӘК қажет. Бос орын нөл емес; бұл ауа райы болжамы емес.',
+                'en':'Common NASA POWER 1995–2014 baseline with CCKP monthly anomalies. Future humidity, wind, solar and pressure are held fixed. Crop ETc requires Kc; delivery needs effective rain and efficiency. Blank means unavailable, not zero. This is a scenario, not a 2050 weather forecast.'}[lang])
+            for _r56 in _cmp_rows:
+                report_payload['summary'].append({'label':str(_r56[_cols56['name']])+' - '+_cols56['et0'],
+                    'value':str(_r56[_cols56['et0']]),
+                    'note':{'ru':'NASA POWER 1995–2014 и месячные аномалии CCKP; FAO-56, остальные климатические параметры фиксированы', 'kk':'NASA POWER 1995–2014 және CCKP айлық ауытқулары; FAO-56, қалған климаттық көрсеткіштер тұрақты', 'en':'NASA POWER 1995–2014 + CCKP monthly anomalies; FAO-56, other climate parameters fixed'}[lang]})
+                for _ckey in ('etc','water'):
+                    if _r56[_cols56[_ckey]] is not None:
+                        report_payload['summary'].append({'label':str(_r56[_cols56['name']])+' - '+_cols56[_ckey],
+                            'value':str(_r56[_cols56[_ckey]]),
+                            'note':{'ru':'FAO-56: справочные Kc, эффективные осадки и КПД, если заданы; только сценарий', 'kk':'FAO-56: Kc, тиімді жауын-шашын және ПӘК берілсе; сценарийлік нәтиже', 'en':'FAO-56: documented Kc, effective rain and field efficiency if supplied; scenario only'}[lang]})
             _a,_b=st.columns(2)
             _a.metric('ET₀ Apr-Sep, NASA baseline (mm)', f"{_summary56['baseline_et0_mm']:.1f}")
             _b.metric('ET₀ Apr-Sep, CMIP6 scenario (mm)', f"{_summary56['future_et0_mm']:.1f}")
@@ -2613,147 +2779,49 @@ if submitted:
                         'ru':'Расчёт FAO-56 не выполнен; проверьте исходные данные и NASA: ',
                         'en':'FAO-56 computation unavailable; check inputs/NASA: '}[lang]+str(_e56))
 
-    # Optional HISTORICAL daily root-zone ledger; not CMIP6 future daily weather.
-    # Separate from monthly FAO-56 ET0; avoids conflating climate projection and
-    # a historical daily irrigation schedule. No automatic optimizer override.
-    if mode_key in ('mode1','mode2') and crop in CROP_ROOT_P:
+    # Output only: all daily FAO-56 input widgets live above the Calculate button.
+    if mode_key in ('mode1','mode2') and crop in CROP_ROOT_P and _daily_enabled:
         with st.expander({
-            'ru':'FAO-56: суточный баланс влаги почвы и график полива (сценарий)',
-            'kk':'FAO-56: топырақтың тәуліктік су балансы және суару күнтізбесі (сценарий)',
-            'en':'FAO-56: historical daily root-zone balance and irrigation schedule (scenario)'
-        }[lang],expanded=False):
-            st.caption({
-                'ru':'Это исторический расчёт по ежедневным данным NASA POWER, а не прогноз погоды на 2050 год. Тип почвы и глубина корней — справочные допущения, которые можно изменить. Для риса нужна отдельная модель затопления.',
-                'kk':'NASA POWER тарихи тәуліктік деректері: бұл 2050 жылғы ауа райы болжамы емес. Топырақ пен тамыр параметрлері анықтамалық жорамалдар, оларды өзгертуге болады.',
-                'en':'Historical NASA POWER daily weather, NOT a 2050 daily forecast. Soil and root values are illustrative, editable assumptions. Paddy rice requires a separate flooded-soil model.'
-            }[lang])
-            _daily_year=st.selectbox({'ru':'Год исторической погоды','kk':'Тарихи ауа райы жылы','en':'Historical weather year'}[lang],
-                                    [2025,2024,2023],key='daily_soil_year')
-            _daily_sow=st.date_input({'ru':'Дата посева в выбранном году','kk':'Егу күні','en':'Sowing date'}[lang],
-                value=date(_daily_year,4,1),min_value=date(_daily_year,4,1),
-                max_value=date(_daily_year,9,15),key=f'daily_soil_sow_{_daily_year}_{crop}')
-            _daily_stages=CROP_KC_STAGES[crop][1]
-            _daily_stage_text=st.text_input({'ru':'Длительность четырёх фаз роста, дней',
-                'kk':'Төрт өсу кезеңінің ұзақтығы, күн','en':'Four crop-stage durations, days'}[lang],
-                value=', '.join(map(str,_daily_stages)),key=f'daily_soil_stage_lengths_{crop}')
-            _map_soil_state=st.session_state.get('soilgrids_last')
-            _mapped_soil_available=bool(_map_soil_state and _map_soil_state[0]==(
-                round(float(calc_lat),5),round(float(calc_lon),5)))
-            _soil_modes=['fao_reference','measured']+(['mapped_soilgrids'] if _mapped_soil_available else [])
-            _daily_soil_mode=st.selectbox({'ru':'Источник параметров почвы','kk':'Топырақ деректерінің көзі',
-                'en':'Soil data source'}[lang],_soil_modes,
-                format_func=lambda x:{'fao_reference':{'ru':'Справочный профиль FAO AquaCrop',
-                    'kk':'FAO AquaCrop анықтамалық топырағы','en':'FAO AquaCrop reference profile'},
-                    'measured':{'ru':'Ввести собственные измерения','kk':'Өз өлшемдерін енгізу',
-                    'en':'Enter field-measured values'},
-                    'mapped_soilgrids':{'ru':'Карта SoilGrids: приблизительная текстура + FAO-параметры',
-                    'kk':'SoilGrids: топырақ текстурасы + FAO бағалары',
-                    'en':'SoilGrids: mapped indicative texture + FAO parameters'}}[x][lang],key='daily_soil_profile_mode')
-            _daily_soil_tex=st.selectbox({'ru':'Тип почвы (для справочного сценария)',
-                'kk':'Топырақ түрі','en':'Indicative soil texture'}[lang],list(SOIL_PRESETS),index=list(SOIL_PRESETS).index('loam'),
-                format_func=lambda x:{'sand':{'ru':'Песок','kk':'Құм','en':'Sand'},
-                  'sandy_loam':{'ru':'Супесь','kk':'Құмдақ','en':'Sandy loam'},
-                  'loam':{'ru':'Суглинок','kk':'Саздақ','en':'Loam'},
-                  'silt_loam':{'ru':'Пылеватый суглинок','kk':'Шаңды саздақ','en':'Silt loam'},
-                  'clay_loam':{'ru':'Глинистый суглинок','kk':'Сазды саздақ','en':'Clay loam'}}[x][lang],
-                key='daily_soil_texture')
-            _fc,_wp=SOIL_PRESETS[_daily_soil_tex]
-            if _daily_soil_mode=='mapped_soilgrids':
-                try:
-                    _mapped_texture=indicative_texture_from_soilgrids(_map_soil_state[1])
-                    _daily_soil_tex=_mapped_texture['faopreset']
-                    _fc,_wp=SOIL_PRESETS[_daily_soil_tex]
-                    st.caption({'ru':f"SoilGrids: предварительная категория {_daily_soil_tex}, θFC={_fc:.2f}, θWP={_wp:.2f} по FAO. Это не измерения поля!",
-                        'kk':f"SoilGrids: {_daily_soil_tex} болжамды текстурасы, FAO θFC={_fc:.2f}, θWP={_wp:.2f}. Өлшем емес!",
-                        'en':f"SoilGrids indicative {_daily_soil_tex} texture; FAO θFC={_fc:.2f}, θWP={_wp:.2f}; NOT measured!"}[lang])
-                except ValueError as _texture_err:
-                    st.error(str(_texture_err))
-                    st.stop()
-            if _daily_soil_mode=='measured':
-                _fc=st.number_input('Field capacity / Полевая влагоёмкость (m³/m³)',
-                    min_value=.05,max_value=.70,value=float(_fc),step=.01,key='daily_soil_fc')
-                _wp=st.number_input('Wilting point / Влажность завядания (m³/m³)',
-                    min_value=0.0,max_value=.65,value=float(_wp),step=.01,key='daily_soil_wp')
+            'ru':'Итог суточного FAO-56: влага почвы и график полива',
+            'kk':'FAO-56 тәуліктік нәтижесі: топырақ ылғалы және суару кестесі',
+            'en':'Daily FAO-56 results: root-zone balance and irrigation schedule'}[lang], expanded=True):
+            if not _daily_confirm:
+                st.warning({'ru':'Подтвердите исходные предположения выше и повторите расчёт.',
+                            'kk':'Жоғарыдағы жорамалдарды растаңыз да, қайта есептеңіз.',
+                            'en':'Confirm assumptions above and calculate again.'}[lang])
             else:
-                st.caption(f'FAO AquaCrop scenario θFC={_fc:.2f}, θWP={_wp:.2f} m³/m³. '+FAO_SOIL_PROFILE_SOURCE)
-            _root_fao,_p_fao=CROP_ROOT_P[crop]
-            _root=st.number_input({'ru':'Глубина корневой зоны, м (справочный максимум FAO)',
-                'kk':'Тамыр тереңдігі, м (FAO)','en':'Rooting depth, m (FAO reference)'}[lang],
-                min_value=.10,max_value=3.0,value=float(_root_fao),step=.1,key=f'daily_soil_root_{crop}')
-            _p=st.number_input({'ru':'Доля доступной влаги до стресса p (FAO-56)',
-                'kk':'Стресс басталуындағы ылғал үлесі p','en':'Depletion fraction p (FAO-56)'}[lang],
-                min_value=.10,max_value=.80,value=float(_p_fao),step=.05,key=f'daily_soil_p_{crop}')
-            _start_frac=st.slider({'ru':'Начальная степень иссушения корневой зоны, % TAW',
-                'kk':'Бастапқы ылғал тапшылығы, % TAW','en':'Initial root-zone depletion, % of TAW'}[lang],
-                min_value=0,max_value=100,value=50,step=5,key='daily_soil_initial')/100.
-            _runoff=st.slider({'ru':'Доля стока при осадках, % (сценарное допущение)',
-                'kk':'Жауыннан ағып кететін су, %','en':'Rainfall runoff share, % (assumption)'}[lang],
-                0,100,0,5,key='daily_soil_runoff')/100.
-            _cr=st.number_input({'ru':'Капиллярное поступление из грунтовых вод, мм/сутки (0 — допущение)',
-                'kk':'Жерасты суынан көтерілу, мм/тәулік (0 — жорамал)',
-                'en':'Groundwater capillary rise, mm/day (0 is an assumption)'}[lang],
-                min_value=0.,max_value=20.,value=0.,step=.5,key='daily_soil_cr')
-            _daily_eta_method=st.selectbox({'ru':'Способ полива (справочная эффективность FAO)',
-                'kk':'Суару түрі (FAO анықтамалығы)','en':'Irrigation type (FAO reference)'}[lang],
-                list(FIELD_EFFICIENCIES),key='daily_soil_irrigation')
-            _daily_eta=field_efficiency(_daily_eta_method)
-            _daily_sched=st.selectbox({'ru':'Режим расчёта','kk':'Есептеу режимі','en':'Daily schedule mode'}[lang],
-                ['auto','rainfed'],format_func=lambda x:{'auto':{'ru':'Иллюстративный автоматический полив по порогу RAW',
-                   'kk':'RAW шегіне сай шартты суару','en':'Illustrative RAW-threshold automatic irrigation'},
-                   'rainfed':{'ru':'Без орошения (проверка водного стресса)',
-                   'kk':'Суарусыз (ылғал тапшылығы)','en':'No irrigation (soil stress case)'}}[x][lang],
-                key='daily_soil_sched')
-            _daily_confirm=st.checkbox({'ru':'Подтверждаю: все почвенные параметры, дата посева и потери воды — мои сценарные допущения либо измерения, а не автоматически установленные факты',
-                'kk':'Топырақ, егу күні және шығындар өлшенген немесе сценарийлік жорамал екенін растаймын',
-                'en':'I confirm soil parameters, crop calendar and water losses are measured or scenario assumptions, not automatically verified facts'}[lang],
-                key='daily_soil_assumptions')
-            import json as _daily_json
-            _daily_geometry_string=(_daily_json.dumps(calc_geojson,sort_keys=True)
-                  if location_source=='map' and calc_geojson is not None else None)
-            _daily_fingerprint=(crop,_daily_year,str(_daily_sow),_daily_stage_text,
-                _daily_geometry_string,
-                _daily_soil_mode,_daily_soil_tex,float(_fc),float(_wp),float(_root),
-                float(_p),float(_start_frac),float(_runoff),float(_cr),
-                _daily_eta_method,_daily_sched,float(calc_lat),float(calc_lon))
-            if st.button({'ru':'Рассчитать суточный баланс по NASA POWER',
-                'kk':'NASA POWER тәуліктік балансын есептеу',
-                'en':'Calculate historical NASA daily water balance'}[lang],key='daily_soil_run'):
-                if not _daily_confirm:
-                    st.warning({'ru':'Сначала подтвердите допущения.','kk':'Алдымен жорамалдарды растаңыз.',
-                                'en':'Confirm assumptions before running.'}[lang])
-                else:
-                    try:
-                        _lengths=parse_stage_lengths(_daily_stage_text)
-                        _end=min(date(_daily_year,9,30),_daily_sow+timedelta(days=sum(_lengths)-1))
-                        with st.spinner({'ru':'Загрузка ежедневных данных NASA POWER...',
-                          'kk':'NASA POWER тәуліктік деректерін жүктеу...',
-                          'en':'Loading daily NASA POWER observations...'}[lang]):
-                            if _daily_geometry_string:
-                                _weather=_cached_polygon_daily_weather(_daily_geometry_string,_daily_sow,_end)
-                            else:
-                                _weather=_cached_daily_soil_nasa(float(calc_lat),float(calc_lon),_daily_sow,_end)
-                        _soil_result=daily_soil_balance(_weather,crop=crop,sowing_date=_daily_sow,
-                            latitude_deg=float(calc_lat),field_efficiency=_daily_eta,
-                            soil_fc=_fc,soil_wp=_wp,root_max_m=_root,depletion_p=_p,
-                            initial_depletion_fraction=_start_frac,stage_lengths=_lengths,
-                            mode=_daily_sched,runoff_fraction=_runoff,
-                            capillary_rise_mm_day=_cr,assumptions_confirmed=True)
-                        _soil_result['location']={'latitude':float(calc_lat),'longitude':float(calc_lon)}
-                        _soil_result['weather_year']=_daily_year
-                        _soil_result['spatial_weather_source']=('NASA polygon-weighted daily samples' if _daily_geometry_string else 'NASA district/user single point')
-                        _soil_result['fingerprint']=_daily_fingerprint
-                        _soil_result['soil_source']=('SoilGrids point texture mapped to FAO indicative profile' if _daily_soil_mode=='mapped_soilgrids' else 'FAO AquaCrop reference: '+_daily_soil_tex if _daily_soil_mode=='fao_reference' else 'User-supplied soil parameters')
-                        st.session_state['daily_soil_last_result']=_soil_result
-                    except (ValueError,KeyError,TypeError,requests.exceptions.RequestException) as _soil_err:
-                        st.warning({'ru':'Расчёт не выполнен: ','kk':'Есеп жасалмады: ',
-                                    'en':'Daily calculation unavailable: '}[lang]+str(_soil_err))
-            _result=st.session_state.get('daily_soil_last_result')
+                try:
+                    _lengths=parse_stage_lengths(_daily_stage_text)
+                    _end=min(date(_daily_year,9,30),_daily_sow+timedelta(days=sum(_lengths)-1))
+                    with st.spinner({'ru':'Загрузка ежедневных данных NASA POWER...',
+                      'kk':'NASA POWER тәуліктік деректерін жүктеу...',
+                      'en':'Loading daily NASA POWER observations...'}[lang]):
+                        if _daily_geometry_string:
+                            _weather=_cached_polygon_daily_weather(_daily_geometry_string,_daily_sow,_end)
+                        else:
+                            _weather=_cached_daily_soil_nasa(float(calc_lat),float(calc_lon),_daily_sow,_end)
+                    _soil_result=daily_soil_balance(_weather,crop=crop,sowing_date=_daily_sow,
+                        latitude_deg=float(calc_lat),field_efficiency=_daily_eta,
+                        soil_fc=_fc,soil_wp=_wp,root_max_m=_root,depletion_p=_p,
+                        initial_depletion_fraction=_start_frac,stage_lengths=_lengths,
+                        mode=_daily_sched,runoff_fraction=_runoff,
+                        capillary_rise_mm_day=_cr,assumptions_confirmed=True)
+                    _soil_result['location']={'latitude':float(calc_lat),'longitude':float(calc_lon)}
+                    _soil_result['weather_year']=_daily_year
+                    _soil_result['spatial_weather_source']=('NASA polygon-weighted daily samples' if _daily_geometry_string else 'NASA district/user single point')
+                    _soil_result['fingerprint']=_daily_fingerprint
+                    _soil_result['soil_source']=('SoilGrids point texture mapped to FAO indicative profile' if _daily_soil_mode=='mapped_soilgrids' else 'FAO AquaCrop reference: '+_daily_soil_tex if _daily_soil_mode=='fao_reference' else 'User-supplied soil parameters')
+                    st.session_state['daily_soil_last_result']=_soil_result
+                except (ValueError,KeyError,TypeError,requests.exceptions.RequestException) as _soil_err:
+                    st.warning({'ru':'Расчёт не выполнен: ','kk':'Есеп жасалмады: ',
+                                'en':'Daily calculation unavailable: '}[lang]+str(_soil_err))
+            _result=(st.session_state.get('daily_soil_last_result') if _daily_confirm else None)
             if _result and _result.get('fingerprint') == _daily_fingerprint:
                 _ts=_result['totals']
                 _col1,_col2,_col3=st.columns(3)
-                _col1.metric('ETc actual (mm)',f"{_ts['actual_etc_mm']:.1f}")
-                _col2.metric('Net irrigation (m³/ha)',f"{_ts['net_irrigation_m3_ha']:.0f}")
-                _col3.metric('Field delivery (m³/ha)',f"{_ts['field_delivery_m3_ha']:.0f}")
+                _col1.metric({'ru':'Фактическая ETc в расчёте, мм','kk':'Есептік нақты ETc, мм','en':'Modelled actual ETc, mm'}[lang],f"{_ts['actual_etc_mm']:.1f}")
+                _col2.metric({'ru':'Чистая потребность в поливе, м³/га','kk':'Таза суару қажеттілігі, м³/га','en':'Net irrigation, m³/ha'}[lang],f"{_ts['net_irrigation_m3_ha']:.0f}")
+                _col3.metric({'ru':'Подача воды на поле, м³/га','kk':'Егістікке су беру, м³/га','en':'Field delivery, m³/ha'}[lang],f"{_ts['field_delivery_m3_ha']:.0f}")
                 st.caption({'ru':f"Исторический сценарий {_result['weather_year']}: дней с водным стрессом {_ts['days_under_stress']}; расчётных поливов {_ts['irrigation_events']}. Не является измеренной экономией воды.",
                   'kk':f"{_result['weather_year']} тарихи сценарий: стресс күндері {_ts['days_under_stress']}, суару оқиғалары {_ts['irrigation_events']}.",
                   'en':f"Historical {_result['weather_year']} scenario: {_ts['days_under_stress']} stress days; {_ts['irrigation_events']} modeled irrigations; not observed water saving."}[lang])
