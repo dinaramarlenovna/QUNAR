@@ -377,6 +377,39 @@ def q_radio(label, *args, **kwargs):
 def q_toggle(label, *args, **kwargs):
     kwargs.setdefault("help", _default_widget_help(label)); return st.toggle(label, *args, **kwargs)
 
+def _crop_saved_value(slot, fallback):
+    """Persist shared crop-plot inputs even when mode widgets temporarily disappear."""
+    return st.session_state.get("qunar_crop_saved_" + slot, fallback)
+
+
+def _crop_remember_value(slot, value):
+    st.session_state["qunar_crop_saved_" + slot] = value
+    return value
+
+
+def _on_crop_changed():
+    """Reset only crop-specific inputs, never district, farm total, language or report basket."""
+    chosen = st.session_state.get('qunar_assessed_crop_widget')
+    previous = st.session_state.get('qunar_last_assessed_crop')
+    if previous is not None and chosen != previous:
+        crop_widgets = (
+            'qunar_area_widget_crop', 'qunar_crop_available_water_widget',
+            'qunar_crop_water_widget', 'qunar_crop_energy_widget',
+            'qunar_crop_irrigation_widget', 'qunar_crop_reuse_widget',
+            'qunar_crop_meter_widget', 'qunar_crop_soil_sensors_widget',
+            'qunar_crop_efficient_pump_widget', 'qunar_crop_solar_widget',
+            'qunar_crop_target_solar_widget', 'confirm_observed_zero_water_crop',
+            'confirm_observed_zero_energy_crop', 'qunar_crop_resource_scope_widget',
+        )
+        for k in crop_widgets:
+            st.session_state.pop(k, None)
+        for k in list(st.session_state):
+            if k.startswith(('qunar_crop_saved_', 'qunar_saved_fuel_crop_', 'resource_amount_crop_')):
+                st.session_state.pop(k, None)
+        st.session_state.pop('qunar_calculated_mode', None)
+        st.session_state['qunar_crop_inputs_reset_notice'] = True
+    st.session_state['qunar_last_assessed_crop'] = chosen
+
 st.set_page_config(page_title=APP_NAME, page_icon="🌱", layout="wide", initial_sidebar_state="expanded")
 
 if not st.session_state.get("ga_page_view_sent"):
@@ -1118,19 +1151,93 @@ area_input_label = t["area"] if mode_key != "mode5" else {
     "en":"Pasture / production land area, ha",
 }[lang]
 
+# Separate the total holding from the plot actually assessed.  This is
+# contextual metadata only: crop-water and production formulas still use area_ha.
+# A zero TOTAL denotes "not entered" and is never treated as a 0-ha farm.
+farm_total_area_ha = 0.0
+plot_area_explanations = {
+    "mode1": {
+        "ru":"Это площадь участка под выбранной культурой, а не обязательно всего хозяйства. Например: хозяйство 100 га, подсолнечник 40 га - здесь 40 га.",
+        "kk":"Бұл таңдалған дақылдың танап алаңы, барлық шаруашылықтың жері емес. Мысалы: шаруашылық 100 га, күнбағыс 40 га - мұнда 40 га.",
+        "en":"Area of the selected crop, not necessarily the whole farm. Example: 100 ha farm with 40 ha sunflower - enter 40 ha here.",
+    },
+    "mode2": {
+        "ru":"Площадь участка, для которого проверяется выбранная культура. Не вводите общую площадь разных культур.",
+        "kk":"Таңдалған дақыл тексерілетін танап алаңы. Әртүрлі дақылдар өскен барлық жерді енгізбеңіз.",
+        "en":"Area of the plot being checked for this crop, not the whole mixed-crop farm.",
+    },
+    "mode3": {
+        "ru":"Площадь участка, для которого QŪNAR сравнит возможные культуры. Это не вся территория смешанного хозяйства, если анализируется отдельное поле.",
+        "kk":"QŪNAR дақылдарды салыстыратын танаптың алаңы. Бұл аралас шаруашылықтың барлық жері емес.",
+        "en":"Area of the plot for comparing candidate crops, not necessarily the total holding.",
+    },
+    "mode4": {
+        "ru":"Это общая площадь посевов, которую оптимизатор распределяет между культурами. Пастбища и строения сюда не входят.",
+        "kk":"Оңтайландыру дақылдарға бөлетін егістік жердің жалпы алаңы. Жайылым мен ғимарат кірмейді.",
+        "en":"Total arable cropping area to allocate across crops; exclude pasture and buildings.",
+    },
+    "mode5": {
+        "ru":"Это площадь пастбища или территории, относящейся к рассматриваемому животноводству, не вся площадь предприятия.",
+        "kk":"Бұл қарастырылатын мал шаруашылығына арналған жайылым немесе өндірістік жер; бүкіл кәсіпорын аумағы емес.",
+        "en":"Pasture or land assigned to livestock, not necessarily the entire farm holding.",
+    },
+}
 with st.container():
     c1, c2, c3 = st.columns(3)
     with c1:
-        area_ha = q_number_input(area_input_label, min_value=0.1, value=10.0, step=0.5, help=t["declared_area_help"])
+        if mode_key in ("mode1", "mode2", "mode3", "mode5"):
+            farm_total_area_ha = q_number_input(
+                {"ru":"Общая площадь хозяйства, га (необязательно)",
+                 "kk":"Шаруашылықтың жалпы аумағы, га (міндетті емес)",
+                 "en":"Total farm area, ha (optional)"}[lang],
+                min_value=0.0,
+                value=float(st.session_state.get("qunar_farm_total_area_saved", 0.0)),
+                step=0.5, key="qunar_total_farm_area_widget",
+                help={"ru":"Вся земля предприятия: поля, пастбища и другая территория. 0 означает, что площадь не указана; это не нулевая площадь.",
+                      "kk":"Кәсіпорынның барлық жері: танап, жайылым және басқа жерлер. 0 - енгізілмеген.",
+                      "en":"All land of the holding, including fields and pasture. 0 means not provided."}[lang],
+            )
+            st.session_state["qunar_farm_total_area_saved"] = float(farm_total_area_ha)
+            st.caption({"ru":"Справочная общая площадь. Не заменяет площадь выбранного участка и не умножает нормы расхода.",
+                        "kk":"Бұл жалпы аумақ тек ақпарат үшін. Дақыл танабының алаңын алмастырмайды.",
+                        "en":"Holding-level context only; does not replace the selected plot area or scale crop inputs."}[lang])
+        # A crop plot, the total arable structure and livestock pasture are
+        # distinct areas. Save per mode across Streamlit widget destruction.
+        _is_crop_assessment = mode_key in ('mode1', 'mode2')
+        _area_saved_key = 'qunar_crop_saved_area' if _is_crop_assessment else 'qunar_saved_area_'+mode_key
+        _area_widget_key = 'qunar_area_widget_crop' if _is_crop_assessment else 'qunar_area_widget_'+mode_key
+        area_ha = q_number_input(area_input_label, min_value=0.1,
+                                 value=float(st.session_state.get(_area_saved_key, 10.0)),
+                                 step=0.5, key=_area_widget_key,
+                                 help=t["declared_area_help"])
+        st.session_state[_area_saved_key] = float(area_ha)
+        st.caption(plot_area_explanations[mode_key][lang])
+        if farm_total_area_ha > 0 and area_ha > farm_total_area_ha:
+            st.error({"ru":"Площадь выбранного участка превышает общую площадь хозяйства. Проверьте значения перед расчётом.",
+                      "kk":"Таңдалған жер алаңы шаруашылықтың жалпы аумағынан үлкен. Екі мәнді тексеріңіз.",
+                      "en":"Selected plot exceeds total farm area. Check both entries before calculating."}[lang])
+            st.stop()
     with c2:
         available_water_label = t["water"] if mode_key != "mode5" else {
             "kk":"Жылдық қолжетімді су көлемі, м³",
             "ru":"Доступный годовой объем воды, м³",
             "en":"Available annual water volume, m³",
         }[lang]
+        _water_budget_crop = mode_key in ('mode1', 'mode2')
+        _water_budget_key = ('qunar_crop_available_water_widget' if _water_budget_crop
+                             else 'qunar_available_water_'+mode_key)
         available_water = q_number_input(
-            available_water_label, min_value=0.0, value=0.0, step=1000.0, help=t["available_water_note"]
+            available_water_label, min_value=0.0,
+            value=float(_crop_saved_value('available_water', 0.0)) if _water_budget_crop else 0.0,
+            step=1000.0, help=t["available_water_note"], key=_water_budget_key,
         )
+        if _water_budget_crop:
+            _crop_remember_value('available_water', float(available_water))
+            st.caption({
+                'ru':'Здесь лимит воды именно для анализируемого участка. Если известен только общий лимит всего хозяйства и не установлено, сколько доступно этой культуре, оставьте 0 (= неизвестно). Не распределяйте общий лимит автоматически по гектарам.',
+                'kk':'Мұнда тек қарастырылатын танапқа қолжетімді су лимитін енгізіңіз. Бүкіл шаруашылықтың ғана лимиті белгілі болса, 0 қалдырыңыз (= белгісіз).',
+                'en':'Enter water available to this assessed plot. If only the whole-farm water allowance is known and no crop allocation exists, leave 0 (= unknown). Do not apportion by area automatically.',
+            }[lang])
     with c3:
         st.caption(t["nasa_auto_note"])
         if user_level == "farmer":
@@ -1140,10 +1247,32 @@ with st.container():
             use_wapor = st.checkbox(t["wapor_toggle"], value=True)
 
     crop = None
-    if mode_key == "mode1":
-        crop = q_selectbox(t["crop"], check_crop_codes(), format_func=lambda c: extended_crop_label(c, lang))
-    elif mode_key == "mode2":
-        crop = q_selectbox(t["crop"], check_crop_codes(), format_func=lambda c: extended_crop_label(c, lang))
+    if mode_key in ('mode1', 'mode2'):
+        _crop_options = list(check_crop_codes())
+        _crop_default = st.session_state.get('qunar_last_assessed_crop', _crop_options[0])
+        crop = q_selectbox(
+            t['crop'], _crop_options, format_func=lambda c: extended_crop_label(c, lang),
+            index=_crop_options.index(_crop_default) if _crop_default in _crop_options else 0,
+            key='qunar_assessed_crop_widget', on_change=_on_crop_changed,
+        )
+        # Handle first render or a mode transition without replacing saved inputs.
+        st.session_state['qunar_last_assessed_crop'] = crop
+        st.caption({
+            'ru':'Нормы воды, агротехнологии и урожайность относятся к этой культуре и площади её участка. Они не являются нормами всего хозяйства. Если расход известен только по общему счётчику, укажите это ниже в «Границы учёта».',
+            'kk':'Су, технология және өнімділік нормативтері осы дақыл мен оның танап алаңына қатысты. Жалпы шаруашылық есептегішін бөлек көрсетіңіз.',
+            'en':'Crop water, production and yield references apply only to this crop and its assessed plot, not the entire holding. Mark whole-farm meter readings below.',
+        }[lang])
+        if user_level in ('specialist', 'researcher'):
+            _crop_norm_note = default_water_requirement(used_district, crop, 'unknown')
+            st.caption({
+                'ru':f'Справочная норма: {_crop_norm_note.m3_ha:,.0f} м³/га, только для выбранной культуры. Источник: {_crop_norm_note.source_label}. Это не измеренный расход.',
+                'kk':f'Анықтамалық норма: {_crop_norm_note.m3_ha:,.0f} м³/га, тек таңдалған дақыл үшін. Дереккөз: {_crop_norm_note.source_label}. Бұл нақты өлшеу емес.',
+                'en':f'Crop-specific reference: {_crop_norm_note.m3_ha:,.0f} m³/ha. Source: {_crop_norm_note.source_label}. This is not measured consumption.',
+            }[lang])
+        if st.session_state.pop('qunar_crop_inputs_reset_notice', False):
+            st.info({'ru':'Культура изменена: сброшены только показатели выбранной культуры. Общая площадь хозяйства, район, язык и другие режимы сохранены.',
+                     'kk':'Дақыл өзгерді: осы дақылдың көрсеткіштері ғана тазартылды. Жалпы аумақ, аудан және тіл сақталды.',
+                     'en':'Crop changed: only crop-specific inputs were reset; farm area, district and language were preserved.'}[lang])
 
     livestock_species = "Cattle"
     livestock_heads = 0.0
@@ -1165,9 +1294,9 @@ with st.container():
                 {"kk":"Мал саны, бас","ru":"Поголовье, голов","en":"Number of animals, head"}[lang],
                 min_value=0.0, value=0.0, step=10.0,
                 help={
-                    "kk":"0 қалдырылса, аудан бойынша соңғы қолжетімді ресми мал саны анықтамалық сценарий ретінде пайдаланылады.",
-                    "ru":"Если оставить 0, QŪNAR использует последнее доступное официальное поголовье района как справочный сценарий.",
-                    "en":"If left at 0, QŪNAR uses the latest available official district herd count as a reference scenario.",
+                    "kk":"0 қалдырылса, шаруашылықтағы мал саны белгісіз болып қалады; аудан көрсеткіші бөлек анықтама ретінде беріледі.",
+                    "ru":"Если оставить 0, поголовье хозяйства будет считаться неизвестным. Районные значения показываются отдельно только для сравнения.",
+                    "en":"If left at 0, the farm herd remains unknown; district livestock counts are shown separately for context.",
                 }[lang],
             )
         with l3:
@@ -1280,30 +1409,55 @@ with st.container():
         st.markdown("#### " + {"kk":"Негізгі шаруашылық деректері","ru":"Основные данные хозяйства","en":"Essential farm data"}[lang])
         b1,b2,b3=st.columns(3)
         with b1:
-            water_used = q_number_input(t["water_used"], min_value=0.0, value=0.0, step=1000.0)
+            water_used = q_number_input(t["water_used"], min_value=0.0,
+                value=float(_crop_saved_value('water_used', 0.0)) if mode_key in ('mode1','mode2') else 0.0,
+                step=1000.0, key='qunar_crop_water_widget' if mode_key in ('mode1','mode2') else 'qunar_water_'+mode_key)
+            if mode_key in ('mode1','mode2'): _crop_remember_value('water_used', float(water_used))
         with b2:
-            energy = q_number_input(grid_energy_input_label, min_value=0.0, value=0.0, step=100.0)
+            energy = q_number_input(grid_energy_input_label, min_value=0.0,
+                value=float(_crop_saved_value('energy', 0.0)) if mode_key in ('mode1','mode2') else 0.0,
+                step=100.0, key='qunar_crop_energy_widget' if mode_key in ('mode1','mode2') else 'qunar_energy_'+mode_key)
+            if mode_key in ('mode1','mode2'): _crop_remember_value('energy', float(energy))
         with b3:
             irrigation_type = q_selectbox(
                 t["irrigation_type"], ["unknown","furrow","sprinkler","drip","mixed"],
-                format_func=lambda x:{"unknown":t["irrigation_unknown"],"furrow":t["irrigation_furrow"],"sprinkler":t["irrigation_sprinkler"],"drip":t["irrigation_drip"],"mixed":t["irrigation_mixed"]}[x]
+                format_func=lambda x:{"unknown":t["irrigation_unknown"],"furrow":t["irrigation_furrow"],"sprinkler":t["irrigation_sprinkler"],"drip":t["irrigation_drip"],"mixed":t["irrigation_mixed"]}[x],
+                index=['unknown','furrow','sprinkler','drip','mixed'].index(_crop_saved_value('irrigation_type', 'unknown')),
+                key='qunar_crop_irrigation_widget',
             )
+            _crop_remember_value('irrigation_type', irrigation_type)
         st.caption({"kk":"Қалған техникалық параметрлер анықтамалық сценариймен есептеледі. Нақты тарифтер, өлшеу сенсорлары, сорғы және сценарийлер үшін «Кеңейтілген» деңгейді таңдаңыз.","ru":"Остальные технические параметры рассчитываются по справочному сценарию. Для точных тарифов, датчиков, насоса и сценариев выберите «Расширенный» уровень.","en":"Other technical parameters use the reference scenario. Choose Advanced for exact tariffs, sensors, pump and what-if settings."}[lang])
         st.caption({"kk":"Өсімдік шаруашылығы үшін енгізілетін нақты су мен энергия мәндері толық өндірістік циклге жатады; оларды сәуір-қыркүйек климаттық терезесімен шектемеңіз.","ru":"Для растениеводства фактические вода и энергия относятся ко всему производственному циклу культуры; ограничивать эти значения только апрелем-сентябрём не нужно.","en":"For crops, observed water and energy refer to the full production cycle; do not restrict these inputs to the April-September climate window."}[lang])
     else:
         with st.expander(t["resource_inputs"], expanded=True):
             a,b=st.columns(2)
             with a:
-                water_used=q_number_input(t["water_used"],min_value=0.0,value=0.0,step=1000.0)
-                reuse=q_number_input(t["reuse"],min_value=0.0,max_value=100.0,value=0.0,step=0.1)
-                irrigation_type=q_selectbox(t["irrigation_type"],["unknown","furrow","sprinkler","drip","mixed"],format_func=lambda x:{"unknown":t["irrigation_unknown"],"furrow":t["irrigation_furrow"],"sprinkler":t["irrigation_sprinkler"],"drip":t["irrigation_drip"],"mixed":t["irrigation_mixed"]}[x])
-                water_meter=st.checkbox(t["has_water_meter"],value=False)
-                soil_sensors=st.checkbox(t["has_soil_sensors"],value=False)
+                water_used=q_number_input(t['water_used'],min_value=0.0,
+                    value=float(_crop_saved_value('water_used',0.0)) if mode_key in ('mode1','mode2') else 0.0,
+                    step=1000.0,key='qunar_crop_water_widget' if mode_key in ('mode1','mode2') else 'qunar_water_'+mode_key)
+                if mode_key in ('mode1','mode2'): _crop_remember_value('water_used',float(water_used))
+                reuse=q_number_input(t['reuse'],min_value=0.0,max_value=100.0,value=0.0,step=0.1,
+                    key='qunar_crop_reuse_widget' if mode_key in ('mode1','mode2') else 'qunar_reuse_'+mode_key)
+                irrigation_type=q_selectbox(t['irrigation_type'],['unknown','furrow','sprinkler','drip','mixed'],
+                    format_func=lambda x:{'unknown':t['irrigation_unknown'],'furrow':t['irrigation_furrow'],'sprinkler':t['irrigation_sprinkler'],'drip':t['irrigation_drip'],'mixed':t['irrigation_mixed']}[x],
+                    index=['unknown','furrow','sprinkler','drip','mixed'].index(_crop_saved_value('irrigation_type','unknown')) if mode_key in ('mode1','mode2') else 0,
+                    key='qunar_crop_irrigation_widget' if mode_key in ('mode1','mode2') else 'qunar_irrigation_'+mode_key)
+                if mode_key in ('mode1','mode2'): _crop_remember_value('irrigation_type',irrigation_type)
+                water_meter=st.checkbox(t['has_water_meter'],value=False,
+                    key='qunar_crop_meter_widget' if mode_key in ('mode1','mode2') else 'qunar_meter_'+mode_key)
+                soil_sensors=st.checkbox(t['has_soil_sensors'],value=False,
+                    key='qunar_crop_soil_sensors_widget' if mode_key in ('mode1','mode2') else 'qunar_sensors_'+mode_key)
             with b:
-                energy=q_number_input(grid_energy_input_label,min_value=0.0,value=0.0,step=100.0)
-                efficient_pump=st.checkbox(t["has_efficient_pump"],value=False)
-                current_solar=q_number_input(t["current_solar"],min_value=0.0,max_value=100.0,value=0.0,step=0.1)
-                target_solar=q_number_input(t["target_solar"],min_value=0.0,max_value=100.0,value=float(DEFAULT_GREEN_SHARE_TARGET),step=0.5)
+                energy=q_number_input(grid_energy_input_label,min_value=0.0,
+                    value=float(_crop_saved_value('energy',0.0)) if mode_key in ('mode1','mode2') else 0.0,
+                    step=100.0,key='qunar_crop_energy_widget' if mode_key in ('mode1','mode2') else 'qunar_energy_'+mode_key)
+                if mode_key in ('mode1','mode2'): _crop_remember_value('energy',float(energy))
+                efficient_pump=st.checkbox(t['has_efficient_pump'],value=False,
+                    key='qunar_crop_efficient_pump_widget' if mode_key in ('mode1','mode2') else 'qunar_pump_eff_'+mode_key)
+                current_solar=q_number_input(t['current_solar'],min_value=0.0,max_value=100.0,value=0.0,step=0.1,
+                    key='qunar_crop_solar_widget' if mode_key in ('mode1','mode2') else 'qunar_solar_'+mode_key)
+                target_solar=q_number_input(t['target_solar'],min_value=0.0,max_value=100.0,value=float(DEFAULT_GREEN_SHARE_TARGET),step=0.5,
+                    key='qunar_crop_target_solar_widget' if mode_key in ('mode1','mode2') else 'qunar_target_solar_'+mode_key)
             st.caption({"kk":"Ресурстық енгізулер толық өндірістік циклге жатады: егіс алдындағы дайындық/себу, өсіру кезеңі және өнім жинау. Сәуір-қыркүйек шекарасы тек ML климаттық белгілеріне қолданылады.","ru":"Ресурсные вводы относятся к полному производственному циклу: предпосевная подготовка/посев, выращивание и уборка. Граница апрель-сентябрь применяется только к климатическим признакам ML.","en":"Resource inputs cover the full production cycle: pre-sowing preparation/sowing, crop growth and harvest. The April-September boundary applies only to ML climate features."}[lang])
             st.markdown("##### "+t["econ_block"])
             st.caption(t["whatif_help"])
@@ -2091,13 +2245,48 @@ with st.container():
             'ru':'Подтверждаю: фактически измеренное использование воды равно 0 м³',
             'kk':'Растаймын: нақты өлшенген су пайдалану 0 м³',
             'en':'Confirm measured water consumption is exactly 0 m³',
-        }[lang], value=False, key='confirm_observed_zero_water')
+        }[lang], value=False, key='confirm_observed_zero_water_crop' if mode_key in ('mode1','mode2') else 'confirm_observed_zero_water_'+mode_key)
     if float(energy or 0) == 0.0:
         energy_zero_confirmed = st.checkbox({
             'ru':'Подтверждаю: фактически измеренное потребление электроэнергии равно 0 кВт·ч',
             'kk':'Растаймын: нақты өлшенген электр тұтынуы 0 кВт·сағ',
             'en':'Confirm measured electricity consumption is exactly 0 kWh',
-        }[lang], value=False, key='confirm_observed_zero_energy')
+        }[lang], value=False, key='confirm_observed_zero_energy_crop' if mode_key in ('mode1','mode2') else 'confirm_observed_zero_energy_'+mode_key)
+
+    # Explicit accounting boundary: data for the WHOLE holding must not be
+    # silently used as consumption of a single crop. The baseline for a plot
+    # falls back to a source-labelled reference, not an invented allocation.
+    resource_accounting_scope = "assessed_plot"
+    if mode_key in ("mode1", "mode2") or mode_key == "mode5":
+        resource_accounting_scope = q_radio(
+            {"ru":"К какой площади относятся введённые расходы ресурсов?",
+             "kk":"Енгізілген ресурстар шығыны қай аумаққа қатысты?",
+             "en":"Which area do the entered resource quantities refer to?"}[lang],
+            ["assessed_plot", "whole_farm", "unknown"],
+            format_func=lambda x: ({
+                "assessed_plot":{"ru":"Только животноводческая часть" if mode_key == "mode5" else "Только участок выбранной культуры",
+                                 "kk":"Мал шаруашылығы бөлігі ғана" if mode_key == "mode5" else "Таңдалған дақыл танабы ғана",
+                                 "en":"Livestock activity only" if mode_key == "mode5" else "Selected crop plot only"},
+                "whole_farm":{"ru":"Всё хозяйство, включая другие виды деятельности","kk":"Барлық өндіріс түрлерімен бүкіл шаруашылық","en":"Entire farm including other activities"},
+                "unknown":{"ru":"Не могу определить / данные не разделены","kk":"Белгісіз / деректер бөлінбеген","en":"Unknown / not allocated"},
+            }[x][lang]),
+            index=['assessed_plot','whole_farm','unknown'].index(
+                st.session_state.get('qunar_crop_saved_resource_scope','unknown') if mode_key in ('mode1','mode2')
+                else st.session_state.get('qunar_saved_resource_scope_'+mode_key,'unknown')),
+            key='qunar_crop_resource_scope_widget' if mode_key in ('mode1','mode2') else 'qunar_resource_input_scope_'+mode_key,
+            horizontal=False,
+            help={"ru":"Например, 120 000 м³ по общему счётчику всего хозяйства нельзя приписывать одному полю подсолнечника. Для участка будут использованы нормативы, пока нет отдельного счётчика или документированного распределения.",
+                  "kk":"Жалпы шаруашылық есептегішінің көрсеткішін бір дақылға телуге болмайды; танап бойынша анықтамалық қажеттілік бөлек есептеледі.",
+                  "en":"Do not assign whole-farm meter readings to one crop. Plot estimates use documented references until allocation is justified."}[lang],
+        )
+        if mode_key in ('mode1','mode2'):
+            _crop_remember_value('resource_scope', resource_accounting_scope)
+        else:
+            st.session_state['qunar_saved_resource_scope_'+mode_key] = resource_accounting_scope
+        if resource_accounting_scope != "assessed_plot":
+            st.info({"ru":"Общие показания воды, электричества и топлива не будут приписаны выбранной культуре или животноводству. Нормативная потребность рассчитывается отдельно и помечается как оценка.",
+                     "kk":"Жалпы су, электр және отын шығыны дақылға не мал шаруашылығына тікелей жатқызылмайды. Қажеттілік бөлек анықтамалық есеппен бағаланады.",
+                     "en":"Whole-farm water, electricity and fuel are not assigned directly to one crop or livestock activity. Reference resource demand is estimated separately."}[lang])
 
     # Mandatory energy-source *classification*, not mandatory fossil-fuel consumption.
     # A rain-fed/manual/contractor-powered farm is allowed and is NOT assigned diesel.
@@ -2128,8 +2317,10 @@ with st.container():
             _val = q_number_input(
                 SOURCE_LABELS[lang][_src] + ' (' + _units + '; '
                 + {'ru':'0 = неизвестно', 'kk':'0 = белгісіз', 'en':'0 = unknown'}[lang] + ')',
-                min_value=0.0, value=0.0, step=1.0,
-                key='resource_amount_'+_src)
+                min_value=0.0,
+                value=float(st.session_state.get('qunar_saved_fuel_'+('crop' if mode_key in ('mode1','mode2') else mode_key)+'_'+_src, 0.0)),
+                step=1.0, key='resource_amount_'+('crop' if mode_key in ('mode1','mode2') else mode_key)+'_'+_src)
+            st.session_state['qunar_saved_fuel_'+('crop' if mode_key in ('mode1','mode2') else mode_key)+'_'+_src] = float(_val)
             _fuel_observations[_src] = float(_val) if float(_val) > 0 else None
 
     pumping_confirmed = False
@@ -2301,8 +2492,23 @@ if submitted:
     ga_event("run_assessment", mode_key=mode_key, season_mode=season_mode, calculation_year=calculation_year, user_level=user_level)
     live_ok = False
 
-    observed_water = optional_observation(water_used, measured_zero=water_zero_confirmed)
-    observed_energy = optional_observation(energy, measured_zero=energy_zero_confirmed)
+    reported_farm_resource_context = None
+    if mode_key in ('mode1', 'mode2', 'mode5') and resource_accounting_scope != 'assessed_plot':
+        reported_farm_resource_context = {
+            "water_m3": optional_observation(water_used, measured_zero=water_zero_confirmed),
+            "grid_kwh": optional_observation(energy, measured_zero=energy_zero_confirmed),
+            "fuel_quantities": dict(_fuel_observations),
+        }
+        # No area-share shortcut: crop energy and water require crop-specific data
+        # or explicit engineering/normative estimation, not division by hectares.
+        observed_water = None
+        observed_energy = None
+        water_zero_confirmed = False
+        energy_zero_confirmed = False
+        _fuel_observations = {k: None for k in _fuel_observations}
+    else:
+        observed_water = optional_observation(water_used, measured_zero=water_zero_confirmed)
+        observed_energy = optional_observation(energy, measured_zero=energy_zero_confirmed)
     water_default_info = default_water_requirement(used_district, crop, irrigation_type) if crop is not None else None
     if mode_key == 'mode5':
         # Drinking water is a defensible *minimum component*, NOT total livestock operations.
@@ -2377,6 +2583,47 @@ if submitted:
             [t["energy"], f"{observed_energy:.2f}" if observed_energy is not None else {"kk":"белгісіз","ru":"неизвестно","en":"unknown"}[lang], t["source_user"] if observed_energy is not None else {"kk":"Енгізілмеген","ru":"Не введено","en":"Not entered"}[lang]],
         ]
     }
+    if farm_total_area_ha > 0:
+        report_payload['inputs'].append([
+            {"ru":"Общая площадь хозяйства, га", "kk":"Шаруашылықтың жалпы аумағы, га", "en":"Total farm holding area, ha"}[lang],
+            f"{farm_total_area_ha:.2f}",
+            {"ru":"Контекст хозяйства, не площадь расчёта по культуре", "kk":"Шаруашылық туралы анықтама, дақыл алаңы емес", "en":"Holding context only, not crop calculation area"}[lang],
+        ])
+    if polygon_area:
+        report_payload['inputs'].append([
+            {"ru":"Назначение контура карты", "kk":"Карта контурының мақсаты", "en":"Map polygon scope"}[lang],
+            ({"ru":"Всё хозяйство", "kk":"Бүкіл шаруашылық", "en":"Entire farm"}[lang]
+             if polygon_scope == "whole_farm" else
+             {"ru":"Расчётный участок", "kk":"Есептік танап", "en":"Assessed plot"}[lang]),
+            {"ru":"Площадь контура сопоставляется только с указанным назначением", "kk":"Контур алаңы таңдалған аумақ түрімен салыстырылады", "en":"Polygon area compared with declared map scope"}[lang],
+        ])
+    if mode_key in ("mode1", "mode2") or mode_key == "mode5":
+        report_payload['inputs'].append([
+            {"ru":"Границы учёта введённых ресурсов", "kk":"Енгізілген ресурс есебінің шекарасы", "en":"Scope of entered resource consumption"}[lang],
+            {"assessed_plot":{"ru":"Животноводческая часть" if mode_key == "mode5" else "Участок выбранной культуры",
+                               "kk":"Мал шаруашылығы бөлігі" if mode_key == "mode5" else "Таңдалған дақыл танабы",
+                               "en":"Livestock activity" if mode_key == "mode5" else "Selected crop plot"},
+             "whole_farm":{"ru":"Всё хозяйство", "kk":"Бүкіл шаруашылық", "en":"Entire farm"},
+             "unknown":{"ru":"Не установлено", "kk":"Белгісіз", "en":"Not established"}}[resource_accounting_scope][lang],
+            {"ru":"Общий расход хозяйства не приписывается отдельной культуре или животноводству без подтверждённого распределения", "kk":"Жалпы шығындар дәлелсіз дақылдарға бөлінбейді", "en":"Whole-farm consumption is not attributed to a crop or livestock activity without justified allocation"}[lang],
+        ])
+        if reported_farm_resource_context is not None:
+            for source_key, val in [
+                ("water_m3", reported_farm_resource_context["water_m3"]),
+                ("grid_kwh", reported_farm_resource_context["grid_kwh"]),
+            ]:
+                report_payload['inputs'].append([
+                    ({"water_m3":{"ru":"Вода по общему учёту хозяйства, м³", "kk":"Шаруашылық суының жалпы есебі, м³", "en":"Whole-farm water meter, m³"},
+                      "grid_kwh":{"ru":"Электроэнергия всего хозяйства, кВт·ч", "kk":"Шаруашылықтың жалпы электрі, кВт·сағ", "en":"Whole-farm purchased electricity, kWh"}}[source_key][lang]),
+                    (f"{val:.2f}" if val is not None else {"ru":"нет данных", "kk":"дерек жоқ", "en":"not provided"}[lang]),
+                    {"ru":"Только справочный контекст, не включено в расчёт выбранного вида деятельности", "kk":"Тек анықтамалық, таңдалған дақыл есебіне кірмейді", "en":"Context only, excluded from selected activity footprint"}[lang],
+                ])
+            for source_key, val in reported_farm_resource_context['fuel_quantities'].items():
+                report_payload['inputs'].append([
+                    SOURCE_LABELS[lang][source_key],
+                    f"{val:.2f}" if val is not None else {"ru":"нет данных", "kk":"дерек жоқ", "en":"not provided"}[lang],
+                    {"ru":"Общий расход хозяйства, не отнесён на выбранный вид деятельности", "kk":"Шаруашылықтың жалпы шығыны, дақылға жатқызылмаған", "en":"Whole-farm amount, not allocated to selected activity"}[lang],
+                ])
     report_payload['inputs'].append([
         {'ru':'Используемые источники энергии / труда', 'kk':'Энергия және еңбек көздері',
          'en':'Operational energy and work sources'}[lang],
@@ -3061,12 +3308,32 @@ if submitted:
 
     polygon_area = calc_polygon_area
     area_geometry_mismatch = False
+    polygon_scope = "calculation_plot"
+    if polygon_area and farm_total_area_ha > 0 and mode_key in ("mode1", "mode2", "mode3", "mode5"):
+        polygon_scope = q_radio(
+            {"ru":"Что обозначает нарисованный контур карты?",
+             "kk":"Картадағы сызылған контур нені білдіреді?",
+             "en":"What does the drawn map polygon represent?"}[lang],
+            ["calculation_plot", "whole_farm"],
+            format_func=lambda x: ({
+                "calculation_plot":{"ru":"Анализируемый участок (культура / пастбище)","kk":"Қарастырылатын танап немесе жайылым","en":"Assessed plot (crop / pasture)"},
+                "whole_farm":{"ru":"Всё хозяйство (включая другие участки)","kk":"Бүкіл шаруашылық (басқа учаскелермен)","en":"Entire farm (including other plots)"},
+            }[x][lang]), key="qunar_map_area_scope",
+            help={"ru":"Если контур охватывает 100 га всего хозяйства, а культура занимает 40 га, выберите «Всё хозяйство». QŪNAR сравнит контур со 100 га, а воду культуры рассчитает на 40 га.",
+                  "kk":"Контур жалпы аумақты көрсетсе, «Бүкіл шаруашылық» таңдаңыз; дақыл шығыны тек танап алаңына есептеледі.",
+                  "en":"Choose Entire farm for a whole-holding polygon; crop resources still use the selected plot area."}[lang],
+        )
     if polygon_area:
-        diff_pct = abs(polygon_area - area_ha) / max(area_ha, 0.0001) * 100.0
-        st.caption(t["area_compare"].format(declared=area_ha, polygon=polygon_area, diff=diff_pct))
+        comparison_area = (farm_total_area_ha if polygon_scope == "whole_farm" else area_ha)
+        if polygon_scope == "whole_farm" and mode_key in ("mode1", "mode2", "mode3"):
+            st.info({"ru":"Климат и спутниковые данные рассчитываются для контура всего хозяйства. Это пространственный ориентир, а не измерение конкретного участка выбранной культуры.",
+                     "kk":"Климат пен спутниктік деректер бүкіл шаруашылық контуры үшін есептеледі. Бұл таңдалған дақыл танабының нақты өлшемі емес.",
+                     "en":"Climate and satellite inputs represent the whole-holding polygon, not a direct measurement of the selected crop plot."}[lang])
+        diff_pct = abs(polygon_area - comparison_area) / max(comparison_area, 0.0001) * 100.0
+        st.caption(t["area_compare"].format(declared=comparison_area, polygon=polygon_area, diff=diff_pct))
         area_geometry_mismatch = diff_pct > 25
         if area_geometry_mismatch:
-            st.warning(t["area_mismatch"].format(declared=area_ha, polygon=polygon_area, diff=diff_pct))
+            st.warning(t["area_mismatch"].format(declared=comparison_area, polygon=polygon_area, diff=diff_pct))
         else:
             st.success(t["area_match"].format(diff=diff_pct))
         detected = map_district
