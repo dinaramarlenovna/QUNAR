@@ -5,19 +5,11 @@ from datetime import datetime
 import html
 import re
 import pandas as pd
-from .report_localization import prepare_report
-from .report_variants import compared_variants, condensed_variants
-import math
 
 
 def _clean(v):
-    """Export missing numbers as missing, not NaN text or fictional zero."""
     if v is None:
-        return "—"
-    if isinstance(v, float) and not math.isfinite(v):
-        return "—"
-    if isinstance(v, str) and v.strip().lower() in {"nan", "none", "null", "n/a"}:
-        return "—"
+        return ""
     return str(v)
 
 
@@ -46,6 +38,44 @@ def _unique_inputs(payloads):
                 seen.add(key)
                 out.append(list(row[:3]))
     return out
+
+
+def _consolidated_input_groups(payloads):
+    """One shared assumption table plus explicit differences grouped by report.
+
+    Fields that vary across report sections (such as a 10 ha field and 100 ha
+    optimization) are never collapsed into an ambiguous common value.
+    """
+    from collections import OrderedDict
+    per_mode = []
+    for payload in payloads:
+        rows = OrderedDict()
+        for row in payload.get('inputs', []) or []:
+            if len(row) >= 3:
+                rows[str(row[0])] = (str(row[1]), str(row[2]))
+        per_mode.append(rows)
+    if not per_mode:
+        return [], []
+    counts = {}
+    for rows in per_mode:
+        for name, pair in rows.items():
+            counts.setdefault(name, []).append(pair)
+    common = []
+    for name, pairs in counts.items():
+        if len(pairs) == len(per_mode) and len(set(pairs)) == 1:
+            common.append((name, *pairs[0]))
+    # Also consolidate identical values appearing in 2+ sections, even when
+    # another section does not define that parameter.
+    for name, pairs in counts.items():
+        if name not in {r[0] for r in common} and len(pairs) >= 2 and len(set(pairs)) == 1:
+            common.append((name, *pairs[0]))
+    common_names = {r[0] for r in common}
+    specifics = []
+    for index, (payload, rows) in enumerate(zip(payloads, per_mode), 1):
+        unique = [(name, *pair) for name, pair in rows.items() if name not in common_names]
+        if unique:
+            specifics.append((f"{index}. {payload.get('mode_label','Mode')}", unique))
+    return common, specifics
 
 
 def _xlsx_formats(wb):
@@ -171,7 +201,6 @@ def _write_payload_sheet(writer, sheet_name: str, payload: dict, include_inputs:
 
 
 def build_excel_report(payload: dict) -> bytes:
-    payload = prepare_report(payload)
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         _write_payload_sheet(writer, "QUNAR_Report", payload, include_inputs=True)
@@ -180,56 +209,51 @@ def build_excel_report(payload: dict) -> bytes:
 
 
 def build_combined_excel_report(payloads: list[dict]) -> bytes:
-    comparisons = compared_variants(payloads)
-    payloads = [prepare_report(p) for p in condensed_variants(payloads) if p]
-    for _p in payloads:
-        _n = _p.get('variant_number', 1)
-        if _n > 1:
-            _tag = {'ru':'вариант','kk':'нұсқа','en':'variant'}.get(_p.get('lang','ru'),'variant')
-            _p['mode_label'] = f"{_p.get('mode_label','')} ({_tag} {_n}; отличия)" if _p.get('lang') == 'ru' else f"{_p.get('mode_label','')} ({_tag} {_n})"
+    payloads = [p for p in payloads if p]
     output = BytesIO()
-    with pd.ExcelWriter(output, engine='xlsxwriter') as writer:
+    with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         wb = writer.book
         fm = _xlsx_formats(wb)
-        lang = (payloads[0].get('lang') if payloads else 'en') or 'en'
-        title = {'kk':'Біріктірілген аналитикалық есеп','ru':'Сводный аналитический отчет',
-                 'en':'Integrated analytical report'}.get(lang, 'Integrated analytical report')
-        summary_ws = wb.add_worksheet('Summary')
-        writer.sheets['Summary'] = summary_ws
+        summary_ws = wb.add_worksheet("Summary")
+        writer.sheets["Summary"] = summary_ws
         summary_ws.hide_gridlines(2)
-        summary_ws.set_column('A:A', 34)
-        summary_ws.set_column('B:B', 72)
-        summary_ws.set_column('C:C', 28)
-        summary_ws.write('A1','QŪNAR', fm['brand'])
-        summary_ws.merge_range('B1:C1',title,fm['section'])
-        summary_ws.write('A3', {'ru':'Включённые расчёты', 'kk':'Таңдалған есептер', 'en':'Selected calculations'}.get(lang), fm['section'])
-        for i,payload in enumerate(payloads,1):
-            idx=i+4
-            summary_ws.write(idx,0,f"{i}. {payload.get('mode_label','')}",fm['key'])
-            recs=payload.get('recommendations') or []
-            first = recs[0] if recs else ''
-            if isinstance(first,dict): first=first.get('text') or first.get('title') or ''
-            summary_ws.write(idx,1,_clean(first),fm['recommend'])
-            summary_ws.write(idx,2,_clean(payload.get('generated_at','')),fm['cell'])
-        for i,payload in enumerate(payloads,1):
-            _write_payload_sheet(writer,f"{i}_{payload.get('mode_label','Mode')}", payload,include_inputs=True)
-        if comparisons:
-            sh=wb.add_worksheet('Comparisons')
-            writer.sheets['Comparisons']=sh
-            sh.hide_gridlines(2)
-            sh.set_column('A:A',60);sh.set_column('B:C',36)
-            sh.write_row(0,0,[{'ru':'Показатель','kk':'Көрсеткіш','en':'Indicator'}[lang],
-                               {'ru':'Вариант 1','kk':'1-нұсқа','en':'Variant 1'}[lang],
-                               {'ru':'Сравниваемый вариант','kk':'Салыстырылатын нұсқа','en':'Compared variant'}[lang]],fm['header'])
-            row=1
-            for comp in comparisons:
-                sh.merge_range(row,0,row,2,f"{comp['mode_label']}: #1 → #{comp['candidate']}",fm['section']);row+=1
-                for label, rows in [({'ru':'Изменённые исходные условия','kk':'Өзгерген кіріс деректер','en':'Changed inputs'}[lang],comp['inputs']),
-                                    ({'ru':'Изменённые результаты','kk':'Өзгерген нәтижелер','en':'Changed results'}[lang],comp['results'])]:
-                    sh.merge_range(row,0,row,2,label,fm['key']);row+=1
-                    for field,a,b in rows[:35]:
-                        sh.write(row,0,_clean(field),fm['cell']);sh.write(row,1,_clean(a),fm['cell']);sh.write(row,2,_clean(b),fm['cell']);row+=1
-                row+=2
+        summary_ws.set_column("A:A", 31)
+        summary_ws.set_column("B:B", 54)
+        summary_ws.set_column("C:C", 28)
+        lang = (payloads[0].get("lang") if payloads else "en") or "en"
+        combined_title = {"kk":"Біріктірілген аналитикалық есеп","ru":"Сводный аналитический отчет","en":"Integrated analytical report"}.get(lang,"Integrated analytical report")
+        included_title = {"kk":"Қосылған бөлімдер","ru":"Включенные разделы","en":"Included sections"}.get(lang,"Included sections")
+        summary_ws.write("A1", "QŪNAR", fm["brand"])
+        summary_ws.merge_range("B1:C1", combined_title, fm["section"])
+        summary_ws.write("A3", included_title, fm["section"])
+        row = 5
+        for i, payload in enumerate(payloads, 1):
+            summary_ws.write(row, 0, f"{i}. {payload.get('mode_label','')}", fm["key"])
+            recs = payload.get("recommendations", []) or []
+            first = recs[0] if recs else ""
+            if isinstance(first, dict):
+                first = first.get("text") or first.get("recommendation") or first.get("title") or ""
+            summary_ws.write(row, 1, _clean(first), fm["recommend"])
+            summary_ws.write(row, 2, payload.get("generated_at", ""), fm["cell"])
+            row += 1
+
+        for i, payload in enumerate(payloads, 1):
+            _write_payload_sheet(writer, f"{i}_{payload.get('mode_label','Mode')}", payload, include_inputs=False)
+
+        common, specifics = _consolidated_input_groups(payloads)
+        if common or specifics:
+            src=wb.add_worksheet('Sources');writer.sheets['Sources']=src
+            src.hide_gridlines(2);src.set_column('A:A',35);src.set_column('B:B',30);src.set_column('C:C',72)
+            rr=0
+            def add_section(title,rows):
+                nonlocal rr
+                src.merge_range(rr,0,rr,2,title,fm['section']);rr+=1
+                src.write_row(rr,0,['Parameter','Value','Source / role'],fm['header']);rr+=1
+                for name,value,source in rows:
+                    src.write_row(rr,0,[name,value,source],fm['cell']);rr+=1
+                rr+=2
+            if common:add_section('Shared parameters',common)
+            for label,rows in specifics:add_section('Mode-specific: '+label,rows)
     output.seek(0)
     return output.getvalue()
 
@@ -387,7 +411,6 @@ def _append_payload_pdf(story, payload: dict, styles, include_inputs: bool = Tru
 
 
 def build_pdf_report(payload: dict) -> bytes:
-    payload = prepare_report(payload)
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
     from reportlab.platypus import SimpleDocTemplate
@@ -403,55 +426,49 @@ def build_pdf_report(payload: dict) -> bytes:
 
 
 def build_combined_pdf_report(payloads: list[dict]) -> bytes:
-    comparisons = compared_variants(payloads)
-    payloads = [prepare_report(p) for p in condensed_variants(payloads) if p]
-    for _p in payloads:
-        _n = _p.get('variant_number', 1)
-        if _n > 1:
-            _tag = {'ru':'вариант','kk':'нұсқа','en':'variant'}.get(_p.get('lang','ru'),'variant')
-            _p['mode_label'] = f"{_p.get('mode_label','')} ({_tag} {_n}; отличия)" if _p.get('lang') == 'ru' else f"{_p.get('mode_label','')} ({_tag} {_n})"
     from reportlab.lib import colors
     from reportlab.lib.pagesizes import A4
     from reportlab.lib.units import mm
-    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, LongTable, TableStyle
-    regular,bold=_register_pdf_fonts()
-    styles=_pdf_styles(regular,bold)
-    out=BytesIO()
-    doc=SimpleDocTemplate(out,pagesize=A4,rightMargin=16*mm,leftMargin=16*mm,
-        topMargin=14*mm,bottomMargin=14*mm,title='QŪNAR integrated report',author='QŪNAR')
-    lang=(payloads[0].get('lang') if payloads else 'en') or 'en'
-    title={'ru':'Сводный аналитический отчёт','kk':'Біріктірілген аналитикалық есеп',
-           'en':'Integrated analytical report'}[lang]
-    story=[Paragraph('QŪNAR',styles['title']),Paragraph(title,styles['subtitle']),
-           Paragraph({'ru':'Структура отчёта','kk':'Есеп құрылымы','en':'Report structure'}[lang],styles['h2'])]
-    for i,p in enumerate(payloads,1):
-        story.append(Paragraph(f"{i}. {html.escape(_clean(p.get('mode_label','')))}",styles['key']))
-    if comparisons:
-        story.append(Paragraph({'ru':'Сравнение вариантов одного режима','kk':'Бір режим нұсқаларын салыстыру',
-                                'en':'Comparison of scenarios within the same mode'}[lang],styles['h2']))
-        story.append(Paragraph({'ru':'Отображаются только изменившиеся исходные условия и показатели. Неизменные данные приведены в базовом варианте.',
-                                'kk':'Тек өзгерген кіріс деректер мен нәтижелер көрсетіледі. Өзгермегендері бастапқы нұсқада берілген.',
-                                'en':'Only changed inputs and results are listed. Unchanged material remains in the baseline variant.'}[lang],styles['small']))
-        for comp in comparisons:
-            story.append(Paragraph(f"{html.escape(_clean(comp['mode_label']))}: #1 → #{comp['candidate']}",styles['h3']))
-            for section, rows in [({'ru':'Изменённые исходные условия','kk':'Өзгерген кіріс деректер','en':'Changed inputs'}[lang],comp['inputs']),
-                                  ({'ru':'Изменённые результаты','kk':'Өзгерген нәтижелер','en':'Changed results'}[lang],comp['results'])]:
-                if not rows: continue
-                story.append(Paragraph(section,styles['key']))
-                cells=[[Paragraph(html.escape(_clean(x)),styles['small']) for x in line] for line in
-                       [[{'ru':'Показатель','kk':'Көрсеткіш','en':'Indicator'}[lang],
-                         {'ru':'Вариант 1','kk':'1-нұсқа','en':'Variant 1'}[lang],
-                         f"#{comp['candidate']}"]] + rows[:35]]
-                tbl=LongTable(cells,colWidths=[74*mm,48*mm,48*mm],repeatRows=1,hAlign='LEFT')
-                tbl.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#EAF3EC')),
-                    ('GRID',(0,0),(-1,-1),.3,colors.HexColor('#D7E0D9')),
-                    ('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),4),
-                    ('RIGHTPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),4),
-                    ('BOTTOMPADDING',(0,0),(-1,-1),4)]))
-                story.append(tbl)
-    for payload in payloads:
-        story.append(PageBreak())
-        _append_payload_pdf(story,payload,styles,include_inputs=True,include_brand=False)
+    from reportlab.platypus import SimpleDocTemplate, Paragraph, Spacer, PageBreak, Table, TableStyle
+    payloads = [p for p in payloads if p]
+    regular, bold = _register_pdf_fonts()
+    styles = _pdf_styles(regular, bold)
+    out = BytesIO()
+    doc = SimpleDocTemplate(out, pagesize=A4, rightMargin=16*mm, leftMargin=16*mm, topMargin=14*mm, bottomMargin=14*mm, title="QŪNAR integrated report", author="QŪNAR")
+    lang = (payloads[0].get("lang") if payloads else "en") or "en"
+    combined_title = {"kk":"Біріктірілген аналитикалық есеп","ru":"Сводный аналитический отчет","en":"Integrated analytical report"}.get(lang,"Integrated analytical report")
+    structure_title = {"kk":"Есеп құрылымы","ru":"Структура отчета","en":"Report structure"}.get(lang,"Report structure")
+    story = [Paragraph("QŪNAR", styles["title"]), Paragraph(combined_title, styles["subtitle"])]
+    story.append(Paragraph(structure_title, styles["h2"]))
+    for i, payload in enumerate(payloads, 1):
+        story.append(Paragraph(f"{i}. {html.escape(payload.get('mode_label',''))}", styles["key"]))
+    story.append(Spacer(1, 5*mm))
+    for i, payload in enumerate(payloads):
+        if i:
+            story.append(PageBreak())
+        _append_payload_pdf(story, payload, styles, include_inputs=False, include_brand=False)
+
+    common, specifics = _consolidated_input_groups(payloads)
+    if common or specifics:
+        title = {"kk":"Біріктірілген бастапқы деректер мен дереккөздер","ru":"Сводные исходные данные и источники","en":"Consolidated inputs and sources"}.get(lang,"Consolidated inputs and sources")
+        shared_title = {"kk":"Ортақ параметрлер","ru":"Общие параметры","en":"Shared parameters"}.get(lang,"Shared parameters")
+        differences_title = {"kk":"Режимдер бойынша айырмашылықтар","ru":"Отличающиеся параметры по режимам","en":"Mode-specific inputs"}.get(lang,"Mode-specific inputs")
+        story += [PageBreak(), Paragraph(title, styles['h2'])]
+        def add_input_table(rows):
+            labels = {'kk':('Көрсеткіш','Мәні','Дереккөз / рөл'),'ru':('Показатель','Значение','Источник / роль'),'en':('Parameter','Value','Source / role')}.get(lang,('Parameter','Value','Source / role'))
+            data = [[Paragraph(html.escape(x),styles['small']) for x in labels]]
+            data += [[Paragraph(html.escape(_clean(x)),styles['small']) for x in row] for row in rows]
+            table = Table(data,colWidths=[52*mm,42*mm,76*mm],repeatRows=1,hAlign='LEFT')
+            table.setStyle(TableStyle([('BACKGROUND',(0,0),(-1,0),colors.HexColor('#EAF3EC')),('LINEBELOW',(0,0),(-1,-1),.25,colors.HexColor('#D7E0D9')),('VALIGN',(0,0),(-1,-1),'TOP'),('LEFTPADDING',(0,0),(-1,-1),4),('RIGHTPADDING',(0,0),(-1,-1),4),('TOPPADDING',(0,0),(-1,-1),3),('BOTTOMPADDING',(0,0),(-1,-1),3)]))
+            story.append(table)
+        if common:
+            story.append(Paragraph(shared_title,styles['h3']))
+            add_input_table(common)
+        if specifics:
+            story.append(Paragraph(differences_title,styles['h3']))
+            for label, rows in specifics:
+                story.append(Paragraph(html.escape(label),styles['h3']))
+                add_input_table(rows)
     doc.build(story)
     out.seek(0)
     return out.getvalue()
@@ -576,50 +593,39 @@ def _word_document_base(title='QŪNAR report'):
 
 
 def build_word_report(payload: dict) -> bytes:
-    payload = prepare_report(payload)
     doc = _word_document_base('QŪNAR report')
     _word_add_payload(doc, payload, include_inputs=True, include_brand=True)
     out = BytesIO(); doc.save(out); out.seek(0); return out.getvalue()
 
 
 def build_combined_word_report(payloads: list[dict]) -> bytes:
-    comparisons=compared_variants(payloads)
-    payloads=[prepare_report(p) for p in condensed_variants(payloads) if p]
-    for _p in payloads:
-        _n=_p.get('variant_number',1)
-        if _n > 1:
-            _tag={'ru':'вариант','kk':'нұсқа','en':'variant'}.get(_p.get('lang','ru'),'variant')
-            _p['mode_label']=f"{_p.get('mode_label','')} ({_tag} {_n})"
-    lang=(payloads[0].get('lang') if payloads else 'en') or 'en'
-    title={'ru':'Сводный аналитический отчёт','kk':'Біріктірілген аналитикалық есеп',
-           'en':'Integrated analytical report'}[lang]
-    doc=_word_document_base('QŪNAR integrated report')
+    payloads = [p for p in payloads if p]
+    lang = (payloads[0].get('lang') if payloads else 'en') or 'en'
+    title = {'kk':'Біріктірілген аналитикалық есеп','ru':'Сводный аналитический отчет','en':'Integrated analytical report'}.get(lang,'Integrated analytical report')
+    doc = _word_document_base('QŪNAR integrated report')
     from docx.enum.text import WD_ALIGN_PARAGRAPH
-    p=doc.add_paragraph();p.alignment=WD_ALIGN_PARAGRAPH.CENTER;r=p.add_run('QŪNAR');r.bold=True
-    p=doc.add_paragraph(title);p.alignment=WD_ALIGN_PARAGRAPH.CENTER
-    doc.add_heading({'ru':'Структура отчёта','kk':'Есеп құрылымы','en':'Report structure'}[lang],level=1)
-    for i,payload in enumerate(payloads,1):doc.add_paragraph(f"{i}. {_clean(payload.get('mode_label',''))}")
-    if comparisons:
-        doc.add_heading({'ru':'Сравнение вариантов одного режима','kk':'Бір режим нұсқаларын салыстыру',
-                         'en':'Comparing scenarios in the same mode'}[lang],level=1)
-        doc.add_paragraph({'ru':'Приведены различающиеся исходные значения и результаты; неизменные данные доступны в первом варианте.',
-                           'kk':'Тек өзгерген кіріс деректер мен нәтижелер; өзгермегендері бірінші нұсқада.',
-                           'en':'Only changed inputs and results are shown; unchanged details remain in variant 1.'}[lang])
-        for comp in comparisons:
-            doc.add_heading(f"{comp['mode_label']}: #1 → #{comp['candidate']}",level=2)
-            for section,rows in [({'ru':'Изменённые исходные условия','kk':'Өзгерген кіріс деректер','en':'Changed inputs'}[lang],comp['inputs']),
-                                 ({'ru':'Изменённые результаты','kk':'Өзгерген нәтижелер','en':'Changed results'}[lang],comp['results'])]:
-                if not rows:continue
-                doc.add_heading(section,level=3)
-                tbl=doc.add_table(rows=1,cols=3);tbl.style='Table Grid'
-                for j,x in enumerate([{'ru':'Показатель','kk':'Көрсеткіш','en':'Indicator'}[lang],
-                                      {'ru':'Вариант 1','kk':'1-нұсқа','en':'Variant 1'}[lang],
-                                      f"#{comp['candidate']}"]):tbl.rows[0].cells[j].text=x
-                for field,a,b in rows[:35]:
-                    cells=tbl.add_row().cells
-                    for j,x in enumerate([field,a,b]):cells[j].text=_clean(x)
-    for payload in payloads:
+    p = doc.add_paragraph(); p.alignment = WD_ALIGN_PARAGRAPH.CENTER; r = p.add_run('QŪNAR'); r.bold = True
+    p = doc.add_paragraph(title); p.alignment = WD_ALIGN_PARAGRAPH.CENTER
+    structure = {'kk':'Есеп құрылымы','ru':'Структура отчета','en':'Report structure'}.get(lang,'Report structure')
+    doc.add_heading(structure, level=1)
+    for i, payload in enumerate(payloads, 1): doc.add_paragraph(f"{i}. {_clean(payload.get('mode_label',''))}")
+    for i, payload in enumerate(payloads):
         doc.add_page_break()
-        _word_add_payload(doc,payload,include_inputs=True,include_brand=False)
-    out=BytesIO();doc.save(out);out.seek(0)
-    return out.getvalue()
+        _word_add_payload(doc, payload, include_inputs=False, include_brand=False)
+    common, specifics = _consolidated_input_groups(payloads)
+    if common or specifics:
+        doc.add_page_break()
+        doc.add_heading({'kk':'Біріктірілген бастапқы деректер мен дереккөздер','ru':'Сводные исходные данные и источники','en':'Consolidated inputs and sources'}.get(lang), level=1)
+        def add_table(rows):
+            table=doc.add_table(rows=1,cols=3); table.style='Table Grid'
+            for j,x in enumerate(('Parameter','Value','Source / role')): table.rows[0].cells[j].text=x
+            for p_,v_,s_ in rows:
+                cells=table.add_row().cells;cells[0].text=_clean(p_);cells[1].text=_clean(v_);cells[2].text=_clean(s_)
+        if common:
+            doc.add_heading('Shared parameters' if lang=='en' else 'Общие параметры' if lang=='ru' else 'Ортақ параметрлер',level=2)
+            add_table(common)
+        if specifics:
+            doc.add_heading('Mode-specific inputs' if lang=='en' else 'Отличающиеся параметры по режимам' if lang=='ru' else 'Режимдер бойынша айырмашылықтар',level=2)
+            for label,rows in specifics:
+                doc.add_heading(label,level=3);add_table(rows)
+    out=BytesIO(); doc.save(out); out.seek(0); return out.getvalue()

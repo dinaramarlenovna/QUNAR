@@ -994,6 +994,33 @@ mode_key = _remember_sidebar('mode', st.sidebar.radio(
     key='qunar_mode_widget',
     help={"kk":"QŪNAR есептеу міндетін таңдаңыз.","ru":"Выберите задачу, которую должен выполнить QŪNAR.","en":"Choose the analytical task QŪNAR should perform."}[lang],
 ))
+# Keep mode-owned widget values across navigation. Streamlit normally prunes the
+# state of widgets that are not rendered in the next mode. The snapshots are
+# independent of widget keys, so they survive that cleanup.
+_MODE_INPUT_SNAPSHOTS = st.session_state.setdefault('qunar_mode_input_snapshots_v1', {})
+_PREVIOUS_INPUT_MODE = st.session_state.get('qunar_last_input_mode_v1')
+if _PREVIOUS_INPUT_MODE and _PREVIOUS_INPUT_MODE != mode_key:
+    _last_snapshot = _MODE_INPUT_SNAPSHOTS.setdefault(_PREVIOUS_INPUT_MODE, {})
+    for _widget_k, _widget_v in list(st.session_state.items()):
+        if _widget_k.startswith(('qunar_saved_', 'qunar_farm_', 'qunar_report_')):
+            continue  # shared crop, canonical sidebar and reports have separate persistence
+        if _widget_k in ('qunar_mode_input_snapshots_v1', 'qunar_last_input_mode_v1'):
+            continue
+        if _widget_k.startswith(('qunar_', 'qmix_', 'tariff_basis_', 'confirm_', 'sust_')):
+            try:
+                import copy as _copy
+                _last_snapshot[_widget_k] = _copy.deepcopy(_widget_v)
+            except Exception:
+                pass
+    for _widget_k, _widget_v in _MODE_INPUT_SNAPSHOTS.get(mode_key, {}).items():
+        if _widget_k not in st.session_state:
+            try:
+                import copy as _copy
+                st.session_state[_widget_k] = _copy.deepcopy(_widget_v)
+            except Exception:
+                pass
+st.session_state['qunar_last_input_mode_v1'] = mode_key
+
 if st.session_state.get("ga_last_mode") != mode_key:
     if st.session_state.get("ga_last_mode") is not None:
         ga_event("assessment_mode", mode_key=mode_key)
@@ -1290,9 +1317,10 @@ with st.container():
                              else 'qunar_available_water_'+mode_key)
         available_water = q_number_input(
             available_water_label, min_value=0.0,
-            value=float(_crop_saved_value('available_water', 0.0)) if _water_budget_crop else 0.0,
+            value=float(_crop_saved_value('available_water', 0.0)) if _water_budget_crop else float(st.session_state.get('qunar_saved_water_budget_'+mode_key, _crop_saved_value('available_water', 0.0) if mode_key == 'mode3' else 0.0)),
             step=1000.0, help=t["available_water_note"], key=_water_budget_key,
         )
+        st.session_state['qunar_saved_water_budget_'+mode_key] = float(available_water)
         if _water_budget_crop:
             _crop_remember_value('available_water', float(available_water))
             st.caption({
@@ -1915,18 +1943,32 @@ with st.container():
                 _reg.columns=['product','display']
                 _econ_rows = _sc[['product']].drop_duplicates().merge(_reg,on='product',how='left')
                 _econ_rows['display']=_econ_rows['product'].map(lambda x: extended_crop_label(x, lang))
+                _saved_econ_rows = st.session_state.get('qunar_econ_table_saved', {})
                 # Blank is unreported; an explicitly entered zero is break-even.
                 _econ_rows['margin_kzt_ha']=float('nan')
                 _econ_rows['current_share_pct']=0.0
                 _econ_rows['partial_ghg_kg_co2e_ha']=float('nan')
+                for _i, _er in _econ_rows.iterrows():
+                    _saved = _saved_econ_rows.get(str(_er['product']), {})
+                    for _column in ('margin_kzt_ha', 'current_share_pct', 'partial_ghg_kg_co2e_ha'):
+                        if _column in _saved and _saved[_column] is not None:
+                            _econ_rows.at[_i, _column] = _saved[_column]
                 _visible_cols=['product','display','margin_kzt_ha','current_share_pct'] + (['partial_ghg_kg_co2e_ha'] if optimization_objective_mode == 'sustainable' else [])
-                _edited = st.data_editor(_econ_rows[_visible_cols], hide_index=True, use_container_width=True,
+                _edited = st.data_editor(_econ_rows[_visible_cols], hide_index=True, use_container_width=True, key='qunar_econ_editor_'+optimization_objective_mode,
                     disabled=['product','display'], column_config={
                         'product': None,
                         'display': st.column_config.TextColumn({"kk":"Дақыл","ru":"Культура","en":"Crop"}[lang]),
                         'margin_kzt_ha': st.column_config.NumberColumn({"kk":"Маржа, тг/га","ru":"Маржа, тг/га","en":"Contribution margin, KZT/ha"}[lang], min_value=-1000000000.0, step=10000.0, format='%.0f'),
                         'current_share_pct': st.column_config.NumberColumn({"kk":"Ағымдағы үлес, %","ru":"Текущая доля, %","en":"Current share, %"}[lang], min_value=0.0, max_value=100.0, step=1.0, format='%.5g')
                     })
+                st.session_state['qunar_econ_table_saved'] = {
+                    str(_er['product']): {
+                        _col: (float(_er[_col]) if pd.notna(_er[_col]) else None)
+                        for _col in ('margin_kzt_ha','current_share_pct','partial_ghg_kg_co2e_ha')
+                        if _col in _edited.columns
+                    }
+                    for _,_er in _edited.iterrows()
+                }
                 optimization_economic_margins={str(r['product']):float(r['margin_kzt_ha']) for _,r in _edited.iterrows() if pd.notna(r['margin_kzt_ha'])}
                 optimization_baseline_shares={str(r['product']):float(r['current_share_pct']) for _,r in _edited.iterrows() if float(r['current_share_pct'] or 0)>0}
                 if optimization_objective_mode == 'sustainable':
@@ -5291,6 +5333,55 @@ if submitted:
                     'value': {'ru':'Маржа является приблизительной сценарной оценкой; зависит от фактических производственных затрат, урожайности, цены и технологии полива хозяйства. Не является подтверждённой прибылью.', 'kk':'Маржа болжамды сценарийлік баға; ол шаруашылықтың нақты шығындарына, өнімділігіне, бағасына және суару тәсіліне тәуелді. Расталған пайда емес.', 'en':'Indicative scenario margin depends on actual farm production costs, yield, prices and irrigation method. It is not verified profit.'}[lang]})
                 report_payload['summary'].append({'label': {'ru':'Потенциальная сценарная маржа, тг','kk':'Сценарийлік ықтимал маржа, тг','en':'Potential scenario margin, KZT'}[lang],
                                                   'value':f"{_margin_after:,.0f}"})
+            # Transparent before/after indicators. Unknown energy and GHG effects
+            # must never be silently displayed as zero reductions.
+            _bi = opt.get('baseline_contribution_margin_kzt')
+            _bp = opt.get('baseline_water_m3')
+            _wa = opt.get('modelled_total_water_m3')
+            _metrics = []
+            if _bi is not None and _margin_after is not None:
+                _metrics += [
+                    ('Baseline contribution margin, KZT', f'{_bi:,.0f}'),
+                    ('Optimized contribution margin, KZT', f'{_margin_after:,.0f}'),
+                    ('Contribution margin increase, %', f"{float(opt.get('economic_gain_pct') or 0):+.1f}%"),
+                ]
+            if _bp is not None and _wa is not None:
+                _metrics += [
+                    ('Baseline crop water demand, m³', f'{_bp:,.0f}'),
+                    ('Optimized crop water demand, m³', f'{_wa:,.0f}'),
+                    ('Water demand change, m³', f"{float(opt.get('water_change_m3') or 0):+,.0f}"),
+                    ('Water demand change, %', f"{float(opt.get('water_change_pct') or 0):+.1f}%"),
+                ]
+            _sust = opt.get('sustainable_comparison') or {}
+            if _sust and _sust.get('baseline_partial_ghg_kg_co2e') is not None and _sust.get('optimized_partial_ghg_kg_co2e') is not None:
+                _gb = float(_sust['baseline_partial_ghg_kg_co2e'])
+                _ga = float(_sust['optimized_partial_ghg_kg_co2e'])
+                _metrics += [('Baseline partial GHG, kg CO₂e', f'{_gb:,.1f}'),
+                             ('Optimized partial GHG, kg CO₂e', f'{_ga:,.1f}'),
+                             ('Partial GHG change, kg CO₂e', f'{_ga-_gb:+,.1f}')]
+            else:
+                _metrics.append(('Environmental footprint comparison', 'Not quantified: matched crop-level emission factors required'))
+            _metrics.append(('Energy consumption comparison', 'Not quantified: matched crop-level kWh data required'))
+            if lang == 'en':
+                report_payload['summary'].extend({'label':k, 'value':v} for k,v in _metrics)
+            else:
+                _translations = {
+                    'Baseline contribution margin, KZT': ('Исходная маржа, тг','Бастапқы маржа, тг'),
+                    'Optimized contribution margin, KZT': ('Маржа после оптимизации, тг','Оңтайландырудан кейінгі маржа, тг'),
+                    'Contribution margin increase, %': ('Прирост маржи, %','Маржа өсімі, %'),
+                    'Baseline crop water demand, m³': ('Исходная потребность в воде, м³','Бастапқы су қажеттілігі, м³'),
+                    'Optimized crop water demand, m³': ('Потребность в воде после оптимизации, м³','Оңтайландырудан кейінгі су қажеттілігі, м³'),
+                    'Water demand change, m³': ('Изменение водопотребления, м³','Су тұтыну өзгерісі, м³'),
+                    'Water demand change, %': ('Изменение водопотребления, %','Су тұтыну өзгерісі, %'),
+                    'Baseline partial GHG, kg CO₂e': ('Исходные частичные выбросы, кг CO₂e','Бастапқы ішінара шығарындылар, кг CO₂e'),
+                    'Optimized partial GHG, kg CO₂e': ('Частичные выбросы после оптимизации, кг CO₂e','Оңтайландырудан кейінгі ішінара шығарындылар, кг CO₂e'),
+                    'Partial GHG change, kg CO₂e': ('Изменение частичных выбросов, кг CO₂e','Ішінара шығарындылар өзгерісі, кг CO₂e'),
+                    'Environmental footprint comparison': ('Сравнение экологического следа','Экологиялық ізді салыстыру'),
+                    'Energy consumption comparison': ('Сравнение энергопотребления','Энергия тұтынуды салыстыру'),
+                }
+                _unknown = ('Не рассчитано: нужны сопоставимые покультурные исходные данные','Есептелмеген: салыстырмалы дақылдық деректер қажет')
+                report_payload['summary'].extend({'label':_translations.get(k,(k,k))[0 if lang=='ru' else 1],
+                    'value':(_unknown[0 if lang=='ru' else 1] if v.startswith('Not quantified:') else v)} for k,v in _metrics)
             if opt.get('baseline_status') not in ('not_entered', 'valid_comparison'):
                 _bl_reason = {
                     'shares_do_not_sum_to_100': {'ru':'Сумма текущих долей не равна 100%.','kk':'Бастапқы үлестердің қосындысы 100% емес.','en':'Baseline shares do not total 100%.'},
