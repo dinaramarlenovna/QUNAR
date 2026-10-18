@@ -1145,6 +1145,11 @@ map_district = official_match.get("district") if official_match else None
 map_district_share = official_match.get("share") if official_match else None
 used_district = map_district if (location_source == "map" and map_district) else district
 
+# Map geometry and scope must exist on every rerun, even without a drawn map.
+# The input-side choice is required BEFORE report_payload is assembled.
+polygon_area = calc_polygon_area
+polygon_scope = "calculation_plot"
+
 area_input_label = t["area"] if mode_key != "mode5" else {
     "kk":"Жайылым / өндірістік жер алаңы, га",
     "ru":"Площадь пастбища / производственной территории, га",
@@ -1246,6 +1251,20 @@ with st.container():
         else:
             use_wapor = st.checkbox(t["wapor_toggle"], value=True)
 
+    if polygon_area and farm_total_area_ha > 0 and mode_key in ("mode1", "mode2", "mode3", "mode5"):
+        polygon_scope = q_radio(
+            {"ru":"Что обозначает нарисованный контур карты?",
+             "kk":"Картадағы сызылған контур нені білдіреді?",
+             "en":"What does the drawn map polygon represent?"}[lang],
+            ["calculation_plot", "whole_farm"],
+            format_func=lambda x: ({
+                "calculation_plot":{"ru":"Анализируемый участок (культура / пастбище)","kk":"Қарастырылатын танап немесе жайылым","en":"Assessed plot (crop / pasture)"},
+                "whole_farm":{"ru":"Всё хозяйство (включая другие участки)","kk":"Бүкіл шаруашылық (басқа учаскелермен)","en":"Entire farm (including other plots)"},
+            }[x][lang]), key="qunar_map_area_scope",
+            help={"ru":"Если контур охватывает 100 га всего хозяйства, а культура занимает 40 га, выберите «Всё хозяйство». QŪNAR сравнит контур со 100 га, а воду культуры рассчитает на 40 га.",
+                  "kk":"Контур жалпы аумақты көрсетсе, «Бүкіл шаруашылық» таңдаңыз; дақыл шығыны тек танап алаңына есептеледі.",
+                  "en":"Choose Entire farm for a whole-holding polygon; crop resources still use the selected plot area."}[lang],
+        )
     crop = None
     if mode_key in ('mode1', 'mode2'):
         _crop_options = list(check_crop_codes())
@@ -1718,7 +1737,12 @@ with st.container():
                             "en":"No verified comparable regional cost reference for this crop and technology is currently available."}[lang])
             irrigation_compare_enabled = st.checkbox({"kk":"Суару технологиясын өзгерту сценарийін салыстыру","ru":"Сравнить сценарий смены типа орошения","en":"Compare an irrigation-switch scenario"}[lang], value=False)
             if irrigation_compare_enabled:
-                irrigation_target = st.selectbox({"kk":"Ұсынылатын суару","ru":"Предлагаемый тип орошения","en":"Proposed irrigation type"}[lang], ["furrow", "sprinkler", "drip", "mixed"], format_func=lambda x: {"furrow":"Бороздовой / Furrow", "sprinkler":"Дождевальный / Sprinkler", "drip":"Капельный / Drip", "mixed":"Смешанный / Mixed"}[x])
+                irrigation_target = st.selectbox({"kk":"Ұсынылатын суару","ru":"Предлагаемый тип орошения","en":"Proposed irrigation type"}[lang], ["furrow", "sprinkler", "drip", "mixed"], format_func=lambda x: {
+                    'furrow': {'ru': 'Бороздовой', 'kk': 'Бороздалы', 'en': 'Furrow'},
+                    'sprinkler': {'ru': 'Дождевальный', 'kk': 'Жаңбырлатып', 'en': 'Sprinkler'},
+                    'drip': {'ru': 'Капельный', 'kk': 'Тамшылатып', 'en': 'Drip'},
+                    'mixed': {'ru': 'Смешанный', 'kk': 'Аралас', 'en': 'Mixed'},
+                }[x][lang])
                 irrigation_yield_change_pct = st.number_input({"kk":"Суарудан өнімділік өзгерісі, %","ru":"Изменение урожайности от орошения, %","en":"Irrigation yield change, %"}[lang], min_value=-100.0, max_value=200.0, value=0.0, step=1.0)
                 irrigation_evidence = st.text_input({"kk":"Өнімділік әсерінің дереккөзі немесе жорамал","ru":"Источник или допущение для изменения урожайности","en":"Source or assumption for yield change"}[lang], value="", help={"kk":"Зерттеу, тәжірибе немесе шаруашылық дерегін көрсетіңіз; жорамал болса, оны нақты белгілеңіз.","ru":"Укажите исследование, эксперимент или данные хозяйства; явно обозначьте допущение.","en":"Specify study/experimental estimate, farm records, or explicitly label as an assumption"}[lang])
                 irrigation_extra_cost = st.number_input({"kk":"Жаңа технологияның қосымша маусымдық шығындары, тг/га","ru":"Дополнительные сезонные расходы на технологию, тг/га","en":"Extra seasonal technology costs, KZT/ha"}[lang], min_value=0.0, value=0.0, step=1000.0)
@@ -2315,7 +2339,12 @@ with st.container():
                          ('biomass','kg'),('solar_pv','kWh'),('wind','kWh')]:
         if _src in selected_energy_sources:
             _val = q_number_input(
-                SOURCE_LABELS[lang][_src] + ' (' + _units + '; '
+                SOURCE_LABELS[lang][_src] + ' (' + {
+                    'L': {'ru':'л', 'kk':'л', 'en':'L'},
+                    'kg': {'ru':'кг', 'kk':'кг', 'en':'kg'},
+                    'kWh': {'ru':'кВт·ч', 'kk':'кВт·сағ', 'en':'kWh'},
+                    'm³': {'ru':'м³', 'kk':'м³', 'en':'m³'},
+                }.get(_units, {}).get(lang, _units) + '; '
                 + {'ru':'0 = неизвестно', 'kk':'0 = белгісіз', 'en':'0 = unknown'}[lang] + ')',
                 min_value=0.0,
                 value=float(st.session_state.get('qunar_saved_fuel_'+('crop' if mode_key in ('mode1','mode2') else mode_key)+'_'+_src, 0.0)),
@@ -2416,12 +2445,16 @@ with st.container():
                     st.error(str(_texture_err))
                     st.stop()
             if _daily_soil_mode=='measured':
-                _fc=st.number_input('Field capacity / Полевая влагоёмкость (m³/m³)',
+                _fc=st.number_input({'ru':'Полевая влагоёмкость (м³/м³)', 'kk':'Егістік ылғал сыйымдылығы (м³/м³)', 'en':'Field capacity (m³/m³)'}[lang],
                     min_value=.05,max_value=.70,value=float(_fc),step=.01,key='daily_soil_fc')
-                _wp=st.number_input('Wilting point / Влажность завядания (m³/m³)',
+                _wp=st.number_input({'ru':'Влажность завядания (м³/м³)', 'kk':'Солу ылғалдылығы (м³/м³)', 'en':'Wilting point (m³/m³)'}[lang],
                     min_value=0.0,max_value=.65,value=float(_wp),step=.01,key='daily_soil_wp')
             else:
-                st.caption(f'FAO AquaCrop scenario θFC={_fc:.2f}, θWP={_wp:.2f} m³/m³. '+FAO_SOIL_PROFILE_SOURCE)
+                st.caption({
+                    'ru':f'Справочный почвенный сценарий FAO AquaCrop: θFC={_fc:.2f}, θWP={_wp:.2f} м³/м³. ',
+                    'kk':f'FAO AquaCrop анықтамалық топырақ сценарийі: θFC={_fc:.2f}, θWP={_wp:.2f} м³/м³. ',
+                    'en':f'FAO AquaCrop reference soil scenario: θFC={_fc:.2f}, θWP={_wp:.2f} m³/m³. ',
+                }[lang]+FAO_SOIL_PROFILE_SOURCE)
             _root_fao,_p_fao=CROP_ROOT_P[crop]
             _root=st.number_input({'ru':'Глубина корневой зоны, м (справочный максимум FAO)',
                 'kk':'Тамыр тереңдігі, м (FAO)','en':'Rooting depth, m (FAO reference)'}[lang],
@@ -2441,7 +2474,13 @@ with st.container():
                 min_value=0.,max_value=20.,value=0.,step=.5,key='daily_soil_cr')
             _daily_eta_method=st.selectbox({'ru':'Способ полива (справочная эффективность FAO)',
                 'kk':'Суару түрі (FAO анықтамалығы)','en':'Irrigation type (FAO reference)'}[lang],
-                list(FIELD_EFFICIENCIES),key='daily_soil_irrigation')
+                list(FIELD_EFFICIENCIES),
+                format_func=lambda x: {
+                    'furrow': {'ru': 'Бороздовой', 'kk': 'Бороздалы', 'en': 'Furrow'},
+                    'sprinkler': {'ru': 'Дождевальный', 'kk': 'Жаңбырлатып', 'en': 'Sprinkler'},
+                    'drip': {'ru': 'Капельный', 'kk': 'Тамшылатып', 'en': 'Drip'},
+                }.get(x, {}).get(lang, x),
+                key='daily_soil_irrigation')
             _daily_eta=field_efficiency(_daily_eta_method)
             _daily_sched=st.selectbox({'ru':'Режим расчёта','kk':'Есептеу режимі','en':'Daily schedule mode'}[lang],
                 ['auto','rainfed'],format_func=lambda x:{'auto':{'ru':'Иллюстративный автоматический полив по порогу RAW',
@@ -3306,23 +3345,9 @@ if submitted:
             "en":"QŪNAR compares territorial resource and climate constraints within one decision space. Scores are comparative; evidence strength is reported separately."
         }[lang])
 
-    polygon_area = calc_polygon_area
+    # The map area and its declared scope were set at input time, prior to
+    # building the report; do not redefine the user's selection here.
     area_geometry_mismatch = False
-    polygon_scope = "calculation_plot"
-    if polygon_area and farm_total_area_ha > 0 and mode_key in ("mode1", "mode2", "mode3", "mode5"):
-        polygon_scope = q_radio(
-            {"ru":"Что обозначает нарисованный контур карты?",
-             "kk":"Картадағы сызылған контур нені білдіреді?",
-             "en":"What does the drawn map polygon represent?"}[lang],
-            ["calculation_plot", "whole_farm"],
-            format_func=lambda x: ({
-                "calculation_plot":{"ru":"Анализируемый участок (культура / пастбище)","kk":"Қарастырылатын танап немесе жайылым","en":"Assessed plot (crop / pasture)"},
-                "whole_farm":{"ru":"Всё хозяйство (включая другие участки)","kk":"Бүкіл шаруашылық (басқа учаскелермен)","en":"Entire farm (including other plots)"},
-            }[x][lang]), key="qunar_map_area_scope",
-            help={"ru":"Если контур охватывает 100 га всего хозяйства, а культура занимает 40 га, выберите «Всё хозяйство». QŪNAR сравнит контур со 100 га, а воду культуры рассчитает на 40 га.",
-                  "kk":"Контур жалпы аумақты көрсетсе, «Бүкіл шаруашылық» таңдаңыз; дақыл шығыны тек танап алаңына есептеледі.",
-                  "en":"Choose Entire farm for a whole-holding polygon; crop resources still use the selected plot area."}[lang],
-        )
     if polygon_area:
         comparison_area = (farm_total_area_ha if polygon_scope == "whole_farm" else area_ha)
         if polygon_scope == "whole_farm" and mode_key in ("mode1", "mode2", "mode3"):
