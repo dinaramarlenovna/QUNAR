@@ -808,6 +808,9 @@ _MODE_LABEL_FALLBACK = {
     "ru": {"mode5": "Оценить ресурсы животноводства"},
     "en": {"mode5": "Assess livestock resources"},
 }
+_MODE_LABEL_FALLBACK['ru']['mode6'] = 'Сравнить растениеводство и животноводство'
+_MODE_LABEL_FALLBACK['kk']['mode6'] = 'Өсімдік және мал шаруашылығын салыстыру'
+_MODE_LABEL_FALLBACK['en']['mode6'] = 'Compare crops and livestock'
 for _key, _label in _MODE_LABEL_FALLBACK[lang].items():
     t.setdefault(_key, _label)
 
@@ -982,7 +985,7 @@ render_report_workspace(lang)
 st.info(t["session_warning"])
 st.caption(t["save_restore_note"])
 
-mode_keys = ["mode1", "mode2", "mode3", "mode4", "mode5"]
+mode_keys = ["mode1", "mode2", "mode3", "mode4", "mode5", "mode6"]
 mode_key = _remember_sidebar('mode', st.sidebar.radio(
     t["mode"], mode_keys, format_func=lambda k: t.get(k, k),
     index=_sidebar_saved_index('mode', mode_keys, 'mode1'),
@@ -1032,6 +1035,17 @@ st.sidebar.caption({
     "ru":f"Расчётный год: {calculation_year}. Для культур открытого грунта базовое климатическое окно - апрель-сентябрь.",
     "en":f"Calculation year: {calculation_year}. The baseline climate window for open-field crops is April-September.",
 }[lang])
+
+# The crop/livestock comparison uses its own annual scenario accounting, so
+# it cannot inherit the crop-specific area, irrigation meter, or FAO-56 widgets.
+# Keep existing modes, report basket and session-wide language/district intact.
+if mode_key == 'mode6':
+    from core.mixed_farm_ui import render_mixed_mode
+    render_mixed_mode(lang=lang, district=district,
+        district_title=district_label(district), assessment_year=calculation_year,
+        render_export_panel=render_export_panel)
+    st.markdown('<div id="qunar-page-bottom"></div>', unsafe_allow_html=True)
+    st.stop()
 
 centroids = load_centroids()
 default_lat, default_lon = centroids[district]
