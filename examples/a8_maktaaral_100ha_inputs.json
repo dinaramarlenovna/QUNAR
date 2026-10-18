@@ -43,22 +43,25 @@
     }
   },
   "technical_assumptions": {
-    "pump_electricity_kwh_per_m3_field_delivery": 0.70509,
+    "pump_electricity_kwh_per_m3_field_delivery": 0.10480769230769231,
     "water_tariff_kzt_per_m3_field_delivery": 2.5,
     "electricity_tariff_kzt_per_kwh": 30,
-    "grid_kg_co2e_per_kwh": 0.6061,
+    "grid_kg_co2e_per_kwh": 0.813,
     "diesel_kg_co2_per_litre": 2.68,
     "n2o_n_kg_per_kg_n": 0.01,
-    "n2o_gwp100": 273
+    "n2o_gwp100": 273,
+    "water_supply_service_mode": "gravity_with_separate_onfarm_pump",
+    "pump_head_m": 25.0,
+    "pump_total_efficiency": 0.65
   },
   "evidence_status": {
     "prices": "Official BNS Turkestan 2025 published producer prices, prices do not imply 2026 contract prices",
     "yields": "District 2023-2025 arithmetic reference, NOT farm observed yield nor validated 2026 forecast",
-    "water": "Order 108-NQ 2025 QUNAR reference field-delivery norms for Maktaaral; not measured water",
+    "water": "Order 108-NQ (2025) historical reference field-delivery norms; current Order 288-NQ in force 16 Sep 2026; values are not asserted to be current farm water entitlements or measured consumption",
     "baseline": "Illustrative arbitrary 50/30/20 crop shares, NOT an observed farm allocation",
     "budgets": "Illustrative 750,000 m3 normal-water budget and -20% stress, NOT official quota",
     "other_variable_costs": "Illustrative assumed full non-water/non-electric variable costs per ha, NOT statistical regional averages",
-    "energy_and_tariffs": "Uses QUNAR pre-existing reference pump-energy intensity 0.70509 kWh/m3 and grid factor 0.6061 kgCO2e/kWh (reference provenance to be verified); water/electricity tariffs remain illustrative inputs, not farm bills",
+    "energy_and_tariffs": "Representative physical *own pump* scenario: head=25 m, overall pump-and-motor efficiency=0.65, E=ρgH/(η×3.6e6) = 0.104807692 kWh/m3; explicit non-observed assumption. The water-service charge is treated as gravity conveyance (not mechanical supplier pumping), with separate downstream own-pump energy. Grid generation-average CO2 factor 0.813 kgCO2/kWh, Kazakhstan 2025, sourced to Ember Yearly Electricity Data; NOT a national official contract factor, and not full life-cycle CO2e. Water/electricity tariffs 2.5 KZT/m3 and 30 KZT/kWh are illustrative, not farm bills.",
     "nitrogen_and_diesel": "Illustrative input activities per ha, NOT audited farm resource consumption",
     "boundaries": "Same Apr-Sep crop period, field-delivery irrigation. Partial N2O from nitrogen, diesel CO2, pumping electricity CO2e. Excludes manure, fertilizer production, soil carbon and return-flow effects."
   }

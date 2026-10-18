@@ -132,25 +132,32 @@ def test_soil_none_is_unknown_not_zero():
     with pytest.raises(ValueError):indicative_texture_from_soilgrids(p)
 
 
-def test_legacy_a8_is_preserved_for_reconciliation_after_updated_app_defaults():
+def test_a8_replaces_unverified_archival_pump_factor_with_physical_assumption():
+    from core.pumping_billing import pumping_kwh_per_m3
     data=json.loads((Path(__file__).resolve().parents[1]/'examples'/'a8_maktaaral_100ha_inputs.json').read_text())
     t=data['technical_assumptions']
-    assert t['pump_electricity_kwh_per_m3_field_delivery']==PUMPING_REFERENCE_KWH_PER_M3
-    # Historical A8 retains its reproducible inputs; current UI has a new factor.
-    assert t['grid_kg_co2e_per_kwh']==0.6061
-    assert DEFAULT_EF_KZ_KGCO2_PER_KWH==0.813
-    assert t['pump_electricity_kwh_per_m3_field_delivery']!=.35
+    assert t['water_supply_service_mode']=='gravity_with_separate_onfarm_pump'
+    assert t['pump_electricity_kwh_per_m3_field_delivery']==pytest.approx(pumping_kwh_per_m3(25,.65))
+    assert t['grid_kg_co2e_per_kwh']==0.813
+    assert t['pump_electricity_kwh_per_m3_field_delivery']!=PUMPING_REFERENCE_KWH_PER_M3
 
 
 def test_a8_2026_recalculation_stress_and_temperature_only_ssp():
     r=generate_a8_crosscheck()
-    assert r['ordinary_economic_optimum']['baseline']['contribution_margin_kzt']==pytest.approx(7222216.71667,abs=.01)
-    assert r['ordinary_economic_optimum']['optimized']['contribution_margin_kzt']==pytest.approx(8130941.405,abs=.01)
-    assert r['stress']['optimized']['contribution_margin_kzt']==pytest.approx(-3188622.569,abs=.01)
+    assert r['ordinary_economic_optimum']['baseline']['contribution_margin_kzt']==pytest.approx(20287361.14359,abs=.01)
+    assert r['ordinary_economic_optimum']['optimized']['contribution_margin_kzt']==pytest.approx(21637293.32805,abs=.01)
+    assert r['stress']['optimized']['contribution_margin_kzt']==pytest.approx(8696967.12358,abs=.01)
     for name in ['SSP2-4.5','SSP5-8.5']:
         s=r['climate_scenarios'][name]
         assert 1<s['water_multiplier']<1.1
         assert 'temperature TERM only' in s['method']
-        assert s['reoptimized']['status']=='optimal_enumerated_candidates'
-        assert s['reoptimized']['optimized']['water_field_delivery_m3']<=750000+1e-6
-        assert s['reoptimized']['optimized']['contribution_margin_kzt']>0
+        # SSP5-8.5 can be infeasible under the unrelaxed climate/land/water constraints.
+        # Never fabricate an optimized margin from an inadmissible plan.
+        if name=='SSP2-4.5':
+            assert s['reoptimized']['status']=='optimal_enumerated_candidates'
+            assert s['reoptimized']['optimized']['water_field_delivery_m3']<=750000+1e-6
+            assert s['reoptimized']['optimized']['contribution_margin_kzt']>0
+        else:
+            assert s['reoptimized']['status']=='infeasible_under_hard_constraints'
+            assert s['reoptimized']['optimized'] is None
+

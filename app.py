@@ -93,6 +93,7 @@ from core.soil_water_daily import (
 )
 from core.ghg_structure import compare_crop_structures
 from core.forecast_reliability import evaluate_forecast_support
+from core.forecast_quality import forward_yield_evidence, norm_vs_fao_comparison
 from core.irrigation_economics import irrigation_comparison
 from core.irrigation_report import irrigation_export
 from core.uncertainty import support_score
@@ -3001,6 +3002,23 @@ if submitted:
                 area_ha=(float(area_ha) if _kc is not None and fao56_rain_method=='fao_training' else None),
                 weather_source=_geo_note+'; NASA POWER historical 1995-2014')
             _summary56=_v56['totals']
+            # Different methodology, period, Kc, rainfall and application
+            # efficiencies: keep the historical official norm separate.
+            _ref_norm=(water_default_info.m3_ha if water_default_info is not None else None)
+            _water_method_crosscheck=norm_vs_fao_comparison(
+                _ref_norm,_summary56.get('baseline_gross_irrigation_m3_ha'))
+            if _water_method_crosscheck:
+                _ratio=_water_method_crosscheck['ratio_fao_to_norm']
+                _comparison_note={
+                    'ru':f'Справочная норма: {_ref_norm:,.0f} м³/га; FAO-56 (историческая климатическая база): {_water_method_crosscheck["fao_m3_ha"]:,.0f} м³/га. Отношение FAO/норма = {_ratio:.2f}. Это НЕ две взаимозаменяемые оценки: могут различаться период, Kc, эффективные осадки, КПД и методические границы. Разность НЕ является экономией или ошибкой нормы.',
+                    'kk':f'Анықтамалық норма: {_ref_norm:,.0f} м³/га; FAO-56 (тарихи климат): {_water_method_crosscheck["fao_m3_ha"]:,.0f} м³/га. Қатынас = {_ratio:.2f}. Әдістер, кезең, Kc, жауын және ПӘК әртүрлі; айырма үнем не норманың қатесі емес.',
+                    'en':f'Reference norm: {_ref_norm:,.0f} m³/ha; FAO-56 historical baseline: {_water_method_crosscheck["fao_m3_ha"]:,.0f} m³/ha. Ratio = {_ratio:.2f}. Different methods, phenology, effective rain and application efficiency; their difference is NOT observed saving or proof of norm error.'}[lang]
+                (st.warning if _water_method_crosscheck['material_difference'] else st.info)(_comparison_note)
+                report_payload['inputs'].append([
+                    {'ru':'Сопоставимость нормативов и FAO-56','kk':'Норма мен FAO-56 салыстырмалылығы','en':'Normative vs FAO-56 comparability'}[lang],
+                    f'{_ref_norm:.1f} / {_water_method_crosscheck["fao_m3_ha"]:.1f} m³/ha; ratio={_ratio:.2f}',
+                    _comparison_note])
+
             # Both scenarios are derived from the same historical NASA reference
             # and are not merged into the historical observations or RF features.
             _fao56_compare = {}
@@ -3052,10 +3070,10 @@ if submitted:
                             'value':str(_r56[_cols56[_ckey]]),
                             'note':{'ru':'FAO-56: справочные Kc, эффективные осадки и КПД, если заданы; только сценарий', 'kk':'FAO-56: Kc, тиімді жауын-шашын және ПӘК берілсе; сценарийлік нәтиже', 'en':'FAO-56: documented Kc, effective rain and field efficiency if supplied; scenario only'}[lang]})
             _a,_b=st.columns(2)
-            _a.metric('ET₀ Apr-Sep, NASA baseline (mm)', f"{_summary56['baseline_et0_mm']:.1f}")
-            _b.metric('ET₀ Apr-Sep, CMIP6 scenario (mm)', f"{_summary56['future_et0_mm']:.1f}")
+            _a.metric({'ru':'ET₀ апрель–сентябрь, историческая NASA, мм','kk':'NASA тарихи ET₀ сәуір–қыркүйек, мм','en':'ET₀ Apr-Sep, NASA baseline (mm)'}[lang], f"{_summary56['baseline_et0_mm']:.1f}")
+            _b.metric({'ru':'ET₀ апрель–сентябрь, сценарий CMIP6, мм','kk':'CMIP6 ET₀ сәуір–қыркүйек, мм','en':'ET₀ Apr-Sep, CMIP6 scenario (mm)'}[lang], f"{_summary56['future_et0_mm']:.1f}")
             if 'future_etc_mm' in _summary56:
-                st.metric('ETc Apr-Sep, crop scenario (mm)',f"{_summary56['future_etc_mm']:.1f}")
+                st.metric({'ru':'ETc культуры, апрель–сентябрь, мм','kk':'Дақылдың ETc сәуір–қыркүйек, мм','en':'ETc Apr-Sep, crop scenario (mm)'}[lang],f"{_summary56['future_etc_mm']:.1f}")
             if 'future_gross_irrigation_m3_ha' in _summary56:
                 st.metric('Estimated gross irrigation (m³/ha)',
                          f"{_summary56['future_gross_irrigation_m3_ha']:,.0f}",
@@ -3347,6 +3365,17 @@ if submitted:
                 'label': {'kk':'ML болжамының дәлелдік шектеуі','ru':'Статус надёжности ML-прогноза','en':'ML forecast validation caution'}[lang],
                 'value': {'kk':'Төмен/шектеулі сенімділік','ru':'Низкая/ограниченная уверенность','en':'Low/limited support'}[lang] if _fc.low_confidence else {'kk':'Айқын ескерту жоқ','ru':'Без специфического предупреждения','en':'No specific warning'}[lang],
                 'note':'; '.join(_fc.reasons) if _fc.reasons else f'Crop R²={_fc.crop_r2:.3f}; district leave-out R²={_fc.district_r2:.3f}; NOT a 2025 holdout test'})
+            _forward_quality = forward_yield_evidence(DATA_DIR,crop)
+            if _forward_quality.support != 'historically_supported':
+                _reason='; '.join(_forward_quality.reasons)
+                st.warning({
+                    'ru':f'ПРОВЕРКА ПРОГНОЗА ПО КУЛЬТУРЕ (2021–2025): недостаточная подтверждённая точность. {_reason}. Число RF — исследовательский ориентир, НЕ прогноз урожайности конкретного поля. Для хозяйственного решения используйте собственную урожайность и результаты ресурсного анализа.',
+                    'kk':f'Дақылдың 2021–2025 жылдардағы болжамы жеткілікті дәлелденбеген: {_reason}. RF мәні нақты танап өніміне кепіл емес; шаруашылық дерегін қолданыңыз.',
+                    'en':f'Crop-specific 2021–2025 predictive accuracy is not established: {_reason}. RF is a research benchmark, NOT a validated individual-field forecast; use observed farm yield and resource analysis.'}[lang])
+                _cross_module_summary_rows.append({
+                    'label':{'ru':'Предупреждение: точность ML по культуре','kk':'Ескерту: дақыл бойынша ML дәлдігі','en':'Warning: crop-specific ML predictive validity'}[lang],
+                    'value':{'ru':'Ограниченная, использовать с осторожностью','kk':'Шектеулі, сақтық қажет','en':'Limited, exercise caution'}[lang],
+                    'note':_reason+'; historical forward validation, not new-farm accuracy'})
             _holdout_evidence = forward_holdout_for_crop(crop)
             if _holdout_evidence:
                 _cross_module_summary_rows.append({
@@ -4444,6 +4473,21 @@ if submitted:
             ):
                 opt[_invalid_key] = None
             alloc = alloc.iloc[0:0].copy()
+        # Feasible at the declared limit can still mean zero buffer for dry years.
+        if (not alloc.empty and _scenario_available_water > 0
+                and _allocation_check.get('modelled_water_m3') is not None):
+            _w_used=float(_allocation_check['modelled_water_m3'])
+            _buffer_ratio=(_scenario_available_water-_w_used)/_scenario_available_water
+            if -1e-8 <= _buffer_ratio <= 0.01:
+                _water_buffer_msg={
+                    'ru':f'РЕЗЕРВ ВОДЫ ≤1%: модель использует {_w_used:,.0f} из {_scenario_available_water:,.0f} м³. План математически допустим при данном лимите, но не защищён от сокращения подачи в засушливый сезон. Повторите оптимизацию с бюджетом −10% и −20%, сравните допустимость, маржу и выбросы.',
+                    'kk':f'СУ ҚОРЫ ≤1%: {_w_used:,.0f} / {_scenario_available_water:,.0f} м³. Бұл жоспар берілген шектеуде ғана мүмкін; су −10% және −20% жағдайларын тексеріңіз.',
+                    'en':f'WATER BUFFER ≤1%: {_w_used:,.0f} of {_scenario_available_water:,.0f} m³ used. Feasible at current budget, but not robust to reduced supply. Re-run at −10% and −20% water budgets.'}[lang]
+                st.warning(_water_buffer_msg)
+                _cross_module_summary_rows.append({
+                    'label':{'ru':'Проверка устойчивости: резерв воды','kk':'Тұрақтылық: су қоры','en':'Robustness: water budget buffer'}[lang],
+                    'value':f'{max(0.0,100*_buffer_ratio):.2f}%',
+                    'note':_water_buffer_msg})
         if alloc.empty and optimization_objective_mode == 'sustainable':
             st.warning({
                 'ru':'При заданных данных математически допустимый устойчивый компромисс не найден либо недостаёт исходных показателей. Не ослабляйте ограничения незаметно; проверьте полноту маржи, CO₂e, исходных долей и числа культур.',

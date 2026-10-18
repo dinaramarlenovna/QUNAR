@@ -1,0 +1,77 @@
+{
+  "version": "v0.8.1",
+  "date": "2026-10-18",
+  "tested": "334 passed",
+  "changed_files": [
+    {
+      "path": "app.py",
+      "bytes": 586356,
+      "sha256": "0ea2e846dc93029fcecb6ef6d4a6711cacebe3b82ddb656374cf3ef235bcbefa"
+    },
+    {
+      "path": "core/a8_crosscheck.py",
+      "bytes": 8149,
+      "sha256": "0ee641bdfb2f072d22d3edecf56ee5330c902174db46f13bdba446def437e464"
+    },
+    {
+      "path": "core/a8_reproducible_case.py",
+      "bytes": 21619,
+      "sha256": "996cf99bc27e1c470bc83bc97f836bcff15e17397d35f49278fb67a72bdfbfce"
+    },
+    {
+      "path": "core/forecast_quality.py",
+      "bytes": 3263,
+      "sha256": "3595411d9002a1e07d180d1282cd4a73587388d1ed94894f9f9a42ef5e63ad81"
+    },
+    {
+      "path": "core/reference_fallbacks.py",
+      "bytes": 7678,
+      "sha256": "28205e0fdf71292c81fbc6e6ca185c288cd091f42943ec7769d968a4b6aaae14"
+    },
+    {
+      "path": "core/report_localization.py",
+      "bytes": 21860,
+      "sha256": "92bdb644ad580da3715799ba4bfe1a0d0690966ef46ec9067086c610fc2d0594"
+    },
+    {
+      "path": "core/water_norms.py",
+      "bytes": 8941,
+      "sha256": "ccb0061debaa0b134697b8e650ba22db72f8b49dce8231245c275393532bf20d"
+    },
+    {
+      "path": "examples/a8_maktaaral_100ha_inputs.json",
+      "bytes": 3266,
+      "sha256": "dcc93eb22c4454fd4cd92db40d7329cce5f8cfbeaea9de5036e086e639ba1db6"
+    },
+    {
+      "path": "examples/a8_output/a8_maktaaral_case_results.json",
+      "bytes": 14708,
+      "sha256": "3a2479c633e8f5b7e6566681027b2182392587e6749581bd18d92134651e79fa"
+    },
+    {
+      "path": "examples/a8_output/a8_maktaaral_for_claude.md",
+      "bytes": 3615,
+      "sha256": "fc00507b6dd3526c52893e6b5f294ae7033223f1b4f61bdbf82b0bab899da250"
+    },
+    {
+      "path": "examples/release_evidence/EVIDENCE_A1_A3_A4_A7_A8.json",
+      "bytes": 31036,
+      "sha256": "d89ecc701d7ef4807f757bd842971ceadd65b0d410dddd56fe5da306d47f031b"
+    },
+    {
+      "path": "examples/release_evidence/EVIDENCE_FOR_CLAUDE.md",
+      "bytes": 4906,
+      "sha256": "883c54867064b6e0eb0aec2530a584d92eb39baa6e9d73c0ee15324c43541ec0"
+    },
+    {
+      "path": "tests/test_geo_climate_a8_reconciliation.py",
+      "bytes": 7413,
+      "sha256": "39670d43717d1ba35c1a73233cf9743ab087188389c87f8a6510a3d23ad14a1c"
+    },
+    {
+      "path": "tests/test_release_scientific_guardrails_2026_10_18.py",
+      "bytes": 3038,
+      "sha256": "ce0d0ccf8720cbfaffefbb96894d4c1dcbee2f9b570c6437a073e361489efc94"
+    }
+  ]
+}

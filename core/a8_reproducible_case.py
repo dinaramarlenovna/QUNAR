@@ -64,6 +64,19 @@ def _validated_inputs(inputs):
         raise ValueError('Unknown pumping billing boundary')
     # A mechanically delivered water tariff covers supplier pumping. Adding the
     # supplier's pump electricity again would be double counting.
+    # An explicit pump-head scenario must agree with the first-principles
+    # hydraulic formula. Reject arbitrary energy intensity independent of head.
+    if mode == 'gravity_with_separate_onfarm_pump' and (
+            'pump_head_m' in inputs['technical_assumptions'] or
+            'pump_total_efficiency' in inputs['technical_assumptions']):
+        from .pumping_billing import pumping_kwh_per_m3
+        t=inputs['technical_assumptions']
+        if 'pump_head_m' not in t or 'pump_total_efficiency' not in t:
+            raise ValueError('Pump head and efficiency must both be given')
+        physically_derived=pumping_kwh_per_m3(t['pump_head_m'],t['pump_total_efficiency'])
+        supplied=float(t['pump_electricity_kwh_per_m3_field_delivery'])
+        if not isclose(supplied,physically_derived,rel_tol=1e-6,abs_tol=1e-9):
+            raise ValueError('Pump energy intensity disagrees with head and efficiency')
     if mode == 'purchased_mechanized_inclusive' and float(inputs['technical_assumptions']['pump_electricity_kwh_per_m3_field_delivery']) != 0:
         raise ValueError('Purchased mechanized water service includes provider pumping; do not add pump electricity')
     if mode == 'gravity_with_separate_onfarm_pump' and float(inputs['technical_assumptions']['pump_electricity_kwh_per_m3_field_delivery']) <= 0:

@@ -65,7 +65,7 @@ def irrigation_water_fallback(district, crop, area_ha, irrigation_method='unknow
     return ResolvedReference(ref.m3_ha * area, ref.source_tier, ref.source_label,
                              SOURCE_URL if ref.source_tier != 'regional_fallback' else '',
                              'full crop cycle; benchmark irrigation delivery',
-                             'Reference need, NOT measured water; check soil/method and crop mapping')
+                             'Reference need, NOT measured water; historical 108-NQ, current 288-NQ from 16 Sep 2026 has not been crosswalked; check soil/method and crop mapping')
 
 
 def livestock_drinking_fallback(species, heads, observed=None, *, measured_zero=False, temperature_c=None):
