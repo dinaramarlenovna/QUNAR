@@ -704,15 +704,39 @@ def render_export_panel(report_payload: dict, lang: str):
                 clicked = st.download_button(labels["down_word"], data=st.session_state["qunar_word"], file_name=f"QUNAR_report_{datetime.now():%Y%m%d_%H%M}.docx", mime="application/vnd.openxmlformats-officedocument.wordprocessingml.document", use_container_width=True, key=f"download_word_{report_id}")
                 if clicked: ga_event("download_word", report_scope="single", mode_key=report_payload.get("mode_key"))
 
-_prior_lang = st.session_state.get("qunar_preferred_lang")
-_lang_select_caption = {'ru':'Язык интерфейса','kk':'Интерфейс тілі','en':'Interface language'}.get(_prior_lang, 'Тіл / Язык / Language')
-lang_label = st.sidebar.selectbox(_lang_select_caption, list(LANGUAGES.keys()), index=0,
-    help={'ru':'Выберите язык. Все названия и пояснения отчёта будут на выбранном языке.',
-          'kk':'Тілді таңдаңыз. Есептегі атаулар мен түсіндірмелер сол тілде болады.',
-          'en':'Choose the language used by the interface and downloadable reports.'}.get(_prior_lang,
-          'Тілді / язык / language select'))
+# Keep the language selector identity stable across reruns. Streamlit treats a
+# widget whose translated label changes as a new widget; index=0 used to reset
+# the interface to Kazakh whenever a mode/radio triggered a rerun.
+_prior_lang = st.session_state.get("qunar_preferred_lang", "kk")
+_lang_by_code = {code: caption for caption, code in LANGUAGES.items()}
+if st.session_state.get("qunar_language_selector") not in LANGUAGES:
+    st.session_state["qunar_language_selector"] = _lang_by_code.get(_prior_lang, _lang_by_code["kk"])
+_lang_select_caption = {
+    'ru': 'Язык интерфейса',
+    'kk': 'Интерфейс тілі',
+    'en': 'Interface language',
+}.get(_prior_lang, 'Интерфейс тілі')
+st.sidebar.markdown('**' + _lang_select_caption + '**')
+lang_label = st.sidebar.selectbox(
+    'QUNAR language selector - stable internal label',
+    list(LANGUAGES.keys()),
+    key='qunar_language_selector',
+    label_visibility='collapsed',
+    help='Қазақша / Русский / English - select the interface language.',
+)
 lang = LANGUAGES[lang_label]
-st.session_state['qunar_preferred_lang']=lang
+st.session_state['qunar_preferred_lang'] = lang
+
+# Retain canonical sidebar selections when their visible labels are translated.
+# The "saved" keys are separate from Streamlit widget keys on purpose.
+def _sidebar_saved_index(slot, choices, fallback):
+    options = list(choices)
+    saved = st.session_state.get('qunar_saved_' + slot, fallback)
+    return options.index(saved) if saved in options else options.index(fallback)
+
+def _remember_sidebar(slot, value):
+    st.session_state['qunar_saved_' + slot] = value
+    return value
 if st.session_state.get("ga_last_language") != lang:
     if st.session_state.get("ga_last_language") is not None:
         ga_event("change_language", language=lang)
@@ -798,13 +822,14 @@ def water_source_label(info):
         "ru":"Официальные нормы орошения Республики Казахстан и расчетная корректировка",
         "en":"Official irrigation norms of the Republic of Kazakhstan with model adjustment",
     }[lang]
-user_level = st.sidebar.radio(
+user_level = _remember_sidebar('user_level', st.sidebar.radio(
     t["user_level"],
     ["farmer", "specialist", "researcher"],
     format_func=lambda x: {"farmer": t["level_farmer"], "specialist": t["level_specialist"], "researcher": t["level_researcher"]}[x],
-    index=0,
+    index=_sidebar_saved_index('user_level', ["farmer", "specialist", "researcher"], 'farmer'),
+    key='qunar_user_level_widget',
     help={"kk":"Базалық: жылдам есеп. Кеңейтілген: тарифтер, сорғылар, технология және сценарийлер. Зерттеуші: дереккөздер мен модель сапасын тексеру. Есептік нормативтер деңгейге қарай өзгермейді.","ru":"Базовый: минимум полей и быстрый результат. Расширенный: тарифы, насосы, технологии и сценарии. Исследовательский: источники данных, диагностика машинного обучения и научные проверки. Расчётные нормативы между уровнями не меняются.","en":"Basic: quick assessment with fewer inputs. Advanced: costs, pumping, technologies and scenarios. Research: source data and model diagnostics. The reference norms do not change between levels."}[lang],
-)
+))
 if user_level == "farmer":
     st.sidebar.caption(t["level_basic_hint"])
     st.sidebar.caption({"kk":"QŪNAR анонимді пайдалану статистикасын Google Analytics арқылы жинайды.","ru":"QŪNAR собирает обезличенную статистику использования через Google Analytics.","en":"QŪNAR collects anonymized usage statistics through Google Analytics."}[lang])
@@ -872,25 +897,36 @@ st.info(t["session_warning"])
 st.caption(t["save_restore_note"])
 
 mode_keys = ["mode1", "mode2", "mode3", "mode4", "mode5"]
-mode_key = st.sidebar.radio(t["mode"], mode_keys, format_func=lambda k: t.get(k, k), help={"kk":"QŪNAR есептеу міндетін таңдаңыз.","ru":"Выберите задачу, которую должен выполнить QŪNAR.","en":"Choose the analytical task QŪNAR should perform."}[lang])
+mode_key = _remember_sidebar('mode', st.sidebar.radio(
+    t["mode"], mode_keys, format_func=lambda k: t.get(k, k),
+    index=_sidebar_saved_index('mode', mode_keys, 'mode1'),
+    key='qunar_mode_widget',
+    help={"kk":"QŪNAR есептеу міндетін таңдаңыз.","ru":"Выберите задачу, которую должен выполнить QŪNAR.","en":"Choose the analytical task QŪNAR should perform."}[lang],
+))
 if st.session_state.get("ga_last_mode") != mode_key:
     if st.session_state.get("ga_last_mode") is not None:
         ga_event("assessment_mode", mode_key=mode_key)
     st.session_state["ga_last_mode"] = mode_key
-district = st.sidebar.selectbox(t["district"], DISTRICT_ORDER, format_func=district_label, help={"kk":"Есептеу жүргізілетін әкімшілік аудан немесе қала.","ru":"Административный район или город, для которого выполняется расчёт.","en":"Administrative district or city used for the calculation."}[lang])
+district = _remember_sidebar('district', st.sidebar.selectbox(
+    t["district"], DISTRICT_ORDER, format_func=district_label,
+    index=_sidebar_saved_index('district', DISTRICT_ORDER, DISTRICT_ORDER[0]),
+    key='qunar_district_widget',
+    help={"kk":"Есептеу жүргізілетін әкімшілік аудан немесе қала.","ru":"Административный район или город, для которого выполняется расчёт.","en":"Administrative district or city used for the calculation."}[lang],
+))
 
 SEASON_MODE_LABELS = {
     "kk": {"next":"Келесі маусым", "current":"Ағымдағы маусым", "completed":"Соңғы аяқталған маусым"},
     "ru": {"next":"Следующий сезон", "current":"Текущий сезон", "completed":"Последний завершённый сезон"},
     "en": {"next":"Next season", "current":"Current season", "completed":"Last completed season"},
 }[lang]
-season_mode = st.sidebar.radio(
+season_mode = _remember_sidebar('season', st.sidebar.radio(
     {"kk":"Бағалау кезеңі","ru":"Период оценки","en":"Assessment period"}[lang],
     ["next","current","completed"],
     format_func=lambda x: SEASON_MODE_LABELS[x],
-    index=0,
+    index=_sidebar_saved_index('season', ["next","current","completed"], 'next'),
+    key='qunar_season_widget',
     help={"kk":"Келесі маусым - жоспарлау сценарийі; ағымдағы - маусым барысындағы алдын ала мониторинг; аяқталған - толық өткен маусымды ретроспективті бағалау.","ru":"Следующий сезон - плановый сценарий; текущий - предварительный мониторинг по мере поступления данных; завершённый - ретроспективная оценка полного сезона.","en":"Next season is the planning scenario; current season is an in-season preliminary assessment; completed season is a retrospective full-season assessment."}[lang],
-)
+))
 _today = date.today()
 if season_mode == "next":
     calculation_year = _today.year + 1
@@ -2050,16 +2086,26 @@ with st.container():
 
     # Mandatory energy-source *classification*, not mandatory fossil-fuel consumption.
     # A rain-fed/manual/contractor-powered farm is allowed and is NOT assigned diesel.
+    st.caption({
+        'ru': 'Обязательное поле ниже. Выберите источники энергии или способ выполнения работ. Оно находится прямо над настройками FAO-56 и кнопкой «Рассчитать».',
+        'kk': 'Төмендегі міндетті өрісте энергия көзін немесе жұмысты орындау тәсілін таңдаңыз. Ол FAO-56 параметрлері мен «Есептеу» батырмасының дәл үстінде.',
+        'en': 'Required field below: select an energy source or a way of performing farm work. It is immediately above FAO-56 settings and the Calculate button.',
+    }[lang])
+    # The localized multiselect label changes widget identity on language switch.
+    # Restore valid canonical codes rather than silently clearing the user's choice.
+    _remembered_sources = [code for code in st.session_state.get('qunar_saved_operational_energy_sources', [])
+                           if code in ENERGY_SOURCES]
     selected_energy_sources = st.multiselect(
         {'ru':'Источники энергии и выполнения работ (обязательно)',
          'kk':'Энергия және жұмыс орындалуының көздері (міндетті)',
          'en':'Operational energy/work sources (required)'}[lang],
-        options=list(ENERGY_SOURCES), default=[],
+        options=list(ENERGY_SOURCES), default=_remembered_sources,
         format_func=lambda code: SOURCE_LABELS[lang][code],
         key='farm_operational_energy_sources',
         help={'ru':'Выберите все применяемые источники. Подрядная техника и ручной труд допускаются. Выбор источника не означает известный расход топлива.',
               'kk':'Қолданылатын барлық көздерді таңдаңыз. Мердігер техника мен қол еңбегі болуы мүмкін. Таңдау отын шығынын дәлелдемейді.',
               'en':'Select all that apply. Contracted machinery and manual labour are valid. Selecting a fuel does not establish its consumption.'}[lang])
+    st.session_state['qunar_saved_operational_energy_sources'] = list(selected_energy_sources)
     _fuel_observations = {}
     for _src, _units in [('diesel','L'),('petrol','L'),('natural_gas','m³'),('coal','kg'),
                          ('biomass','kg'),('solar_pv','kWh'),('wind','kWh')]:
@@ -2217,9 +2263,11 @@ with st.container():
 
 if submitted:
     if not selected_energy_sources:
-        st.error({'ru':'Выберите хотя бы один источник энергии, работы техники или ручного труда.',
-                  'kk':'Энергия, техника немесе қол еңбегінің кемінде бір көзін таңдаңыз.',
-                  'en':'Select at least one energy source, machinery service or manual labour source.'}[lang])
+        st.error({
+            'ru': 'Не выбран источник энергии или выполнения работ. Откройте поле «Источники энергии и выполнения работ (обязательно)» (в основном блоке ввода, прямо над «FAO-56» и кнопкой «Рассчитать») и выберите хотя бы один вариант: электросеть, солнечная энергия, подрядная техника или ручной труд.',
+            'kk': 'Энергия не жұмысты орындау көзі таңдалмаған. «Энергия және жұмыс орындалуының көздері (міндетті)» өрісіне өтіңіз (негізгі енгізу бөлімінде, «FAO-56» мен «Есептеу» батырмасының үстінде) және кемінде біреуін таңдаңыз: электр желісі, күн энергиясы, мердігер техника не қол еңбегі.',
+            'en': 'No energy or work source selected. Find “Operational energy/work sources (required)” (in the main input section, immediately above FAO-56 and the Calculate button) and choose at least one: grid electricity, solar, contracted machinery, or manual labour.',
+        }[lang])
         st.stop()
     validate_energy_sources(selected_energy_sources)
     ga_event("run_assessment", mode_key=mode_key, season_mode=season_mode, calculation_year=calculation_year, user_level=user_level)
