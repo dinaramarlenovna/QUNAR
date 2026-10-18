@@ -2277,7 +2277,7 @@ with st.container():
     # Scenario configuration belongs to the input area, not beneath Results.
     # Streamlit's container allows us to fill this slot after the main model
     # has produced the reference quantities needed by the comparison.
-    _scenario_inputs_slot = st.container() if (user_level != "farmer" and mode_key in ("mode1", "mode2", "mode5")) else None
+    _scenario_inputs_slot = st.container() if (user_level != "farmer" and mode_key in ("mode1", "mode5")) else None
     submitted = st.button(t["calculate"], type="primary", use_container_width=True, key="calculate_main")
 
 # Keep the optional scenario controls available while editing them after a run.
@@ -3387,7 +3387,7 @@ if submitted:
             {"label":{"kk":"Мал шаруашылығының үлесі","ru":"Доля животноводства","en":"Livestock share"}[lang],
              "value":f"{float(lp.get('livestock_share_pct',0)):.1f}%"},
             {"label":{"kk":"Мал саны","ru":"Поголовье","en":"Herd"}[lang],
-             "value":f"{effective_heads:,.0f} ({ {'user': {'kk':'пайдаланушы дерегі','ru':'данные пользователя','en':'user data'}, 'district_reference': {'kk':'аудандық анықтамалық мән','ru':'районное справочное значение','en':'district reference'}, 'unknown': {'kk':'белгісіз','ru':'неизвестно','en':'unknown'} }.get(heads_source, {'kk':str(heads_source),'ru':str(heads_source),'en':str(heads_source)})[lang] })"},
+             "value":({"kk":"енгізілмеген", "ru":"не указано", "en":"not entered"}[lang] if heads_source == "unknown" else f"{effective_heads:,.0f} ({ {'user': {'kk':'пайдаланушы дерегі','ru':'данные пользователя','en':'user data'}, 'district_reference': {'kk':'аудандық анықтамалық мән','ru':'районное справочное значение','en':'district reference'} }.get(heads_source, {'kk':str(heads_source),'ru':str(heads_source),'en':str(heads_source)})[lang] })"),},
             {"label":{"kk":"Машиналық оқыту болжамы","ru":"Прогноз машинного обучения","en":"Machine-learning forecast"}[lang],
              "value":f"{float(forecast.get('forecast_heads')):,.0f} ({forecast.get('forecast_year','—')})" if forecast.get("available") and forecast.get("publish_forecast") else {"kk":"жарияланбайды","ru":"не публикуется","en":"withheld"}[lang]},
             {"label":{"kk":"Шартты мал бірлігі","ru":"Условные единицы скота","en":"Livestock units (LU)"}[lang],
@@ -3418,6 +3418,18 @@ if submitted:
             "evidence_label":{"kk":"Негіздеме","ru":"Основание","en":"Evidence"}[lang],
             "effect_label":{"kk":"Әсер","ru":"Эффект","en":"Effect"}[lang],
         }]
+        if heads_source == "unknown":
+            report_payload["analysis"] = [{
+                "ru":"Поголовье хозяйства не введено. Районная статистика приводится только для сравнения; индивидуальные потребности в воде и кормах, пастбищная нагрузка и экономический эффект не рассчитаны.",
+                "kk":"Шаруашылықтағы мал саны енгізілмеген. Аудандық статистика тек салыстыру үшін берілген; су, жемшөп және жайылым жүктемесі жеке шаруашылық үшін есептелмеді.",
+                "en":"Farm herd size was not entered. District figures are contextual only; farm water/feed demand, pasture load and economic effect have not been calculated."}[lang]]
+            report_payload["recommendations"] = [{
+                "title":{"ru":"Нужны данные о поголовье", "kk":"Мал саны туралы дерек қажет", "en":"Farm herd input required"}[lang],
+                "text":{"ru":"Введите фактическое количество животных для расчёта потребности вашего хозяйства. Районное поголовье не подставляется вместо него.", "kk":"Шаруашылығыңыз үшін есептеу мақсатында мал санын енгізіңіз. Аудандық көрсеткіш оның орнына қойылмайды.", "en":"Enter your farm herd to calculate farm requirements. District headcounts cannot substitute for it."}[lang],
+                "evidence":{"ru":"Отсутствует поголовье хозяйства", "kk":"Шаруашылықтың мал саны белгісіз", "en":"Farm herd is missing"}[lang],
+                "effect":{"ru":"Индивидуальный водный и кормовой баланс не рассчитан", "kk":"Жеке су және жемшөп теңгерімі есептелмеді", "en":"Farm water/feed balance not calculated"}[lang]
+            }]
+
 
     elif mode_key == "mode1" and crop not in CROPS:
         # Expanded farm assessment for crops without a calibrated yield ML model.
@@ -4552,7 +4564,7 @@ if submitted:
             return {table_indicator: {"kk":label_kk,"ru":label_ru,"en":label_en}[lang], table_value: value}
         report_payload["table"] = [
             _row("Аудан өніміндегі мал шаруашылығы үлесі, %", "Доля животноводства в выпуске района, %", "Livestock share of district output, %", livestock.get("livestock_share_pct")),
-            _row("Есепте қолданылған мал саны, бас", "Поголовье в расчете, голов", "Herd used in calculation, head", livestock.get("heads")),
+            _row("Есепте қолданылған мал саны, бас", "Поголовье в расчете, голов", "Herd used in calculation, head", livestock.get("heads") if heads_source != "unknown" else None),
             _row("Мал санының дереккөзі", "Источник данных о поголовье", "Herd source", head_source_export),
             _row("Соңғы ресми аудандық мал саны, бас", "Последнее официальное районное поголовье, голов", "Latest official district herd, head", benchmark_export.get("latest_district_heads")),
             _row("Соңғы ресми жыл", "Последний официальный год", "Latest official year", benchmark_export.get("latest_year")),
@@ -4767,9 +4779,9 @@ if submitted:
             _gain = opt.get('economic_gain_kzt')
             _margin_after = opt.get('optimized_contribution_margin_kzt')
             _source_remark = {
-                'ru': 'Эффект является сценарной оценкой на основе введённых пользователем маржинальных показателей; требуется независимое подтверждение цен и затрат.',
-                'kk': 'Әсер пайдаланушы енгізген маржа мәндеріне негізделген сценарийлік баға; бағалар мен шығындарды бөлек тексеру қажет.',
-                'en': 'This is a user-input scenario estimate; prices and costs must be independently verified.'
+                'ru': ('Расчётная маржа является сценарием; введённые пользователем затраты и цены требуют проверки.' if _margin_after is not None else 'Структура рассчитана по ресурсно-климатическим критериям. Экономический эффект не определён: данные о марже культур отсутствуют.'),
+                'kk': ('Есептік маржа - сценарий; енгізілген баға мен шығындар тексерілуі керек.' if _margin_after is not None else 'Құрылым ресурс-климат өлшемдері бойынша есептелді. Дақыл маржасы жоқ болғандықтан экономикалық әсер анықталмады.'),
+                'en': ('Contribution margin is a scenario; entered prices and costs require confirmation.' if _margin_after is not None else 'Allocation uses climate-resource criteria. No economic effect can be claimed without crop margins.')
             }[lang]
             report_payload['recommendations'].append({
                 'title': ({'ru':'Предварительные расчётные доли (без водного лимита)','kk':'Алдын ала үлестер (су лимиті жоқ)','en':'Provisional allocation (no water budget)'} if _water_provisional else {'ru':'Практический план посевов','kk':'Егіс бойынша нақты жоспар','en':'Quantified crop allocation'})[lang],
@@ -4977,28 +4989,41 @@ if submitted:
     _integrated_fragment = None
     if _scenario_inputs_slot is not None:
         with _scenario_inputs_slot:
-            st.markdown("#### " + {
+            _has_farm_subject = (mode_key == "mode1" and crop is not None) or (mode_key == "mode5" and livestock_heads > 0)
+            _scenario_opted_in = st.checkbox({
+                "ru":"Рассчитать дополнительный сценарий «до / после»",
+                "kk":"Қосымша «дейін / кейін» сценарийін есептеу",
+                "en":"Calculate optional before/after scenario"}[lang],
+                value=False, key=f"qunar_integrated_optin_{mode_key}",
+                help={"ru":"Необязательно. Включите, только если хотите сравнить две технологии для этого хозяйства. Результат не является подтверждённой фактической экономией.",
+                      "kk":"Міндетті емес. Осы шаруашылық үшін екі технологияны салыстыру қажет болса ғана қосыңыз.",
+                      "en":"Optional. Enable only when comparing two technologies for this farm; savings are not measured."}[lang],
+                disabled=not _has_farm_subject)
+            if not _has_farm_subject and _scenario_opted_in:
+                _scenario_opted_in = False
+            if _scenario_opted_in:
+                st.markdown("#### " + {
                 "ru":"Дополнительный сценарий «до / после» (параметры)",
                 "kk":"«Дейін / кейін» қосымша сценарийі (параметрлер)",
                 "en":"Optional before/after scenario (inputs)"}[lang])
-            _integrated_fragment = render_integrated_scenario(
-                lang=lang, mode_key=mode_key, district=used_district,
-                crop=crop, area_ha=area_ha, irrigation_type=irrigation_type,
-                observed_water_m3=observed_water, observed_energy_kwh=observed_energy,
-                grid_factor=ef, water_tariff=water_tariff,
-                electricity_tariff=electricity_tariff,
-                expected_yield_c_ha=expected_yield_c_ha,
-                selling_price_kzt_t=selling_price_kzt_t,
-                other_cost_kzt_ha=variable_cost_kzt_ha,
-                livestock_heads=livestock_heads, livestock_species=livestock_species,
-                livestock_production_amount=livestock_production_amount,
-                livestock_production_kind=livestock_production_kind,
-                livestock_reference=locals().get('livestock'),
-                assessment_year=calculation_year,
-                main_pump_confirmed=(pumping_confirmed and pump_head_m is not None and pump_efficiency is not None),
-                main_pump_head_m=pump_head_m, main_pump_efficiency=pump_efficiency,
-                purchased_mechanized_water=(_tariff_water_ref == 'kazvodkhoz_irrigation_pumped_2026'),
-            )
+                _integrated_fragment = render_integrated_scenario(
+                    lang=lang, mode_key=mode_key, district=used_district,
+                    crop=crop, area_ha=area_ha, irrigation_type=irrigation_type,
+                    observed_water_m3=observed_water, observed_energy_kwh=observed_energy,
+                    grid_factor=ef, water_tariff=water_tariff,
+                    electricity_tariff=electricity_tariff,
+                    expected_yield_c_ha=expected_yield_c_ha,
+                    selling_price_kzt_t=selling_price_kzt_t,
+                    other_cost_kzt_ha=variable_cost_kzt_ha,
+                    livestock_heads=livestock_heads, livestock_species=livestock_species,
+                    livestock_production_amount=livestock_production_amount,
+                    livestock_production_kind=livestock_production_kind,
+                    livestock_reference=locals().get('livestock'),
+                    assessment_year=calculation_year,
+                    main_pump_confirmed=(pumping_confirmed and pump_head_m is not None and pump_efficiency is not None),
+                    main_pump_head_m=pump_head_m, main_pump_efficiency=pump_efficiency,
+                    purchased_mechanized_water=(_tariff_water_ref == 'kazvodkhoz_irrigation_pumped_2026'),
+                )
     if _integrated_fragment is not None:
         report_payload['summary'].extend(_integrated_fragment['summary'])
         report_payload['inputs'].extend(_integrated_fragment['inputs'])

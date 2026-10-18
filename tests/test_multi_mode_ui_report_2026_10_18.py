@@ -24,7 +24,7 @@ def test_economic_electricity_is_defined_before_all_mode_results():
 def test_optional_scenario_is_input_only_and_mode_scoped():
     source=APP.read_text(encoding='utf-8')
     assert source.index('_scenario_inputs_slot = st.container()') < source.index('submitted = st.button(t["calculate"]')
-    assert 'mode_key in ("mode1", "mode2", "mode5")' in source
+    assert 'mode_key in ("mode1", "mode5")' in source
     assert 'with _scenario_inputs_slot:' in source
     assert 'qunar_calculated_mode' in source
 
