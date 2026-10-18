@@ -955,7 +955,7 @@ _brand_translation = {
 
 st.markdown(
     f"""
-    <div class="qunar-hero">
+    <div class="qunar-hero" id="qunar-page-top">
       <div class="qunar-brand">QŪNAR</div>
       <div class="qunar-acronym"><span class="qunar-initial">Q</span>uantified <span class="qunar-initial">U</span>tilization of <span class="qunar-initial">N</span>atural <span class="qunar-initial">A</span>gricultural <span class="qunar-initial">R</span>esources</div>
       {f'<div class="qunar-translation">{_brand_translation}</div>' if _brand_translation else ''}
@@ -963,8 +963,7 @@ st.markdown(
     """,
     unsafe_allow_html=True,
 )
-st.markdown("""<div id="qunar-page-top"></div>
-<style>
+st.markdown("""<style>
 a.qunar-fixed-nav {position:fixed;right:10px;z-index:99999;background:#f9fbf9;
  color:#214432 !important;border:1px solid #acc2b0;box-shadow:0 2px 9px #0002;
  border-radius:10px;padding:9px 12px;text-decoration:none;font-size:13px;font-weight:600;}
@@ -974,7 +973,7 @@ a.qunar-go-report{top:51%;background:#e9f3ec;}
  a.qunar-go-top{top:92px;} a.qunar-go-bottom{bottom:125px;}}
 </style>
 <a class="qunar-fixed-nav qunar-go-top" href="#qunar-page-top" title="Back to top">↑</a>
-<a class="qunar-fixed-nav qunar-go-report" href="#qunar-report-workspace" title="My report">▤</a>
+<a class="qunar-fixed-nav qunar-go-report" href="#qunar-page-top" title="QŪNAR - к логотипу / QŪNAR - back to top">▤</a>
 <a class="qunar-fixed-nav qunar-go-bottom" href="#qunar-page-bottom" title="Go to bottom">↓</a>""", unsafe_allow_html=True)
 render_report_workspace(lang)
 st.info(t["session_warning"])
