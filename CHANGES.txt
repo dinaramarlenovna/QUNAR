@@ -1,0 +1,1 @@
+Modified: app.py, core/reporting.py. Added: docs/QUNAR_User_Guide_EN_v0.8.1.pdf, RU, KK. Previous mixed-calculate and persistence fixes retained. Reports now have paragraph indents and consistent fonts and spacing. Guide download is below My Reports; Before you start removed. PDFs contain guidance, not a claim of validation.

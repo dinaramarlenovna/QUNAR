@@ -1047,6 +1047,31 @@ a.qunar-go-report{top:51%;background:#e9f3ec;}
 <a class="qunar-fixed-nav qunar-go-top" href="#qunar-page-top" title="Back to top">↑</a>
 <a class="qunar-fixed-nav qunar-go-report" href="#qunar-page-top" title="QŪNAR - к логотипу / QŪNAR - back to top">▤</a>
 <a class="qunar-fixed-nav qunar-go-bottom" href="#qunar-page-bottom" title="Go to bottom">↓</a>""", unsafe_allow_html=True)
+# A single language-matched guide download sits beneath the QŪNAR wordmark,
+# ahead of My report. Do not add another top-level expander here.
+_guide_file = Path(__file__).resolve().parent / 'docs' / f'QUNAR_User_Guide_{lang.upper()}_v0.8.1.pdf'
+if _guide_file.is_file():
+    _guide_title = {
+        'kk': 'Пайдаланушы нұсқаулығы (PDF)',
+        'ru': 'Руководство пользователя (PDF)',
+        'en': 'User Guide (PDF)',
+    }[lang]
+    _guide_help = {
+        'kk': 'Алты режимнің кіріс деректері, есептеу әдістері және шектеулері.',
+        'ru': 'Ввод данных, методы расчёта и ограничения всех шести режимов.',
+        'en': 'Inputs, calculation methods and limitations of all six modes.',
+    }[lang]
+    _guide_left, _guide_action = st.columns([5, 1], vertical_alignment='center')
+    with _guide_action:
+        st.download_button(
+            label=f'📖 {_guide_title}',
+            data=_guide_file.read_bytes(),
+            file_name=_guide_file.name,
+            mime='application/pdf',
+            key='qunar_guide_download',
+            help=_guide_help,
+            use_container_width=True,
+        )
 render_report_workspace(lang)
 
 mode_keys = ["mode1", "mode2", "mode3", "mode4", "mode5", "mode6"]
@@ -1166,13 +1191,6 @@ if st.session_state["district_for_location"] != district and not st.session_stat
     st.session_state.polygon_area_ha = None
     st.session_state.district_for_location = district
 
-with st.expander({"ru": "Перед началом работы", "kk": "Жұмысты бастамас бұрын", "en": "Before you start"}[lang], expanded=False):
-    st.info(t["session_warning"])
-    st.caption(t["save_restore_note"])
-    st.caption(t["fast_mode_note"])
-    st.caption({"kk":"Әдістемелік ескерту: QŪNAR бір ауыл шаруашылығы маусымын бағалайды. Ашық алқаптағы дақылдардың ML-климат блогы сәуір-қыркүйек аралығындағы температура, жауын-шашын, тамыр аймағының ылғалдылығы және күн радиациясын пайдаланады. Бұл барлық дақыл үшін дәл фенологиялық күнтізбе емес, салыстырмалы модельдеу үшін бірыңғай белсенді вегетация терезесі.","ru":"Методическая сноска: QŪNAR оценивает один сельскохозяйственный сезон. В ML-климатическом блоке культур открытого грунта используются температура, осадки, влажность корневой зоны и солнечная радиация за апрель-сентябрь. Это унифицированное окно активной вегетации для сопоставимого моделирования, а не точный фенологический календарь каждой культуры.","en":"Method note: QŪNAR evaluates one agricultural season. The open-field crop ML climate block uses April-September temperature, precipitation, root-zone wetness and solar radiation. This is a standardized active-season window for comparable modelling, not an exact phenological calendar for every crop."}[lang])
-    st.caption({"kk":"Уақыт шекаралары: сәуір-қыркүйек тек ML климаттық белгілеріне қатысты. Су, энергия және басқа өндірістік ресурстар дақылдың толық өндірістік циклі бойынша - егіс алдындағы дайындықтан/себуден бастап өнім жинауға дейін есепке алынады. Сондықтан климаттық терезе мен ресурстық есептің уақыт шекарасы бірдей болуға міндетті емес.","ru":"Временные границы расчёта: апрель-сентябрь относится только к климатическим признакам ML. Вода, энергия и другие производственные ресурсы учитываются за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Поэтому временные границы климатического окна и ресурсного учёта намеренно различаются.","en":"Time scope: April-September applies only to the ML climate features. Water, energy and other production resources are accounted for over the full crop production cycle - from pre-sowing preparation/sowing through harvest. The climate-feature window and the resource-accounting boundary are therefore intentionally different."}[lang])
-    st.caption({"kk":"Қолданылу шекарасы: ағымдағы дақылдардың ML-ядросы ашық алқап өндірісіне арналған. Жылыжай өндірісі жылыту, жарықтандыру, желдету және бірнеше өндірістік циклді ескеретін жеке болашақ модуль ретінде қарастырылады.","ru":"Граница применимости: текущий ML-контур растениеводства откалиброван для открытого грунта. Тепличное производство требует отдельного будущего модуля с отоплением, освещением, вентиляцией и возможными несколькими циклами производства.","en":"Scope boundary: the current crop ML core is calibrated for open-field production. Greenhouse production requires a separate future module covering heating, lighting, ventilation and potentially multiple production cycles."}[lang])
 
 location_source = q_radio(
     t.get("location_source", {"kk":"Геодерек көзі","ru":"Источник геоданных","en":"Geodata source"}[lang]),
