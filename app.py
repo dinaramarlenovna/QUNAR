@@ -1090,10 +1090,9 @@ if _PREVIOUS_INPUT_MODE and _PREVIOUS_INPUT_MODE != mode_key:
                 st.session_state[_widget_k] = _copy.deepcopy(_widget_v)
             except Exception:
                 pass
-# Clean up any transient button state left by an older deployed version.
-# This executes before the mixed-farm button is instantiated.
-if mode_key == 'mode6':
-    st.session_state.pop('qmix_calculate', None)
+# qmix_calculate is a momentary Streamlit button. Do not restore it from
+# snapshots and do not pop it here: on a button-triggered rerun that would
+# erase the click before render_mixed_mode can consume it.
 st.session_state['qunar_last_input_mode_v1'] = mode_key
 
 if st.session_state.get("ga_last_mode") != mode_key:

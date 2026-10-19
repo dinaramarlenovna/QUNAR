@@ -1,11 +1,6 @@
-QUNAR v0.8.1 - incremental patch (2026-10-19)
-Replace only these two files in repository root:
-  app.py
-  core/reporting.py
+QUNAR v0.8.1 - Mixed farm Calculate click fix
 
-Includes previous cross-mode input persistence fix.
-Export improvement: Research report exports include captured screen-only forecast-method coverage, ML yield evidence and additional 2023 evidence tables (when computed); Basic does not include these tables. Both single and combined PDF, DOCX and XLSX supported. Integrated report still consolidates common and mode-specific inputs at end.
-
-This is NOT a full mirror of every Streamlit visual: interactive charts and some diagnostics remain screen-only. All tables are included only if generated in Research mode when the calculation runs; rerun after selecting Research.
-
-QA: Python compilation; six report-generation smoke tests. Streamlit navigation not tested in a deployed browser.
+Replace root app.py only. Based on the latest persistence and research-report patch.
+Removed unconditional session_state.pop('qmix_calculate') executed on each mode6 run.
+Kept button excluded from snapshot/restore. No other files changed.
+AST checks passed; project Python source compilation passed. End-to-end Streamlit UI testing not performed.
