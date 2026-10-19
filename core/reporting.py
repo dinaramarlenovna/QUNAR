@@ -78,13 +78,6 @@ def _consolidated_input_groups(payloads):
     return common, specifics
 
 
-def _research_sections(payload):
-    """Only export researcher evidence that was actually calculated and captured."""
-    if payload.get('report_level') != 'researcher':
-        return []
-    return [t for t in (payload.get('research_tables') or []) if t.get('rows')]
-
-
 def _xlsx_formats(wb):
     return {
         "brand": wb.add_format({"bold": True, "font_size": 24, "font_color": "#1F5135"}),
@@ -207,25 +200,10 @@ def _write_payload_sheet(writer, sheet_name: str, payload: dict, include_inputs:
     return ws
 
 
-def _write_research_sheets(writer, payloads):
-    """Use distinct sheets for screen-only Research data, without guessed values."""
-    for i, payload in enumerate(payloads, 1):
-        for j, section in enumerate(_research_sections(payload), 1):
-            df = pd.DataFrame(section['rows'])
-            if df.empty:
-                continue
-            sheet = _safe_sheet_name(f"R{i}_{j}_{section['title']}")
-            df.to_excel(writer, sheet_name=sheet, index=False)
-            ws = writer.sheets[sheet]
-            ws.freeze_panes(1, 0)
-            ws.set_column(0, len(df.columns)-1, 27)
-
-
 def build_excel_report(payload: dict) -> bytes:
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         _write_payload_sheet(writer, "QUNAR_Report", payload, include_inputs=True)
-        _write_research_sheets(writer, [payload])
     output.seek(0)
     return output.getvalue()
 
@@ -262,7 +240,6 @@ def build_combined_excel_report(payloads: list[dict]) -> bytes:
         for i, payload in enumerate(payloads, 1):
             _write_payload_sheet(writer, f"{i}_{payload.get('mode_label','Mode')}", payload, include_inputs=False)
 
-        _write_research_sheets(writer, payloads)
         common, specifics = _consolidated_input_groups(payloads)
         if common or specifics:
             src=wb.add_worksheet('Sources');writer.sheets['Sources']=src
@@ -305,7 +282,7 @@ def _pdf_styles(regular, bold):
         "subtitle": ParagraphStyle("QunarSubtitle", parent=styles["BodyText"], fontName=bold, fontSize=10.5, leading=15, textColor=colors.HexColor("#53675A"), alignment=TA_CENTER, spaceAfter=15),
         "h2": ParagraphStyle("QunarH2", parent=styles["Heading2"], fontName=bold, fontSize=15, leading=19, textColor=colors.HexColor("#24342A"), spaceBefore=13, spaceAfter=8),
         "h3": ParagraphStyle("QunarH3", parent=styles["Heading3"], fontName=bold, fontSize=11.5, leading=15, textColor=colors.HexColor("#234F36"), spaceBefore=7, spaceAfter=4),
-        "body": ParagraphStyle("QunarBody", parent=styles["BodyText"], fontName=regular, fontSize=10.3, leading=15, textColor=colors.HexColor("#202722"), spaceAfter=6),
+        "body": ParagraphStyle("QunarBody", parent=styles["BodyText"], fontName=regular, fontSize=10.5, leading=16, firstLineIndent=12, textColor=colors.HexColor("#202722"), spaceAfter=8),
         "key": ParagraphStyle("QunarKey", parent=styles["BodyText"], fontName=bold, fontSize=10.6, leading=15, textColor=colors.HexColor("#183A25"), backColor=colors.HexColor("#EEF7F0"), borderColor=colors.HexColor("#BFD5C5"), borderWidth=.7, borderPadding=8, spaceAfter=8),
         "small": ParagraphStyle("QunarSmall", parent=styles["BodyText"], fontName=regular, fontSize=8.4, leading=11.5, textColor=colors.HexColor("#67736B")),
     }
@@ -418,22 +395,6 @@ def _append_payload_pdf(story, payload: dict, styles, include_inputs: bool = Tru
                 ("TOPPADDING",(0,0),(-1,-1),4), ("BOTTOMPADDING",(0,0),(-1,-1),4)
             ]))
             story.append(tbl)
-
-    if _research_sections(payload):
-        for section in _research_sections(payload):
-            story.append(Paragraph(html.escape(str(section['title'])), h2))
-            df = pd.DataFrame(section['rows']).fillna('')
-            # Tall/narrow tables: retain all rows; split columns into printable groups.
-            cols = list(df.columns)
-            for start in range(0, len(cols), 4):
-                group = cols[start:start+4]
-                data = [[Paragraph(html.escape(str(c)), small) for c in group]]
-                for _, r in df.iterrows():
-                    data.append([Paragraph(html.escape(str(r[c])), small) for c in group])
-                tab = Table(data, colWidths=[170*mm/len(group)]*len(group), repeatRows=1)
-                tab.setStyle(TableStyle([('GRID',(0,0),(-1,-1),.3,colors.HexColor('#D7E0D9')),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#EAF3EC')),('VALIGN',(0,0),(-1,-1),'TOP')]))
-                story.append(tab)
-                story.append(Spacer(1, 3*mm))
 
     if include_inputs and payload.get("inputs"):
         story += [PageBreak(), Paragraph(html.escape(payload.get("inputs_title", "Inputs and sources")), h2)]
@@ -604,18 +565,6 @@ def _word_add_payload(doc, payload: dict, include_inputs: bool = True, include_b
                 cells = table.add_row().cells
                 for j, val in enumerate(rr.tolist()): cells[j].text = _clean(val)
 
-    for section in _research_sections(payload):
-        add_heading(section['title'], 2)
-        df = pd.DataFrame(section['rows']).fillna('')
-        table = doc.add_table(rows=1, cols=len(df.columns))
-        table.style = 'Table Grid'
-        for j, name in enumerate(df.columns):
-            table.rows[0].cells[j].text = str(name)
-        for _, row in df.iterrows():
-            cells = table.add_row().cells
-            for j, value in enumerate(row):
-                cells[j].text = str(value)
-
     if include_inputs and payload.get('inputs'):
         doc.add_page_break()
         add_heading(payload.get('inputs_title','Inputs and sources'), 2)
@@ -635,9 +584,52 @@ def _word_document_base(title='QŪNAR report'):
     section = doc.sections[0]
     section.top_margin = Cm(1.8); section.bottom_margin = Cm(1.8); section.left_margin = Cm(2.0); section.right_margin = Cm(2.0)
     styles = doc.styles
-    styles['Normal'].font.name = 'Arial'; styles['Normal'].font.size = Pt(10.5)
+    styles['Normal'].font.name = 'Arial'; styles['Normal'].font.size = Pt(11)
+    styles['Normal'].paragraph_format.first_line_indent = Cm(0.65)
+    styles['Normal'].paragraph_format.line_spacing = 1.35
+    styles['Normal'].paragraph_format.space_after = Pt(7)
     for name, size in [('Heading 1', 16), ('Heading 2', 13), ('Heading 3', 11)]:
         styles[name].font.name = 'Arial'; styles[name].font.size = Pt(size); styles[name].font.bold = True
+        styles[name].paragraph_format.first_line_indent = Cm(0)
+        styles[name].paragraph_format.space_before = Pt(11)
+        styles[name].paragraph_format.space_after = Pt(6)
+        styles[name].paragraph_format.first_line_indent = Cm(0)
+        styles[name].paragraph_format.space_before = Pt(11)
+        styles[name].paragraph_format.space_after = Pt(6)
+        styles[name].paragraph_format.first_line_indent = Cm(0)
+        styles[name].paragraph_format.space_before = Pt(11)
+        styles[name].paragraph_format.space_after = Pt(6)
+        styles[name].paragraph_format.first_line_indent = Cm(0)
+        styles[name].paragraph_format.space_before = Pt(11)
+        styles[name].paragraph_format.space_after = Pt(6)
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    for table_style_name in ('Table Grid',):
+        if table_style_name in styles:
+            styles[table_style_name].font.name = 'Arial'
+            styles[table_style_name].font.size = Pt(9)
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    for table_style_name in ('Table Grid',):
+        if table_style_name in styles:
+            styles[table_style_name].font.name = 'Arial'
+            styles[table_style_name].font.size = Pt(9)
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    for table_style_name in ('Table Grid',):
+        if table_style_name in styles:
+            styles[table_style_name].font.name = 'Arial'
+            styles[table_style_name].font.size = Pt(9)
+    from docx.enum.text import WD_ALIGN_PARAGRAPH
+    from docx.oxml import OxmlElement
+    from docx.oxml.ns import qn
+    for table_style_name in ('Table Grid',):
+        if table_style_name in styles:
+            styles[table_style_name].font.name = 'Arial'
+            styles[table_style_name].font.size = Pt(9)
     doc.core_properties.title = title
     doc.core_properties.author = 'QŪNAR'
     return doc
