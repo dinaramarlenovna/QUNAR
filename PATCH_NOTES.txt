@@ -1,6 +1,7 @@
-QUNAR v0.8.1 - Mixed farm Calculate click fix
-
-Replace root app.py only. Based on the latest persistence and research-report patch.
-Removed unconditional session_state.pop('qmix_calculate') executed on each mode6 run.
-Kept button excluded from snapshot/restore. No other files changed.
-AST checks passed; project Python source compilation passed. End-to-end Streamlit UI testing not performed.
+QŪNAR v0.8.1 - UI cleanup (19 October 2026)
+Modified: app.py only (based on MIXED_CALCULATE_CLICK_FIX).
+- Grouped general startup cautions, persistence note and seasonal/model methodological footnotes in a collapsed Before you start expander (RU/KK/EN).
+- Removed the non-working Use my location toggle and associated browser geolocation processing from the visible app; district selection and map polygon tools remain.
+- Kept contextual warnings, missing-data alerts and field-specific hints near their inputs/results.
+- Retained previously integrated persistence, Research reports and mixed-farm calculate button fix.
+Validation: Python compilation and static assertions passed; live Streamlit browser testing not conducted.

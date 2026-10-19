@@ -101,7 +101,6 @@ from core.irrigation_report import irrigation_export
 from core.uncertainty import support_score
 from core.analysis_engine import build_analysis, build_recommendations
 from core.wapor import seasonal_aeti, consumptive_water_metrics, WaPORError
-from core.location import browser_geolocation, reverse_geocode
 from core.admin_boundaries import detect_point, detect_polygon, boundary_geojson
 from core.optimizer import optimize_structure
 from core.optimization_guard import validate_allocation
@@ -1049,8 +1048,6 @@ a.qunar-go-report{top:51%;background:#e9f3ec;}
 <a class="qunar-fixed-nav qunar-go-report" href="#qunar-page-top" title="QŪNAR - к логотипу / QŪNAR - back to top">▤</a>
 <a class="qunar-fixed-nav qunar-go-bottom" href="#qunar-page-bottom" title="Go to bottom">↓</a>""", unsafe_allow_html=True)
 render_report_workspace(lang)
-st.info(t["session_warning"])
-st.caption(t["save_restore_note"])
 
 mode_keys = ["mode1", "mode2", "mode3", "mode4", "mode5", "mode6"]
 mode_key = _remember_sidebar('mode', st.sidebar.radio(
@@ -1169,36 +1166,13 @@ if st.session_state["district_for_location"] != district and not st.session_stat
     st.session_state.polygon_area_ha = None
     st.session_state.district_for_location = district
 
-st.caption(t["fast_mode_note"])
-st.caption({"kk":"Әдістемелік ескерту: QŪNAR бір ауыл шаруашылығы маусымын бағалайды. Ашық алқаптағы дақылдардың ML-климат блогы сәуір-қыркүйек аралығындағы температура, жауын-шашын, тамыр аймағының ылғалдылығы және күн радиациясын пайдаланады. Бұл барлық дақыл үшін дәл фенологиялық күнтізбе емес, салыстырмалы модельдеу үшін бірыңғай белсенді вегетация терезесі.","ru":"Методическая сноска: QŪNAR оценивает один сельскохозяйственный сезон. В ML-климатическом блоке культур открытого грунта используются температура, осадки, влажность корневой зоны и солнечная радиация за апрель-сентябрь. Это унифицированное окно активной вегетации для сопоставимого моделирования, а не точный фенологический календарь каждой культуры.","en":"Method note: QŪNAR evaluates one agricultural season. The open-field crop ML climate block uses April-September temperature, precipitation, root-zone wetness and solar radiation. This is a standardized active-season window for comparable modelling, not an exact phenological calendar for every crop."}[lang])
-st.caption({"kk":"Уақыт шекаралары: сәуір-қыркүйек тек ML климаттық белгілеріне қатысты. Су, энергия және басқа өндірістік ресурстар дақылдың толық өндірістік циклі бойынша - егіс алдындағы дайындықтан/себуден бастап өнім жинауға дейін есепке алынады. Сондықтан климаттық терезе мен ресурстық есептің уақыт шекарасы бірдей болуға міндетті емес.","ru":"Временные границы расчёта: апрель-сентябрь относится только к климатическим признакам ML. Вода, энергия и другие производственные ресурсы учитываются за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Поэтому временные границы климатического окна и ресурсного учёта намеренно различаются.","en":"Time scope: April-September applies only to the ML climate features. Water, energy and other production resources are accounted for over the full crop production cycle - from pre-sowing preparation/sowing through harvest. The climate-feature window and the resource-accounting boundary are therefore intentionally different."}[lang])
-st.caption({"kk":"Қолданылу шекарасы: ағымдағы дақылдардың ML-ядросы ашық алқап өндірісіне арналған. Жылыжай өндірісі жылыту, жарықтандыру, желдету және бірнеше өндірістік циклді ескеретін жеке болашақ модуль ретінде қарастырылады.","ru":"Граница применимости: текущий ML-контур растениеводства откалиброван для открытого грунта. Тепличное производство требует отдельного будущего модуля с отоплением, освещением, вентиляцией и возможными несколькими циклами производства.","en":"Scope boundary: the current crop ML core is calibrated for open-field production. Greenhouse production requires a separate future module covering heating, lighting, ventilation and potentially multiple production cycles."}[lang])
-
-gps_enabled = q_toggle(t["gps_use"], value=False, help=t["gps_title"])
-if gps_enabled:
-    gps_loc, gps_err = timed_call("Browser geolocation", browser_geolocation)
-    if gps_err == "missing_component":
-        st.caption(t["gps_missing"])
-    elif gps_loc:
-        # GPS is navigation only. Keeping it opt-in avoids loading the browser component on every rerun.
-        st.session_state.field_lat = gps_loc["latitude"]
-        st.session_state.field_lon = gps_loc["longitude"]
-        acc = gps_loc.get("accuracy_m")
-        msg = f"{t['gps_ok']}: {gps_loc['latitude']:.6f}, {gps_loc['longitude']:.6f}"
-        if acc is not None:
-            msg += f" | {t['gps_accuracy']}: ~{float(acc):.0f} m"
-        st.success(msg)
-        try:
-            rg = timed_call("Reverse geocoding", reverse_geocode, gps_loc["latitude"], gps_loc["longitude"])
-            if rg.get("matched_district"):
-                if rg["matched_district"] == district:
-                    st.info(t["district_check_ok"])
-                else:
-                    st.warning(t["district_check_warn"] + " " + DISTRICT_LABELS[lang].get(rg["matched_district"], rg["matched_district"]))
-            st.caption(t["district_check_note"])
-        except Exception:
-            pass
-
+with st.expander({"ru": "Перед началом работы", "kk": "Жұмысты бастамас бұрын", "en": "Before you start"}[lang], expanded=False):
+    st.info(t["session_warning"])
+    st.caption(t["save_restore_note"])
+    st.caption(t["fast_mode_note"])
+    st.caption({"kk":"Әдістемелік ескерту: QŪNAR бір ауыл шаруашылығы маусымын бағалайды. Ашық алқаптағы дақылдардың ML-климат блогы сәуір-қыркүйек аралығындағы температура, жауын-шашын, тамыр аймағының ылғалдылығы және күн радиациясын пайдаланады. Бұл барлық дақыл үшін дәл фенологиялық күнтізбе емес, салыстырмалы модельдеу үшін бірыңғай белсенді вегетация терезесі.","ru":"Методическая сноска: QŪNAR оценивает один сельскохозяйственный сезон. В ML-климатическом блоке культур открытого грунта используются температура, осадки, влажность корневой зоны и солнечная радиация за апрель-сентябрь. Это унифицированное окно активной вегетации для сопоставимого моделирования, а не точный фенологический календарь каждой культуры.","en":"Method note: QŪNAR evaluates one agricultural season. The open-field crop ML climate block uses April-September temperature, precipitation, root-zone wetness and solar radiation. This is a standardized active-season window for comparable modelling, not an exact phenological calendar for every crop."}[lang])
+    st.caption({"kk":"Уақыт шекаралары: сәуір-қыркүйек тек ML климаттық белгілеріне қатысты. Су, энергия және басқа өндірістік ресурстар дақылдың толық өндірістік циклі бойынша - егіс алдындағы дайындықтан/себуден бастап өнім жинауға дейін есепке алынады. Сондықтан климаттық терезе мен ресурстық есептің уақыт шекарасы бірдей болуға міндетті емес.","ru":"Временные границы расчёта: апрель-сентябрь относится только к климатическим признакам ML. Вода, энергия и другие производственные ресурсы учитываются за полный производственный цикл выбранной культуры - от предпосевной подготовки/посева до уборки урожая. Поэтому временные границы климатического окна и ресурсного учёта намеренно различаются.","en":"Time scope: April-September applies only to the ML climate features. Water, energy and other production resources are accounted for over the full crop production cycle - from pre-sowing preparation/sowing through harvest. The climate-feature window and the resource-accounting boundary are therefore intentionally different."}[lang])
+    st.caption({"kk":"Қолданылу шекарасы: ағымдағы дақылдардың ML-ядросы ашық алқап өндірісіне арналған. Жылыжай өндірісі жылыту, жарықтандыру, желдету және бірнеше өндірістік циклді ескеретін жеке болашақ модуль ретінде қарастырылады.","ru":"Граница применимости: текущий ML-контур растениеводства откалиброван для открытого грунта. Тепличное производство требует отдельного будущего модуля с отоплением, освещением, вентиляцией и возможными несколькими циклами производства.","en":"Scope boundary: the current crop ML core is calibrated for open-field production. Greenhouse production requires a separate future module covering heating, lighting, ventilation and potentially multiple production cycles."}[lang])
 
 location_source = q_radio(
     t.get("location_source", {"kk":"Геодерек көзі","ru":"Источник геоданных","en":"Geodata source"}[lang]),
