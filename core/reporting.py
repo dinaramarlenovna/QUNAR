@@ -78,6 +78,13 @@ def _consolidated_input_groups(payloads):
     return common, specifics
 
 
+def _research_sections(payload):
+    """Only export researcher evidence that was actually calculated and captured."""
+    if payload.get('report_level') != 'researcher':
+        return []
+    return [t for t in (payload.get('research_tables') or []) if t.get('rows')]
+
+
 def _xlsx_formats(wb):
     return {
         "brand": wb.add_format({"bold": True, "font_size": 24, "font_color": "#1F5135"}),
@@ -200,10 +207,25 @@ def _write_payload_sheet(writer, sheet_name: str, payload: dict, include_inputs:
     return ws
 
 
+def _write_research_sheets(writer, payloads):
+    """Use distinct sheets for screen-only Research data, without guessed values."""
+    for i, payload in enumerate(payloads, 1):
+        for j, section in enumerate(_research_sections(payload), 1):
+            df = pd.DataFrame(section['rows'])
+            if df.empty:
+                continue
+            sheet = _safe_sheet_name(f"R{i}_{j}_{section['title']}")
+            df.to_excel(writer, sheet_name=sheet, index=False)
+            ws = writer.sheets[sheet]
+            ws.freeze_panes(1, 0)
+            ws.set_column(0, len(df.columns)-1, 27)
+
+
 def build_excel_report(payload: dict) -> bytes:
     output = BytesIO()
     with pd.ExcelWriter(output, engine="xlsxwriter") as writer:
         _write_payload_sheet(writer, "QUNAR_Report", payload, include_inputs=True)
+        _write_research_sheets(writer, [payload])
     output.seek(0)
     return output.getvalue()
 
@@ -240,6 +262,7 @@ def build_combined_excel_report(payloads: list[dict]) -> bytes:
         for i, payload in enumerate(payloads, 1):
             _write_payload_sheet(writer, f"{i}_{payload.get('mode_label','Mode')}", payload, include_inputs=False)
 
+        _write_research_sheets(writer, payloads)
         common, specifics = _consolidated_input_groups(payloads)
         if common or specifics:
             src=wb.add_worksheet('Sources');writer.sheets['Sources']=src
@@ -395,6 +418,22 @@ def _append_payload_pdf(story, payload: dict, styles, include_inputs: bool = Tru
                 ("TOPPADDING",(0,0),(-1,-1),4), ("BOTTOMPADDING",(0,0),(-1,-1),4)
             ]))
             story.append(tbl)
+
+    if _research_sections(payload):
+        for section in _research_sections(payload):
+            story.append(Paragraph(html.escape(str(section['title'])), h2))
+            df = pd.DataFrame(section['rows']).fillna('')
+            # Tall/narrow tables: retain all rows; split columns into printable groups.
+            cols = list(df.columns)
+            for start in range(0, len(cols), 4):
+                group = cols[start:start+4]
+                data = [[Paragraph(html.escape(str(c)), small) for c in group]]
+                for _, r in df.iterrows():
+                    data.append([Paragraph(html.escape(str(r[c])), small) for c in group])
+                tab = Table(data, colWidths=[170*mm/len(group)]*len(group), repeatRows=1)
+                tab.setStyle(TableStyle([('GRID',(0,0),(-1,-1),.3,colors.HexColor('#D7E0D9')),('BACKGROUND',(0,0),(-1,0),colors.HexColor('#EAF3EC')),('VALIGN',(0,0),(-1,-1),'TOP')]))
+                story.append(tab)
+                story.append(Spacer(1, 3*mm))
 
     if include_inputs and payload.get("inputs"):
         story += [PageBreak(), Paragraph(html.escape(payload.get("inputs_title", "Inputs and sources")), h2)]
@@ -564,6 +603,18 @@ def _word_add_payload(doc, payload: dict, include_inputs: bool = True, include_b
             for _, rr in df.iterrows():
                 cells = table.add_row().cells
                 for j, val in enumerate(rr.tolist()): cells[j].text = _clean(val)
+
+    for section in _research_sections(payload):
+        add_heading(section['title'], 2)
+        df = pd.DataFrame(section['rows']).fillna('')
+        table = doc.add_table(rows=1, cols=len(df.columns))
+        table.style = 'Table Grid'
+        for j, name in enumerate(df.columns):
+            table.rows[0].cells[j].text = str(name)
+        for _, row in df.iterrows():
+            cells = table.add_row().cells
+            for j, value in enumerate(row):
+                cells[j].text = str(value)
 
     if include_inputs and payload.get('inputs'):
         doc.add_page_break()

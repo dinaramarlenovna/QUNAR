@@ -390,6 +390,68 @@ def q_radio(label, *args, **kwargs):
 def q_toggle(label, *args, **kwargs):
     kwargs.setdefault("help", _default_widget_help(label)); return st.toggle(label, *args, **kwargs)
 
+# Preserve widget inputs before Streamlit prunes controls hidden by mode changes.
+# The backing dictionary is not a widget key and survives reruns/navigation.
+def _install_persistent_input_widgets():
+    import copy
+    import functools
+
+    if getattr(st, '_qunar_persistence_installed', False):
+        return
+    store_key = 'qunar_persistent_input_values_v2'
+    supported = ('number_input', 'text_input', 'text_area', 'selectbox',
+                 'radio', 'multiselect', 'checkbox', 'toggle', 'slider',
+                 'date_input', 'time_input')
+
+    def make_persistent(original, method):
+        @functools.wraps(original)
+        def wrapped(*args, **kwargs):
+            key = kwargs.get('key')
+            if not isinstance(key, str) or not key:
+                return original(*args, **kwargs)
+            stored = st.session_state.setdefault(store_key, {})
+            # Never restore button state or output-only widget states.
+            if key not in st.session_state and key in stored:
+                candidate = copy.deepcopy(stored[key])
+                options = kwargs.get('options')
+                if options is None and method in ('selectbox', 'radio', 'multiselect'):
+                    options = args[1] if len(args) > 1 else None
+                if method in ('selectbox', 'radio') and options is not None:
+                    try:
+                        valid = candidate in options
+                    except (TypeError, ValueError):
+                        valid = False
+                elif method == 'multiselect' and options is not None:
+                    try:
+                        valid = all(item in options for item in candidate)
+                    except (TypeError, ValueError):
+                        valid = False
+                elif method in ('number_input', 'slider'):
+                    lo = kwargs.get('min_value', kwargs.get('min'))
+                    hi = kwargs.get('max_value', kwargs.get('max'))
+                    try:
+                        valid = (lo is None or candidate >= lo) and (hi is None or candidate <= hi)
+                    except (TypeError, ValueError):
+                        valid = False
+                else:
+                    valid = True
+                if valid:
+                    st.session_state[key] = candidate
+            result = original(*args, **kwargs)
+            stored[key] = copy.deepcopy(result)
+            return result
+        return wrapped
+
+    for method in supported:
+        if hasattr(st, method):
+            setattr(st, method, make_persistent(getattr(st, method), method))
+    # Sidebar methods route through their own object; keep them consistent.
+    for method in supported:
+        if hasattr(st.sidebar, method):
+            setattr(st.sidebar, method, make_persistent(getattr(st.sidebar, method), method))
+    st._qunar_persistence_installed = True
+
+
 def _crop_saved_value(slot, fallback):
     """Persist shared crop-plot inputs even when mode widgets temporarily disappear."""
     return st.session_state.get("qunar_crop_saved_" + slot, fallback)
@@ -416,14 +478,17 @@ def _on_crop_changed():
         )
         for k in crop_widgets:
             st.session_state.pop(k, None)
+            st.session_state.get('qunar_persistent_input_values_v2', {}).pop(k, None)
         for k in list(st.session_state):
             if k.startswith(('qunar_crop_saved_', 'qunar_saved_fuel_crop_', 'resource_amount_crop_')):
                 st.session_state.pop(k, None)
+                st.session_state.get('qunar_persistent_input_values_v2', {}).pop(k, None)
         st.session_state.pop('qunar_calculated_mode', None)
         st.session_state['qunar_crop_inputs_reset_notice'] = True
     st.session_state['qunar_last_assessed_crop'] = chosen
 
 st.set_page_config(page_title=APP_NAME, page_icon="🌱", layout="wide", initial_sidebar_state="expanded")
+_install_persistent_input_widgets()
 
 if not st.session_state.get("ga_page_view_sent"):
     st.session_state["ga_page_view_sent"] = True
@@ -2701,6 +2766,8 @@ if submitted:
 
     report_payload = {
         "mode_key": mode_key,
+        "report_level": user_level,
+        "research_tables": [],
         "lang": lang,
         "brand_acronym": t.get("brand_acronym", ""),
         "brand_translation": t.get("brand_translation", ""),
@@ -4461,6 +4528,7 @@ if submitted:
                             ({'ru':'ML + историческая альтернатива','kk':'ML және тарихи балама','en':'ML with historical alternative'}[lang]
                              if _entry.Code in CROPS else {'ru':'Исторические данные / без проверенного ML','kk':'Тарихи деректер / тексерілген ML жоқ','en':'Historical data / no verified ML'}[lang]),
                         {'ru':'Наблюдений в районе','kk':'Аудандағы бақылаулар','en':'District observations'}[lang]:_status.reference_n})
+                report_payload["research_tables"].append({"title": {"ru":"Доступность методов прогноза","kk":"Болжау әдістерінің қолжетімділігі","en":"Forecast-method coverage"}[lang], "rows": pd.DataFrame(_method_rows).to_dict(orient="records")})
                 st.dataframe(pd.DataFrame(_method_rows),use_container_width=True,hide_index=True)
                 st.caption({'ru':'Отсутствующие урожайности не подменяются рейтингом QŪNAR. Рейтинг пригодности и прогноз урожайности — разные показатели.',
                             'kk':'Жоқ өнімділік QŪNAR рейтингімен алмастырылмайды. Жарамдылық пен өнімділік болжамы бөлек.',
@@ -4471,6 +4539,7 @@ if submitted:
                     mlrank=timed_call("ML crop ranking", rank_crops, used_district, area_ha, climate, CROPS).copy()
                 mlrank['Crop']=mlrank['Crop'].map(CROP_LABELS[lang])
                 mlrank=mlrank.rename(columns={'Crop':t['ranking_crop'],'Predicted yield, centners/ha':t['ranking_yield']})
+                report_payload["research_tables"].append({"title": {"ru":"Оценки урожайности ML","kk":"ML өнімділік бағалары","en":"ML yield evidence"}[lang], "rows": mlrank.to_dict(orient="records")})
                 st.dataframe(mlrank,use_container_width=True,hide_index=True)
                 st.caption({'kk':'Бұл кесте машиналық оқыту арқылы алынған өнімділік бағаларын ғана көрсетеді. Әртүрлі дақылдардың ц/га мәндерін тікелей «ең жақсы дақыл» рейтингі ретінде түсіндіруге болмайды.', 'ru':'Таблица показывает только оценки урожайности, полученные машинным обучением. Значения ц/га разных культур нельзя напрямую трактовать как рейтинг «лучшей культуры».','en':'This is ML yield evidence only. Yield values across different crops must not be interpreted directly as a best-crop ranking.'}[lang])
 
@@ -4485,6 +4554,7 @@ if submitted:
                     'value_thousand_kzt': {'kk':'Құны, мың тг','ru':'Стоимость, тыс. тг','en':'Value, thousand KZT'}[lang],
                     'recommendation_type': {'kk':'Бағалау санаты','ru':'Категория оценки','en':'Assessment category'}[lang],
                 })
+                report_payload["research_tables"].append({"title": {"ru":"Дополнительные наблюдаемые данные 2023","kk":"Қосымша 2023 бақыланған деректер","en":"Additional observed 2023 evidence"}[lang], "rows": show.to_dict(orient="records")})
                 st.dataframe(show,use_container_width=True,hide_index=True)
 
         if user_level == "researcher":
