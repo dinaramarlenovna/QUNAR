@@ -520,9 +520,9 @@ div[data-testid="stAlert"] { border-radius: 12px; }
 [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
 .qunar-hero { text-align:center; padding:3.35rem 1rem 1.10rem; margin:0 0 1.1rem; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; }
 .qunar-brand { font-size:68px; line-height:1.18; font-weight:900; letter-spacing:2px; color:var(--qunar); margin:0; padding:.10em 0 0; overflow:visible; }
-.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:var(--text-color, #222222); letter-spacing:.002em; }
-.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:var(--text-color, #222222); letter-spacing:.01em; }
-.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:var(--text-color, #53655d); letter-spacing:.008em; }
+.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:inherit; letter-spacing:.002em; }
+.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:inherit; letter-spacing:.01em; }
+.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:inherit; opacity:.82; letter-spacing:.008em; }
 @media (max-width: 900px) {
   .qunar-hero { padding-top:4.25rem; }
   .qunar-brand { font-size:56px; line-height:1.20; }
@@ -538,11 +538,11 @@ div[data-testid="stAlert"] { border-radius: 12px; }
 .qunar-key, .qunar-reco { background:var(--secondary-background-color, #f1f7f2); border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
 .qunar-key strong, .qunar-reco strong { font-weight:800; }
 .qunar-insight { background:var(--secondary-background-color, #f0f2f6); border:1px solid #e1e8e2; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
-.qunar-insight strong { color:var(--text-color, #243d2d); font-weight:760; }
+.qunar-insight strong { color:inherit; font-weight:760; }
 .qunar-export { margin-top:1.2rem; padding-top:.5rem; }
 /* Do not force the root Streamlit background or text color. Native widgets own their theme. */
 .qunar-hero, .qunar-key, .qunar-reco, .qunar-insight, div[data-testid="stMetric"] { color: inherit; }
-.qunar-brand { color: var(--primary-color, #478f67); }
+.qunar-brand { color: #57a879; }
 
 </style>
 """, unsafe_allow_html=True)
