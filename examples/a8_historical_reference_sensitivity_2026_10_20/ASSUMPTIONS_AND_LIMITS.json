@@ -1,0 +1,29 @@
+{
+  "warning": "2004 partial cost amounts are a historical nominal LOWER-BOUND scenario, not valid modern variable costs; no evidence prices unchanged",
+  "water_m3_per_ha": [
+    8400.0,
+    7450.0,
+    4100.0
+  ],
+  "margin_kzt_ha": [
+    587748.4510256409,
+    379067.8680128205,
+    176202.12423076923
+  ],
+  "partial_ghg_kg_co2e_per_ha": [
+    1348.2422123076922,
+    1119.8709491538461,
+    684.2719587692308
+  ],
+  "products": [
+    "Хлопок, очищенный или не очищенный от семян",
+    "Кукуруза (маис)",
+    "Пшеница"
+  ],
+  "historic_zone": "VIII subtropical desert irrigated scientific",
+  "cost_basis": "wages_fuel_seeds_kzt_ha_2004; incomplete costs; excludes water and pump electricity as separate model cost",
+  "diesel_density_kg_l": 0.84,
+  "canonical_d8_unchanged": true,
+  "baseline_2025_district_structure_not_used": "unverified total crop areas; 50/30/20 remains illustrative",
+  "lambda_math": "linear weighted sum normalized utility and margin score; independent LP with hard min 3 max 60 area and water 750k; not native optimizer lambda"
+}

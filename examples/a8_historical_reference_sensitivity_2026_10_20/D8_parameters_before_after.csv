@@ -1,0 +1,10 @@
+﻿crop,parameter,before,historical_reference_scenario,source,evidence_note
+Cotton,other_variable_cost_kzt_ha,350000,31180.0,RK 2004 Vlll zone scientific technology wage-fuel-seed subset,NOT contemporaneous 2025 costs or observed farm values
+Cotton,nitrogen_kg_ha,110,110,unchanged A8 assumption,NOT contemporaneous 2025 costs or observed farm values
+Cotton,diesel_litres_ha,60,60,unchanged A8 assumption,NOT contemporaneous 2025 costs or observed farm values
+Corn,other_variable_cost_kzt_ha,210000,20209.0,RK 2004 Vlll zone scientific technology wage-fuel-seed subset,NOT contemporaneous 2025 costs or observed farm values
+Corn,nitrogen_kg_ha,90,90.0,KZ Agronomy 2022 corn N90 conditional soil and yield,NOT contemporaneous 2025 costs or observed farm values
+Corn,diesel_litres_ha,55,36.976190476190474,RK diesel 2023 Annex 2; conversion with assumed 0.84 kg/L,NOT contemporaneous 2025 costs or observed farm values
+Wheat,other_variable_cost_kzt_ha,120000,8489.0,RK 2004 Vlll zone scientific technology wage-fuel-seed subset,NOT contemporaneous 2025 costs or observed farm values
+Wheat,nitrogen_kg_ha,55,55,unchanged A8 assumption,NOT contemporaneous 2025 costs or observed farm values
+Wheat,diesel_litres_ha,38,36.976190476190474,RK diesel 2023 Annex 2; conversion with assumed 0.84 kg/L,NOT contemporaneous 2025 costs or observed farm values

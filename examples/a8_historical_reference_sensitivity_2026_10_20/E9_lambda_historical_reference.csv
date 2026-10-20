@@ -1,0 +1,7 @@
+﻿lambda,Cotton ha,Corn ha,Wheat ha,margin_million_kzt,water_1000_m3,partial_ghg_t_co2e,status,basis
+0,3.0,36.999999999999986,60.0,26.36088392339743,546.8499999999999,86.53626928176922,feasible,2004 partial cost lower bound; KZ diesel 2023 wheat/corn; N90 corn; other data canonical
+0.25,37.0,3.0,60.0,33.45602374583333,579.15,94.30089222899998,feasible,2004 partial cost lower bound; KZ diesel 2023 wheat/corn; N90 corn; other data canonical
+0.35,60.0,3.0,36.99999999999997,42.921589262115376,678.0499999999998,109.5722080603846,feasible,2004 partial cost lower bound; KZ diesel 2023 wheat/corn; N90 corn; other data canonical
+0.5,60.0,24.477611940298512,15.522388059701491,47.2786609830463,750.0,118.92783413745121,feasible,2004 partial cost lower bound; KZ diesel 2023 wheat/corn; N90 corn; other data canonical
+0.7,60.0,24.477611940298498,15.522388059701505,47.2786609830463,750.0,118.9278341374512,feasible,2004 partial cost lower bound; KZ diesel 2023 wheat/corn; N90 corn; other data canonical
+1,60.0,24.477611940298498,15.522388059701505,47.2786609830463,750.0,118.9278341374512,feasible,2004 partial cost lower bound; KZ diesel 2023 wheat/corn; N90 corn; other data canonical
