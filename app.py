@@ -511,7 +511,7 @@ h3 { font-size: 1.62rem !important; line-height: 1.23 !important; font-weight:73
 h4 { font-size: 1.30rem !important; line-height: 1.3 !important; font-weight:700 !important; }
 p, li, label, .stMarkdown { font-size:18px; line-height: 1.68; }
 small, .stCaption, [data-testid="stCaptionContainer"] { font-size:15.5px !important; line-height:1.5 !important; }
-div[data-testid="stMetric"] { background: #f0f2f6; border: 1px solid #dfe7e1; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
+div[data-testid="stMetric"] { background: #202c28; border: 1px solid #3b5045; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
 div[data-testid="stMetricValue"] { font-size: 2rem !important; font-weight: 760 !important; letter-spacing:-.02em; }
 div[data-testid="stMetricLabel"] { font-size: 1.02rem !important; font-weight: 650 !important; }
 .stButton > button, .stDownloadButton > button, div[data-testid="stFormSubmitButton"] button { min-height: 50px; border-radius: 11px; font-size: 17px !important; font-weight: 700; }
@@ -535,23 +535,31 @@ div[data-testid="stAlert"] { border-radius: 12px; }
   .qunar-acronym { font-size:19px; line-height:1.34; }
   .qunar-translation { font-size:17px; line-height:1.32; }
 }
-.qunar-key, .qunar-reco { background:#f1f7f2; border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
+.qunar-key, .qunar-reco { background:#24392d; border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
 .qunar-key strong, .qunar-reco strong { font-weight:800; }
-.qunar-insight { background:#f0f2f6; border:1px solid #e1e8e2; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
+.qunar-insight { background:#202c28; border:1px solid #3b5045; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
 .qunar-insight strong { color:inherit; font-weight:760; }
 .qunar-export { margin-top:1.2rem; padding-top:.5rem; }
 /* Do not force the root Streamlit background or text color. Native widgets own their theme. */
 .qunar-hero, .qunar-key, .qunar-reco, .qunar-insight, div[data-testid="stMetric"] { color: inherit; }
 .qunar-brand { color: #57a879; }
-/* These custom cards have an explicit light background in either theme.
-   Pair it with explicit dark foregrounds, including Streamlit metric children. */
+div[data-testid="stMetric"] [data-testid="stMetricLabel"] * { color:#c5d2ca !important; }
+div[data-testid="stMetricValue"], div[data-testid="stMetricValue"] > div {
+  white-space:normal !important; overflow:visible !important;
+  text-overflow:clip !important; overflow-wrap:anywhere; line-height:1.25;
+}
+div[data-testid="stMetricLabel"], div[data-testid="stMetricLabel"] p {
+  white-space:normal !important; overflow:visible !important; text-overflow:clip !important;
+}
+
+/* Muted green cards use paired foreground/background colors in either theme. */
 div[data-testid="stMetric"],
 div[data-testid="stMetric"] [data-testid="stMetricLabel"],
 div[data-testid="stMetric"] [data-testid="stMetricValue"],
 div[data-testid="stMetric"] [data-testid="stMetricLabel"] *,
 div[data-testid="stMetric"] [data-testid="stMetricValue"] *,
 .qunar-key, .qunar-key *, .qunar-reco, .qunar-reco *,
-.qunar-insight, .qunar-insight * { color:#1f2923 !important; }
+.qunar-insight, .qunar-insight * { color:#edf4ef !important; }
 
 
 </style>
@@ -4244,7 +4252,8 @@ if submitted:
             sc1,sc2,sc3,sc4=st.columns(4)
             sc1.metric({"kk":"Бастапқы су","ru":"Исходная вода","en":"Baseline water"}[lang], f"{smart['before_water_m3']:,.0f} {UNITS['m3']}")
             sc2.metric({"kk":"Сценарийден кейін","ru":"После сценария","en":"After scenario"}[lang], f"{smart['after_water_m3']:,.0f} {UNITS['m3']}")
-            sc3.metric({"kk":"Су үнемі","ru":"Экономия воды","en":"Water saving"}[lang], f"{smart['saved_water_m3']:,.0f} {UNITS['m3']} ({smart['saving_target_pct']:.0f}%)")
+            sc3.metric({"kk":"Су үнемі","ru":"Экономия воды","en":"Water saving"}[lang], f"{smart['saved_water_m3']:,.0f} {UNITS['m3']}")
+            sc3.caption({"kk":"Су үнемі", "ru":"Снижение расхода воды", "en":"Water use reduction"}[lang] + f": {smart['saving_target_pct']:.0f}%")
             sc4.metric({"kk":"Ресурстық шығын үнемі","ru":"Экономия ресурсных затрат","en":"Resource-cost saving"}[lang], f"{smart['total_saving_kzt']:,.0f} {UNITS['currency']}")
             st.caption({"kk":f"Дереккөздер: су - {smart['water_source']}; энергия - {smart['energy_source']}; тариф - {smart['tariff_source']}.","ru":f"Источники: вода - {smart['water_source']}; энергия - {smart['energy_source']}; тариф - {smart['tariff_source']}.","en":f"Sources: water - {smart['water_source']}; energy - {smart['energy_source']}; tariff - {smart['tariff_source']}."}[lang])
             e1,e2=st.columns(2)
