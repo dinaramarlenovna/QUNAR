@@ -500,8 +500,8 @@ st.markdown("""
 html, body, [class*="css"], .stApp, .stMarkdown, .stText, label, input, button {
   font-family: "Segoe UI", "Noto Sans", Arial, sans-serif !important;
 }
-html, body, [class*="css"] { font-size: 18px; color:var(--text); }
-.stApp { background: #fbfcfa; }
+html, body { font-size: 18px; }
+/* Keep native Streamlit background and text paired in both themes. */
 .block-container { max-width: 1320px; padding-top: 1.35rem; padding-bottom: 3rem; }
 section[data-testid="stSidebar"] { border-right: 1px solid #e4e9e4; }
 section[data-testid="stSidebar"] * { font-size: 16.5px !important; line-height:1.45 !important; }
@@ -511,7 +511,7 @@ h3 { font-size: 1.62rem !important; line-height: 1.23 !important; font-weight:73
 h4 { font-size: 1.30rem !important; line-height: 1.3 !important; font-weight:700 !important; }
 p, li, label, .stMarkdown { font-size:18px; line-height: 1.68; }
 small, .stCaption, [data-testid="stCaptionContainer"] { font-size:15.5px !important; line-height:1.5 !important; }
-div[data-testid="stMetric"] { background: white; border: 1px solid #dfe7e1; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
+div[data-testid="stMetric"] { background: var(--secondary-background-color, #f0f2f6); border: 1px solid #dfe7e1; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
 div[data-testid="stMetricValue"] { font-size: 2rem !important; font-weight: 760 !important; letter-spacing:-.02em; }
 div[data-testid="stMetricLabel"] { font-size: 1.02rem !important; font-weight: 650 !important; }
 .stButton > button, .stDownloadButton > button, div[data-testid="stFormSubmitButton"] button { min-height: 50px; border-radius: 11px; font-size: 17px !important; font-weight: 700; }
@@ -520,9 +520,9 @@ div[data-testid="stAlert"] { border-radius: 12px; }
 [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
 .qunar-hero { text-align:center; padding:3.35rem 1rem 1.10rem; margin:0 0 1.1rem; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; }
 .qunar-brand { font-size:68px; line-height:1.18; font-weight:900; letter-spacing:2px; color:var(--qunar); margin:0; padding:.10em 0 0; overflow:visible; }
-.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:#222222; letter-spacing:.002em; }
-.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:#000000; letter-spacing:.01em; }
-.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:#53655d; letter-spacing:.008em; }
+.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:var(--text-color, #222222); letter-spacing:.002em; }
+.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:var(--text-color, #222222); letter-spacing:.01em; }
+.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:var(--text-color, #53655d); letter-spacing:.008em; }
 @media (max-width: 900px) {
   .qunar-hero { padding-top:4.25rem; }
   .qunar-brand { font-size:56px; line-height:1.20; }
@@ -535,15 +535,15 @@ div[data-testid="stAlert"] { border-radius: 12px; }
   .qunar-acronym { font-size:19px; line-height:1.34; }
   .qunar-translation { font-size:17px; line-height:1.32; }
 }
-.qunar-key, .qunar-reco { background:var(--qunar-soft); border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
+.qunar-key, .qunar-reco { background:var(--secondary-background-color, #f1f7f2); border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
 .qunar-key strong, .qunar-reco strong { font-weight:800; }
-.qunar-insight { background:#fff; border:1px solid #e1e8e2; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
-.qunar-insight strong { color:#243d2d; font-weight:760; }
+.qunar-insight { background:var(--secondary-background-color, #f0f2f6); border:1px solid #e1e8e2; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
+.qunar-insight strong { color:var(--text-color, #243d2d); font-weight:760; }
 .qunar-export { margin-top:1.2rem; padding-top:.5rem; }
 /* Do not force the root Streamlit background or text color. Native widgets own their theme. */
 .qunar-hero, .qunar-key, .qunar-reco, .qunar-insight, div[data-testid="stMetric"] { color: inherit; }
 .qunar-brand { color: var(--primary-color, #478f67); }
-.stDownloadButton > button { color: inherit; }
+
 </style>
 """, unsafe_allow_html=True)
 
