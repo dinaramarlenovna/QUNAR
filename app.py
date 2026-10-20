@@ -511,7 +511,7 @@ h3 { font-size: 1.62rem !important; line-height: 1.23 !important; font-weight:73
 h4 { font-size: 1.30rem !important; line-height: 1.3 !important; font-weight:700 !important; }
 p, li, label, .stMarkdown { font-size:18px; line-height: 1.68; }
 small, .stCaption, [data-testid="stCaptionContainer"] { font-size:15.5px !important; line-height:1.5 !important; }
-div[data-testid="stMetric"] { background: #202c28; border: 1px solid #3b5045; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
+div[data-testid="stMetric"] { background: transparent; border: 1px solid #71947d55; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
 div[data-testid="stMetricValue"] { font-size: 2rem !important; font-weight: 760 !important; letter-spacing:-.02em; }
 div[data-testid="stMetricLabel"] { font-size: 1.02rem !important; font-weight: 650 !important; }
 .stButton > button, .stDownloadButton > button, div[data-testid="stFormSubmitButton"] button { min-height: 50px; border-radius: 11px; font-size: 17px !important; font-weight: 700; }
@@ -535,15 +535,15 @@ div[data-testid="stAlert"] { border-radius: 12px; }
   .qunar-acronym { font-size:19px; line-height:1.34; }
   .qunar-translation { font-size:17px; line-height:1.32; }
 }
-.qunar-key, .qunar-reco { background:#24392d; border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
+.qunar-key, .qunar-reco { background:transparent; border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
 .qunar-key strong, .qunar-reco strong { font-weight:800; }
-.qunar-insight { background:#202c28; border:1px solid #3b5045; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
+.qunar-insight { background:transparent; border:1px solid #71947d55; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
 .qunar-insight strong { color:inherit; font-weight:760; }
 .qunar-export { margin-top:1.2rem; padding-top:.5rem; }
 /* Do not force the root Streamlit background or text color. Native widgets own their theme. */
 .qunar-hero, .qunar-key, .qunar-reco, .qunar-insight, div[data-testid="stMetric"] { color: inherit; }
 .qunar-brand { color: #57a879; }
-div[data-testid="stMetric"] [data-testid="stMetricLabel"] * { color:#c5d2ca !important; }
+
 div[data-testid="stMetricValue"], div[data-testid="stMetricValue"] > div {
   white-space:normal !important; overflow:visible !important;
   text-overflow:clip !important; overflow-wrap:anywhere; line-height:1.25;
@@ -552,14 +552,21 @@ div[data-testid="stMetricLabel"], div[data-testid="stMetricLabel"] p {
   white-space:normal !important; overflow:visible !important; text-overflow:clip !important;
 }
 
-/* Muted green cards use paired foreground/background colors in either theme. */
-div[data-testid="stMetric"],
+/* Derive card fill from native text color: dark text gives pale green
+   cards, light text gives muted dark green cards. Follows the app theme,
+   including manual theme switches, without relying on OS preferences. */
+div[data-testid="stMetric"], .qunar-key, .qunar-reco, .qunar-insight {
+  color:inherit !important;
+  background:linear-gradient(rgba(80,145,100,.10), rgba(80,145,100,.10)),
+             color-mix(in srgb, currentColor 7%, transparent) !important;
+  border-color:rgba(113,148,125,.32);
+}
 div[data-testid="stMetric"] [data-testid="stMetricLabel"],
 div[data-testid="stMetric"] [data-testid="stMetricValue"],
 div[data-testid="stMetric"] [data-testid="stMetricLabel"] *,
 div[data-testid="stMetric"] [data-testid="stMetricValue"] *,
-.qunar-key, .qunar-key *, .qunar-reco, .qunar-reco *,
-.qunar-insight, .qunar-insight * { color:#edf4ef !important; }
+.qunar-key *, .qunar-reco *, .qunar-insight * { color:inherit !important; }
+div[data-testid="stMetric"] [data-testid="stMetricLabel"] { opacity:.82; }
 
 
 </style>
