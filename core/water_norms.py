@@ -24,7 +24,7 @@ from dataclasses import dataclass
 REGIONAL_BENCHMARK_M3_HA = 8181.6
 PUMPING_REFERENCE_KWH_PER_M3 = 0.70509  # ARCHIVAL opt-in scenario ONLY; not automatic or official reference
 SOURCE_URL = "https://adilet.zan.kz/rus/docs/V2500036253"
-SOURCE_LABEL = "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3 (историческая расчётная база). С 16.09.2026 действует №288-НҚ; соответствие значений №108 действующим нормативам на 2027 год не подтверждено."
+SOURCE_LABEL = "МВРИ РК, приказ №108-НҚ от 04.06.2025, табл. 3 (историческая справочная база; для 2026 г. требуется сверка с №288-НҚ)"
 
 # Values are the first numeric column for each row: surface irrigation,
 # automorphic soils, probability 50%.

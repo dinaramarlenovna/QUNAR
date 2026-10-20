@@ -138,6 +138,6 @@ def generate_a8_crosscheck(config=None, *, temp_reference_c=None,
             'Partial GHG from N2O, diesel, irrigation electricity only.',
             'Soil/transport losses/return flows not included in reference irrigation norm.',
             'SSP impact: temperature-term proxy, adjusted pump energy/cost/GHG, re-optimized climate scores; unchanged crop yield is NOT validated.',
-            'Own-pump scenario uses explicitly hypothesized 25 m head, 65% total pump efficiency and E=rho*g*head/(efficiency*3.6e6) kWh/m3; not a measured farm pump. Grid generation-average 2025 Ember 0.813 kg CO2/kWh, not an official emission factor or full life cycle.',
+            'National default pumping intensity and grid factor are software reference assumptions; confirm documentary year, pump head, irrigation boundary and electricity mix.',
         ],
     }
