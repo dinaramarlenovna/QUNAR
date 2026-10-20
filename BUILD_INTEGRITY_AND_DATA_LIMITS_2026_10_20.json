@@ -1,0 +1,68 @@
+{
+  "version": "v0.8.1",
+  "dark_theme": "removed forced stApp light surface and inline text color; requires browser QA",
+  "core_import_failures": [
+    {
+      "name": "a8_crosscheck",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "a8_reproducible_case",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "analysis_engine",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "clrem",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "crops",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "data",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "environment",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "livestock",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "location",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "mixed_farm",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "mixed_farm_ui",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "ml",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "nasa",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "optimizer",
+      "error": "No module named 'streamlit'"
+    },
+    {
+      "name": "scenario_ui",
+      "error": "No module named 'streamlit'"
+    }
+  ],
+  "source_cost_note": "2004 normative cost cards remain historic; no 2025 real price inferred",
+  "verified_python_files": 120
+}

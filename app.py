@@ -496,14 +496,14 @@ if not st.session_state.get("ga_page_view_sent"):
 
 st.markdown("""
 <style>
-:root { --qunar:var(--primary-color, #234f36); --qunar-soft:var(--secondary-background-color, #f1f7f2); --text:var(--text-color, #1f2923); --muted:var(--text-color, #66736b); }
+:root { --qunar:#234f36; --qunar-soft:#f1f7f2; --text:#1f2923; --muted:#66736b; }
 html, body, [class*="css"], .stApp, .stMarkdown, .stText, label, input, button {
   font-family: "Segoe UI", "Noto Sans", Arial, sans-serif !important;
 }
-html, body, [class*="css"] { font-size: 18px; }
-.stApp { background: var(--background-color, #fbfcfa); color: var(--text-color, #1f2923); }
+html, body, [class*="css"] { font-size: 18px; color:var(--text); }
+.stApp { background: #fbfcfa; }
 .block-container { max-width: 1320px; padding-top: 1.35rem; padding-bottom: 3rem; }
-section[data-testid="stSidebar"] { border-right: 1px solid color-mix(in srgb, var(--text-color, #1f2923) 18%, transparent); }
+section[data-testid="stSidebar"] { border-right: 1px solid #e4e9e4; }
 section[data-testid="stSidebar"] * { font-size: 16.5px !important; line-height:1.45 !important; }
 h1 { font-size: 2.35rem !important; line-height: 1.16 !important; font-weight:760 !important; }
 h2 { font-size: 1.95rem !important; line-height: 1.2 !important; font-weight:740 !important; }
@@ -511,7 +511,7 @@ h3 { font-size: 1.62rem !important; line-height: 1.23 !important; font-weight:73
 h4 { font-size: 1.30rem !important; line-height: 1.3 !important; font-weight:700 !important; }
 p, li, label, .stMarkdown { font-size:18px; line-height: 1.68; }
 small, .stCaption, [data-testid="stCaptionContainer"] { font-size:15.5px !important; line-height:1.5 !important; }
-div[data-testid="stMetric"] { background: var(--secondary-background-color, #f1f7f2); border: 1px solid color-mix(in srgb, var(--text-color, #1f2923) 15%, transparent); border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
+div[data-testid="stMetric"] { background: white; border: 1px solid #dfe7e1; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
 div[data-testid="stMetricValue"] { font-size: 2rem !important; font-weight: 760 !important; letter-spacing:-.02em; }
 div[data-testid="stMetricLabel"] { font-size: 1.02rem !important; font-weight: 650 !important; }
 .stButton > button, .stDownloadButton > button, div[data-testid="stFormSubmitButton"] button { min-height: 50px; border-radius: 11px; font-size: 17px !important; font-weight: 700; }
@@ -520,9 +520,9 @@ div[data-testid="stAlert"] { border-radius: 12px; }
 [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
 .qunar-hero { text-align:center; padding:3.35rem 1rem 1.10rem; margin:0 0 1.1rem; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; }
 .qunar-brand { font-size:68px; line-height:1.18; font-weight:900; letter-spacing:2px; color:var(--qunar); margin:0; padding:.10em 0 0; overflow:visible; }
-.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:var(--text-color, #222222); letter-spacing:.002em; }
-.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:var(--text-color, #000000); letter-spacing:.01em; }
-.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:var(--text-color, #53655d); opacity:.78; letter-spacing:.008em; }
+.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:#222222; letter-spacing:.002em; }
+.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:#000000; letter-spacing:.01em; }
+.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:#53655d; letter-spacing:.008em; }
 @media (max-width: 900px) {
   .qunar-hero { padding-top:4.25rem; }
   .qunar-brand { font-size:56px; line-height:1.20; }
@@ -537,11 +537,13 @@ div[data-testid="stAlert"] { border-radius: 12px; }
 }
 .qunar-key, .qunar-reco { background:var(--qunar-soft); border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
 .qunar-key strong, .qunar-reco strong { font-weight:800; }
-.qunar-key, .qunar-reco { color:var(--text-color, #1f2923); }
-/* Respect Streamlit theme settings in both the sidebar and content. */
-.qunar-insight { background:var(--secondary-background-color, #f1f7f2); border:1px solid color-mix(in srgb, var(--text-color, #1f2923) 15%, transparent); border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
-.qunar-insight strong { color:var(--text-color, #243d2d); font-weight:760; }
+.qunar-insight { background:#fff; border:1px solid #e1e8e2; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
+.qunar-insight strong { color:#243d2d; font-weight:760; }
 .qunar-export { margin-top:1.2rem; padding-top:.5rem; }
+/* Do not force the root Streamlit background or text color. Native widgets own their theme. */
+.qunar-hero, .qunar-key, .qunar-reco, .qunar-insight, div[data-testid="stMetric"] { color: inherit; }
+.qunar-brand { color: var(--primary-color, #478f67); }
+.stDownloadButton > button { color: inherit; }
 </style>
 """, unsafe_allow_html=True)
 
@@ -1039,11 +1041,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown("""<style>
-a.qunar-fixed-nav {position:fixed;right:10px;z-index:99999;background:var(--secondary-background-color, #f9fbf9);
- color:var(--text-color, #214432) !important;border:1px solid color-mix(in srgb, var(--text-color, #214432) 20%, transparent);box-shadow:0 2px 9px #0002;
+a.qunar-fixed-nav {position:fixed;right:10px;z-index:99999;background:#f9fbf9;
+ color:#214432 !important;border:1px solid #acc2b0;box-shadow:0 2px 9px #0002;
  border-radius:10px;padding:9px 12px;text-decoration:none;font-size:13px;font-weight:600;}
 a.qunar-go-top{top:105px;} a.qunar-go-bottom{bottom:110px;}
-a.qunar-go-report{top:51%;background:var(--secondary-background-color, #e9f3ec);}
+a.qunar-go-report{top:51%;background:#e9f3ec;}
 @media (max-width:640px){a.qunar-fixed-nav{right:5px;font-size:12px;padding:8px 9px;}
  a.qunar-go-top{top:92px;} a.qunar-go-bottom{bottom:125px;}}
 </style>
@@ -1910,6 +1912,13 @@ with st.container():
                     st.caption({'ru':'Нормативы РК за 2004 год, https://adilet.zan.kz/rus/docs/P040000839_. Суммы НЕ подставляются в маржу: исторические цены и полная разбивка воды/электроэнергии не сопоставимы с текущим расчётом.',
                         'kk':'2004 жылғы ҚР нормативтері. Бұл сомалар қазіргі маржаға қосылмайды: су мен электр шығындары толық бөлінбеген.',
                         'en':'Kazakhstan 2004 published cards. NOT applied to current contribution margin: nominal historical costs and water/electricity accounting are not comparable.'}[lang])
+            # Historical normative cost cards are an optional baseline, never a current price.
+            # The factor is user supplied; the historical norm has unspecified water/power share.
+            if _historic_candidates and variable_cost_kzt_ha <= 0:
+                st.caption({
+                    'ru':'Доступна историческая база затрат РК 2004 года. Для расчёта современной маржи необходима сопоставимая постатейная смета хозяйства: индексирование всей суммы может повторно учесть воду и электричество.',
+                    'kk':'2004 жылғы ҚР тарихи шығын базасы бар. Қазіргі маржаны есептеу үшін су мен электрді бөлек көрсететін нақты смета қажет.',
+                    'en':'Kazakhstan 2004 cost cards are available, but their total cannot be indexed into present-day margin without an itemized water/electricity split.'}[lang])
             irrigation_compare_enabled = st.checkbox({"kk":"Суару технологиясын өзгерту сценарийін салыстыру","ru":"Сравнить сценарий смены типа орошения","en":"Compare an irrigation-switch scenario"}[lang], value=False)
             if irrigation_compare_enabled:
                 irrigation_target = st.selectbox({"kk":"Ұсынылатын суару","ru":"Предлагаемый тип орошения","en":"Proposed irrigation type"}[lang], ["furrow", "sprinkler", "drip", "mixed"], format_func=lambda x: {

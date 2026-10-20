@@ -1,0 +1,3 @@
+Base: FULL_PROJECT_2026-10-19
+app.py: MIXED_FARM_BUTTON_STATE_FIX_2026-10-19 (includes persistence and reporting adjustments)
+core/reporting.py: REPORT_COMPARISON_AND_COMPACT_EXPORT_2026-10-19
