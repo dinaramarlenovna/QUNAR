@@ -72,6 +72,7 @@ from core.economic_feasibility import economic_feasibility
 from core.yield_reference import trailing_three_year_yield
 from core.producer_prices import reference_producer_price
 from core.production_costs import (reference_variable_cost, itemized_variable_cost, COST_FIELDS)
+from core.agronomic_references import crop_references, suggest_diesel_l_per_ha, evidence_note
 from core.cmip6_scenarios import load_scenario
 from core.nasa_polygon import fetch_polygon_growing_season, fetch_polygon_daily_weather
 from core.field_climate import fetch_farm_climate_normal
@@ -495,14 +496,14 @@ if not st.session_state.get("ga_page_view_sent"):
 
 st.markdown("""
 <style>
-:root { --qunar:#234f36; --qunar-soft:#f1f7f2; --text:#1f2923; --muted:#66736b; }
+:root { --qunar:var(--primary-color, #234f36); --qunar-soft:var(--secondary-background-color, #f1f7f2); --text:var(--text-color, #1f2923); --muted:var(--text-color, #66736b); }
 html, body, [class*="css"], .stApp, .stMarkdown, .stText, label, input, button {
   font-family: "Segoe UI", "Noto Sans", Arial, sans-serif !important;
 }
-html, body, [class*="css"] { font-size: 18px; color:var(--text); }
-.stApp { background: #fbfcfa; }
+html, body, [class*="css"] { font-size: 18px; }
+.stApp { background: var(--background-color, #fbfcfa); color: var(--text-color, #1f2923); }
 .block-container { max-width: 1320px; padding-top: 1.35rem; padding-bottom: 3rem; }
-section[data-testid="stSidebar"] { border-right: 1px solid #e4e9e4; }
+section[data-testid="stSidebar"] { border-right: 1px solid color-mix(in srgb, var(--text-color, #1f2923) 18%, transparent); }
 section[data-testid="stSidebar"] * { font-size: 16.5px !important; line-height:1.45 !important; }
 h1 { font-size: 2.35rem !important; line-height: 1.16 !important; font-weight:760 !important; }
 h2 { font-size: 1.95rem !important; line-height: 1.2 !important; font-weight:740 !important; }
@@ -510,7 +511,7 @@ h3 { font-size: 1.62rem !important; line-height: 1.23 !important; font-weight:73
 h4 { font-size: 1.30rem !important; line-height: 1.3 !important; font-weight:700 !important; }
 p, li, label, .stMarkdown { font-size:18px; line-height: 1.68; }
 small, .stCaption, [data-testid="stCaptionContainer"] { font-size:15.5px !important; line-height:1.5 !important; }
-div[data-testid="stMetric"] { background: white; border: 1px solid #dfe7e1; border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
+div[data-testid="stMetric"] { background: var(--secondary-background-color, #f1f7f2); border: 1px solid color-mix(in srgb, var(--text-color, #1f2923) 15%, transparent); border-radius: 15px; padding: 17px 18px; min-height: 112px; box-shadow:0 2px 8px rgba(31,62,42,.025); }
 div[data-testid="stMetricValue"] { font-size: 2rem !important; font-weight: 760 !important; letter-spacing:-.02em; }
 div[data-testid="stMetricLabel"] { font-size: 1.02rem !important; font-weight: 650 !important; }
 .stButton > button, .stDownloadButton > button, div[data-testid="stFormSubmitButton"] button { min-height: 50px; border-radius: 11px; font-size: 17px !important; font-weight: 700; }
@@ -519,9 +520,9 @@ div[data-testid="stAlert"] { border-radius: 12px; }
 [data-testid="stDataFrame"] { border-radius: 12px; overflow: hidden; }
 .qunar-hero { text-align:center; padding:3.35rem 1rem 1.10rem; margin:0 0 1.1rem; background:transparent; border:0; border-radius:0; box-shadow:none; overflow:visible; }
 .qunar-brand { font-size:68px; line-height:1.18; font-weight:900; letter-spacing:2px; color:var(--qunar); margin:0; padding:.10em 0 0; overflow:visible; }
-.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:#222222; letter-spacing:.002em; }
-.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:#000000; letter-spacing:.01em; }
-.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:#53655d; letter-spacing:.008em; }
+.qunar-acronym { margin-top:.52rem; font-size:29px; line-height:1.28; font-weight:400; color:var(--text-color, #222222); letter-spacing:.002em; }
+.qunar-acronym .qunar-initial { display:inline-block; font-size:1.08em; line-height:1; font-weight:950; color:var(--text-color, #000000); letter-spacing:.01em; }
+.qunar-translation { margin-top:.46rem; font-size:22px; line-height:1.28; font-weight:500; color:var(--text-color, #53655d); opacity:.78; letter-spacing:.008em; }
 @media (max-width: 900px) {
   .qunar-hero { padding-top:4.25rem; }
   .qunar-brand { font-size:56px; line-height:1.20; }
@@ -536,8 +537,10 @@ div[data-testid="stAlert"] { border-radius: 12px; }
 }
 .qunar-key, .qunar-reco { background:var(--qunar-soft); border-left:5px solid #4f7d5d; border-radius:10px; padding:15px 17px; margin:.65rem 0 1rem; font-size:18px; line-height:1.55; }
 .qunar-key strong, .qunar-reco strong { font-weight:800; }
-.qunar-insight { background:#fff; border:1px solid #e1e8e2; border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
-.qunar-insight strong { color:#243d2d; font-weight:760; }
+.qunar-key, .qunar-reco { color:var(--text-color, #1f2923); }
+/* Respect Streamlit theme settings in both the sidebar and content. */
+.qunar-insight { background:var(--secondary-background-color, #f1f7f2); border:1px solid color-mix(in srgb, var(--text-color, #1f2923) 15%, transparent); border-radius:12px; padding:14px 17px; margin:.55rem 0; font-size:17.5px; line-height:1.58; }
+.qunar-insight strong { color:var(--text-color, #243d2d); font-weight:760; }
 .qunar-export { margin-top:1.2rem; padding-top:.5rem; }
 </style>
 """, unsafe_allow_html=True)
@@ -1036,11 +1039,11 @@ st.markdown(
     unsafe_allow_html=True,
 )
 st.markdown("""<style>
-a.qunar-fixed-nav {position:fixed;right:10px;z-index:99999;background:#f9fbf9;
- color:#214432 !important;border:1px solid #acc2b0;box-shadow:0 2px 9px #0002;
+a.qunar-fixed-nav {position:fixed;right:10px;z-index:99999;background:var(--secondary-background-color, #f9fbf9);
+ color:var(--text-color, #214432) !important;border:1px solid color-mix(in srgb, var(--text-color, #214432) 20%, transparent);box-shadow:0 2px 9px #0002;
  border-radius:10px;padding:9px 12px;text-decoration:none;font-size:13px;font-weight:600;}
 a.qunar-go-top{top:105px;} a.qunar-go-bottom{bottom:110px;}
-a.qunar-go-report{top:51%;background:#e9f3ec;}
+a.qunar-go-report{top:51%;background:var(--secondary-background-color, #e9f3ec);}
 @media (max-width:640px){a.qunar-fixed-nav{right:5px;font-size:12px;padding:8px 9px;}
  a.qunar-go-top{top:92px;} a.qunar-go-bottom{bottom:125px;}}
 </style>
@@ -1888,6 +1891,25 @@ with st.container():
                 st.caption({"kk":"Осы дақыл мен технология бойынша расталған облыстық шығындар анықтамасы жоқ.",
                             "ru":"Подтверждённого сопоставимого регионального среднего по затратам для этой культуры и технологии пока нет.",
                             "en":"No verified comparable regional cost reference for this crop and technology is currently available."}[lang])
+            # Historical Kazakhstan cards are shown for audit ONLY; nominal old
+            # amounts must never feed modern prices or contribution margin.
+            _historic_candidates=historic_cost_mix(crop)
+            if _historic_candidates:
+                with st.expander({
+                    'ru':'Документированные исторические затраты (НЕ текущая себестоимость)',
+                    'kk':'Құжатталған тарихи шығындар (ағымдағы өзіндік құн ЕМЕС)',
+                    'en':'Published historical cost cards (NOT current production costs)'
+                }[lang],expanded=False):
+                    _hist_rows=[{
+                        '2004 agrozone':x['agrozone'],
+                        'Technology':x['technology'],
+                        'Historical total KZT/ha':float(x['total_cost_kzt_ha_2004']),
+                        'Historical wages+fuel+seeds KZT/ha':float(x['wages_fuel_seeds_kzt_ha_2004'])
+                    } for x in _historic_candidates]
+                    st.dataframe(pd.DataFrame(_hist_rows),hide_index=True,use_container_width=True)
+                    st.caption({'ru':'Нормативы РК за 2004 год, https://adilet.zan.kz/rus/docs/P040000839_. Суммы НЕ подставляются в маржу: исторические цены и полная разбивка воды/электроэнергии не сопоставимы с текущим расчётом.',
+                        'kk':'2004 жылғы ҚР нормативтері. Бұл сомалар қазіргі маржаға қосылмайды: су мен электр шығындары толық бөлінбеген.',
+                        'en':'Kazakhstan 2004 published cards. NOT applied to current contribution margin: nominal historical costs and water/electricity accounting are not comparable.'}[lang])
             irrigation_compare_enabled = st.checkbox({"kk":"Суару технологиясын өзгерту сценарийін салыстыру","ru":"Сравнить сценарий смены типа орошения","en":"Compare an irrigation-switch scenario"}[lang], value=False)
             if irrigation_compare_enabled:
                 irrigation_target = st.selectbox({"kk":"Ұсынылатын суару","ru":"Предлагаемый тип орошения","en":"Proposed irrigation type"}[lang], ["furrow", "sprinkler", "drip", "mixed"], format_func=lambda x: {
@@ -1989,6 +2011,11 @@ with st.container():
             )
             optimization_use_economics = optimization_objective_mode != "resource"
             st.caption({"kk":"QŪNAR жетіспейтін нарықтық деректерді ойдан шығармайды. Экономикалық режим тек пайдаланушы енгізген немесе тексерілген маржа мәндері бар дақылдарды салыстырады. Ағымдағы құрылым үлесін енгізсеңіз, модель «дейін/кейін» экономикалық және су тиімділігін есептейді.","ru":"QŪNAR не выдумывает отсутствующие рыночные данные. Экономические режимы сравнивают только культуры, для которых введена подтвержденная или сценарная маржа. Если указать текущую структуру посевов, модель дополнительно рассчитает экономический и водный эффект «до/после».","en":"QŪNAR never fabricates missing market data. Economic modes compare only crops with a verified/scenario user-entered contribution margin. If the current crop structure is entered, QŪNAR also calculates before/after economic and water effects."}[lang])
+            st.warning({
+                "ru": "ПРОИСХОЖДЕНИЕ ДАННЫХ: QŪNAR пока не располагает подтверждённым справочником текущих затрат без воды и электроэнергии, азота и дизеля по всем культурам/районам. Площади 50/30/20, затраты и активности из демонстрационного A8 - исследовательские допущения, НЕ статистика БНС. Вводимая маржа является пользовательским сценарием и не становится официальной из-за наличия цен БНС. Для научного использования приложите источники каждого компонента.",
+                "kk": "ДЕРЕККӨЗ МӘРТЕБЕСІ: QŪNAR-да барлық дақылдар мен аудандарға арналған су мен электрді қоспаған ағымдағы шығындар, азот және дизель бойынша толық расталған анықтамалық жоқ. A8 мысалындағы 50/30/20 үлестері, шығындар және ресурстар - ғылыми сценарий жорамалдары, ҰСБ деректері емес. Енгізілген маржа ресми статистика болып саналмайды. Әр құрамдас бөлікке дереккөз келтіріңіз.",
+                "en": "DATA PROVENANCE: QŪNAR has no complete validated current reference catalogue for non-water/non-electricity production costs, nitrogen or diesel across all crops and districts. The illustrative A8 50/30/20 shares, costs and activities are research assumptions, NOT official BNS observations. User-entered margins remain scenarios even when producer prices come from BNS. Cite each component before academic use."
+            }[lang])
             if optimization_use_economics:
                 _default_weight = 70 if optimization_objective_mode == "economic" else 35
                 optimization_economic_weight = st.slider({"kk":"Экономикалық критерий салмағы, %","ru":"Вес экономического критерия, %","en":"Economic-objective weight, %"}[lang], 10, 85, _default_weight, 5) / 100.0
@@ -4812,17 +4839,58 @@ if submitted:
                 _a1_products=sorted(set(str(x) for x in alloc['product']) | set(optimization_baseline_shares))
                 _a1_base={str(k):float(v)*float(area_ha)/100 for k,v in optimization_baseline_shares.items()}
                 _a1_plan={str(r['product']):float(r['area_ha']) for _,r in alloc.iterrows()}
+                # Published activities are optional SCENARIOS, not observed farm values.
+                # Streamlit data_editor is never auto-populated unless user selects the
+                # explicit historical/analogue reference switch.
+                _ref_option=st.checkbox({
+                    'ru':'Заполнить доступные справочные нормы N и дизеля (исторические / аналоги; низкая точность)',
+                    'kk':'N және дизель бойынша қолда бар анықтамалық нормаларды қолдану (тарихи / балама; дәлдігі төмен)',
+                    'en':'Prefill available N and diesel reference rates (historical / analogues; low confidence)'
+                }[lang],value=False,key='qunar_a1_evidence_prefill')
+                _ref_density=None
+                if _ref_option:
+                    _ref_density=q_number_input({
+                        'ru':'Плотность дизеля для пересчёта кг → л, кг/л (допущение)',
+                        'kk':'Дизель тығыздығы, кг/л (жорамал)',
+                        'en':'Diesel density to convert kg to litres, kg/L (assumption)'
+                    }[lang],min_value=0.8,max_value=0.9,value=0.835,step=0.005,
+                       key='qunar_a1_diesel_density')
+                _ref_evidence_notes=[]
+                _ref_n_and_d={}
+                if _ref_option:
+                    for _p in _a1_products:
+                        _nref=crop_references(_p,'nitrogen_kg_n_ha',as_of_year=calculation_year)
+                        _dref=suggest_diesel_l_per_ha(_p,density_kg_l=_ref_density)
+                        # Conditional Kazakhstan N90 requires exactly the target technology;
+                        # use FAO regional analogue as explicitly labelled generic scenario.
+                        _candidate=next((x for x in _nref if x.evidence_level=='external_historical_analogue'),None)
+                        _ref_n_and_d[_p]={
+                            'nitrogen_kg_ha':(_candidate.midpoint if _candidate else float('nan')),
+                            'diesel_litres_ha':(_dref[0] if _dref else float('nan'))}
+                        if _candidate:
+                            _ref_evidence_notes.append(_p+' N: '+evidence_note(_candidate))
+                        if _dref:
+                            _ref_evidence_notes.append(_p+' diesel: '+evidence_note(_dref[1])+
+                                f'; user-chosen density={_ref_density:.3f} kg/L')
+                    st.warning({
+                        'ru':'Подставлены исторические или зарубежные типовые значения, НЕ данные хозяйства. Электричество осталось неизвестным; его нельзя считать нулевым. Проверьте почву и технологию. Экономическая себестоимость автоматически не подставляется.',
+                        'kk':'Ескі немесе шетелдік үлгілік мәндер берілді, шаруашылықтың нақты дерегі емес. Электр энергиясы белгісіз, нөл емес. Шығынның ағымдағы құны автоматты енгізілмейді.',
+                        'en':'Historical or foreign reference rates are scenarios, not farm measurements. Electricity remains unknown, NOT zero; modern production costs are not inferred.'
+                    }[lang])
+                    with st.expander({'ru':'Источники подставленных нормативов','kk':'Нормалардың дереккөздері','en':'Reference rate sources'}[lang]):
+                        for _note in _ref_evidence_notes:
+                            st.caption(_note)
                 _a1_frame=pd.DataFrame([{
                     'product':p,'display':extended_crop_label(p,lang),
                     'baseline_area_ha':_a1_base.get(p,0.0),
                     'optimized_area_ha':_a1_plan.get(p,0.0),
-                    'nitrogen_kg_ha':float('nan'),
-                    'diesel_litres_ha':float('nan'),
+                    'nitrogen_kg_ha':_ref_n_and_d.get(p,{}).get('nitrogen_kg_ha',float('nan')),
+                    'diesel_litres_ha':_ref_n_and_d.get(p,{}).get('diesel_litres_ha',float('nan')),
                     'electricity_kwh_ha':float('nan')}
                     for p in _a1_products])
                 _a1_edited=st.data_editor(_a1_frame,hide_index=True,use_container_width=True,
                     disabled=['product','display','baseline_area_ha','optimized_area_ha'],
-                    key='a1_crop_intensity_editor',column_config={'product':None})
+                    key=('a1_crop_intensity_editor_ref' if _ref_option else 'a1_crop_intensity_editor'),column_config={'product':None})
                 _a1_evidence=st.text_input({'ru':'Источник/сценарное допущение для норм затрат ресурсов по культурам',
                                             'kk':'Дақылдардың ресурстық нормаларының дереккөзі/жорамалдары',
                                             'en':'Evidence or assumptions for crop activity intensities'}[lang],key='a1_crop_intensity_source')
@@ -4838,10 +4906,11 @@ if submitted:
                             'diesel_litres_ha':r['diesel_litres_ha'],
                             'electricity_kwh_ha':r['electricity_kwh_ha']}
                             for _,r in _a1_edited.iterrows()}
+                        _a1_source_for_calc=(_a1_evidence.strip() + (' | ' if _a1_evidence.strip() and _ref_evidence_notes else '') + ' | '.join(_ref_evidence_notes))
                         _a1_comp=compare_crop_structures(baseline_areas=_a1_base,
                             proposed_areas=_a1_plan,baseline_activity_per_ha=_a1_acts,
                             grid_factor=float(ef),diesel_factor=float(DEFAULT_DIESEL_CO2_KG_L),
-                            accounting_period='apr_sep',evidence=_a1_evidence,confirmed=True)
+                            accounting_period='apr_sep',evidence=_a1_source_for_calc,confirmed=True)
                         _m1,_m2,_m3=st.columns(3)
                         _m1.metric({'ru':'Исходные выбросы, кг CO₂e','kk':'Бастапқы шығарындылар, кг CO₂e','en':'Baseline, kg CO₂e'}[lang],f"{_a1_comp['baseline_kgco2e']:,.1f}")
                         _m2.metric({'ru':'Сценарные выбросы, кг CO₂e','kk':'Сценарий шығарындылары, кг CO₂e','en':'Scenario, kg CO₂e'}[lang],f"{_a1_comp['scenario_kgco2e']:,.1f}")
