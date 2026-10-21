@@ -569,6 +569,42 @@ div[data-testid="stMetric"] [data-testid="stMetricValue"] *,
 .qunar-key *, .qunar-reco *, .qunar-insight * { color:inherit !important; }
 div[data-testid="stMetric"] [data-testid="stMetricLabel"] { opacity:.82; }
 
+/* Responsive metric cards: keep large values within their own columns. */
+div[data-testid="stMetric"] {
+  box-sizing:border-box;
+  min-width:0;
+  height:auto;
+  min-height:125px;
+  container-type:inline-size;
+  container-name:qunar-metric;
+}
+div[data-testid="stMetric"] [data-testid="stMetricValue"],
+div[data-testid="stMetric"] [data-testid="stMetricValue"] *,
+div[data-testid="stMetric"] [data-testid="stMetricLabel"],
+div[data-testid="stMetric"] [data-testid="stMetricLabel"] * {
+  min-width:0 !important;
+  max-width:100% !important;
+  white-space:normal !important;
+  overflow-wrap:anywhere !important;
+  word-break:normal !important;
+  text-overflow:clip !important;
+}
+div[data-testid="stMetric"] [data-testid="stMetricValue"] {
+  font-size:clamp(1.2rem, 2vw, 2rem) !important;
+  line-height:1.24 !important;
+}
+div[data-testid="stMetric"] [data-testid="stMetricValue"] * {
+  font-size:inherit !important;
+  line-height:inherit !important;
+}
+@container qunar-metric (max-width: 300px) {
+  [data-testid="stMetricValue"] { font-size:1.55rem !important; }
+}
+@container qunar-metric (max-width: 220px) {
+  [data-testid="stMetricValue"] { font-size:1.25rem !important; }
+}
+
+
 
 </style>
 """, unsafe_allow_html=True)
