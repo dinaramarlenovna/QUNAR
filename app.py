@@ -1,5 +1,6 @@
 
 from datetime import date, datetime, timedelta
+from zoneinfo import ZoneInfo
 from pathlib import Path
 import uuid
 import time
@@ -1158,6 +1159,39 @@ district = _remember_sidebar('district', st.sidebar.selectbox(
     help={"kk":"Есептеу жүргізілетін әкімшілік аудан немесе қала.","ru":"Административный район или город, для которого выполняется расчёт.","en":"Administrative district or city used for the calculation."}[lang],
 ))
 
+def _qunar_season_years(today=None):
+    """Season rollover is April 1 in Kazakhstan, not January 1 / September 30."""
+    today = today or datetime.now(ZoneInfo("Asia/Almaty")).date()
+    current = today.year if today.month >= 4 else today.year - 1
+    return {"next": current + 1, "current": current, "completed": current - 1}
+
+
+def _observed_historical_yield(data_dir, district, crop, year):
+    """Exact district/crop/year observation, not historic median or model prediction."""
+    import csv
+    from math import isfinite
+    if str(crop) == 'Barley':
+        return None  # Existing panel evidence excludes the unreliable barley series.
+    panel = Path(data_dir) / "analytical_panel.csv"
+    if not panel.is_file():
+        return None
+    hits = []
+    with panel.open(encoding="utf-8-sig", newline="") as handle:
+        for row in csv.DictReader(handle):
+            if row.get("District") != str(district) or row.get("Crop") != str(crop):
+                continue
+            try:
+                row_year = int(float(row.get("Year", "")))
+                val = float(row.get("Yield, centners/ha", ""))
+            except (ValueError, TypeError):
+                continue
+            if row_year == int(year) and isfinite(val) and val > 0:
+                hits.append(val)
+    if not hits or any(abs(x - hits[0]) > 1e-8 for x in hits):
+        return None
+    return hits[0]
+
+
 SEASON_MODE_LABELS = {
     "kk": {"next":"Келесі маусым", "current":"Ағымдағы маусым", "completed":"Соңғы аяқталған маусым"},
     "ru": {"next":"Следующий сезон", "current":"Текущий сезон", "completed":"Последний завершённый сезон"},
@@ -1166,22 +1200,20 @@ SEASON_MODE_LABELS = {
 season_mode = _remember_sidebar('season', st.sidebar.radio(
     {"kk":"Бағалау кезеңі","ru":"Период оценки","en":"Assessment period"}[lang],
     ["next","current","completed"],
-    format_func=lambda x: SEASON_MODE_LABELS[x],
+    format_func=lambda x: f"{SEASON_MODE_LABELS[x]} ({_qunar_season_years()[x]})",
     index=_sidebar_saved_index('season', ["next","current","completed"], 'next'),
     key='qunar_season_widget',
     help={"kk":"Келесі маусым - жоспарлау сценарийі; ағымдағы - маусым барысындағы алдын ала мониторинг; аяқталған - толық өткен маусымды ретроспективті бағалау.","ru":"Следующий сезон - плановый сценарий; текущий - предварительный мониторинг по мере поступления данных; завершённый - ретроспективная оценка полного сезона.","en":"Next season is the planning scenario; current season is an in-season preliminary assessment; completed season is a retrospective full-season assessment."}[lang],
 ))
-_today = date.today()
+_season_years = _qunar_season_years()
+calculation_year = _season_years[season_mode]
 if season_mode == "next":
-    calculation_year = _today.year + 1
     assessment_type = {"kk":"жоспарлы әлеуетті сценарий","ru":"плановый потенциальный сценарий","en":"prospective planning scenario"}[lang]
     climate_period_label = f"04-09 / {calculation_year} ({ {'kk':'тарихи климаттық профиль','ru':'исторический климатический профиль','en':'historical climate profile'}[lang] })"
 elif season_mode == "current":
-    calculation_year = _today.year
-    assessment_type = {"kk":"алдын ала ағымдағы бағалау","ru":"предварительная текущая оценка","en":"preliminary current-season assessment"}[lang]
+    assessment_type = {"kk":"ағымдағы маусымды бағалау","ru":"оценка текущего сезона","en":"current-season assessment"}[lang]
     climate_period_label = f"01.04.{calculation_year}-30.09.{calculation_year}"
 else:
-    calculation_year = _today.year if _today > date(_today.year, 9, 30) else _today.year - 1
     assessment_type = {"kk":"ретроспективті бағалау","ru":"ретроспективная оценка","en":"retrospective assessment"}[lang]
     climate_period_label = f"01.04.{calculation_year}-30.09.{calculation_year}"
 
@@ -1823,7 +1855,7 @@ with st.container():
                 # Reference prices are annual *producer* prices from BNS RK. Never
                 # silently estimate censored cells, infer prices for other crops,
                 # or use a publication from the year being backtested.
-                _bns_price = reference_producer_price(crop, as_of_year=calculation_year - 1)
+                _bns_price = reference_producer_price(crop, as_of_year=(calculation_year if season_mode == "completed" else calculation_year - 1))
                 _using_bns_price = False
                 if _bns_price is not None:
                     _using_bns_price = st.checkbox(
@@ -1854,7 +1886,7 @@ with st.container():
             with ec3:
                 # A5: never infer costs from selling prices or out-of-force insurance norms.
                 _other_cost_ref = reference_variable_cost(
-                    crop, as_of_year=calculation_year - 1,
+                    crop, as_of_year=(calculation_year if season_mode == "completed" else calculation_year - 1),
                     technology=irrigation_type if irrigation_type != 'unknown' else 'unspecified')
                 _use_other_cost_ref = False
                 if _other_cost_ref is not None:
@@ -2828,6 +2860,10 @@ if submitted:
         "generated_at": datetime.now().strftime("%Y-%m-%d %H:%M"),
         "assessment_year": calculation_year,
         "assessment_type": assessment_type,
+        "assessment_season_mode": season_mode,
+        "season_calendar_rule": "Season year rolls over April 1 (Asia/Almaty); growing season April-September",
+        "historical_evidence_note": ("NASA POWER grid historical meteorology; district-year yield where available; "
+                                     "farm inputs remain user provided or clearly labelled estimates") if season_mode == "completed" else "",
         "climate_period": climate_period_label,
         "summary_title": {"kk":"Негізгі нәтижелер","ru":"Ключевые результаты","en":"Key results"}[lang],
         "indicator_label": {"kk":"Көрсеткіш","ru":"Показатель","en":"Indicator"}[lang],
@@ -4041,8 +4077,20 @@ if submitted:
         _original_rf_pred = pred
         _yield_choice = route_yield(DATA_DIR, used_district, crop, calculation_year, rf_value=pred)
         _active_yield = _yield_choice.active_value
-        if _active_yield is not None:
+        _actual_year_yield = (_observed_historical_yield(DATA_DIR, used_district, crop, calculation_year)
+                              if season_mode == "completed" else None)
+        if _actual_year_yield is not None:
+            pred = _actual_year_yield
+            st.caption({"ru":f"Урожайность {calculation_year}: {pred:.2f} ц/га, фактическая районная запись аналитической панели (не измерение выбранного поля).",
+                        "kk":f"{calculation_year} жылғы өнімділік: {pred:.2f} ц/га, талдамалық панельдегі аудандық дерек (нақты алқап өлшемі емес).",
+                        "en":f"{calculation_year} yield: {pred:.2f} c/ha, district-year analytical panel observation (not a measurement of the selected field)."}[lang])
+            report_payload['inputs'].append(["Historical district crop yield", f"{pred:.2f} c/ha; {calculation_year}; {used_district}; {crop}", "analytical_panel.csv, district/year observation; not field-observed"])
+        elif _active_yield is not None:
             pred = _active_yield
+        if season_mode == "completed" and _actual_year_yield is None:
+            st.warning({"ru":f"За {calculation_year} год нет подтверждённой урожайности этой культуры по району. Отображаемое значение - расчётный ориентир, не фактическая урожайность.",
+                        "kk":f"{calculation_year} жылға осы аудан мен дақыл бойынша расталған өнімділік жоқ. Көрсеткіш есептік бағдар ғана.",
+                        "en":f"No verified district-crop yield for {calculation_year}. The displayed value is a model/reference estimate, not an observed yield."}[lang])
         # The RF remains the first computed model and is always reported separately;
         # alternatives are only descriptive when its forward verification fails.
         report_payload['summary'].append({
@@ -4077,10 +4125,10 @@ if submitted:
         wapor_pixels = None
         if use_wapor:
             try:
-                today = date.today()
-                season_start = date(today.year, 4, 1)
-                season_end = min(today, date(today.year, 9, 30))
-                if season_end >= season_start:
+                today = datetime.now(ZoneInfo("Asia/Almaty")).date()
+                season_start = date(calculation_year, 4, 1)
+                season_end = min(today - timedelta(days=1), date(calculation_year, 9, 30))
+                if season_mode != "next" and season_end >= season_start:
                     with st.spinner(t["wapor_loading"]):
                         if not calc_geojson:
                             raise WaPORError("WAPOR_FIELD_POLYGON_REQUIRED")
@@ -4402,8 +4450,20 @@ if submitted:
                 ml_pred, ml_used = timed_call("ML prediction", predict_yield, used_district, crop, area_ha, climate)
             _mode2_rf_pred=ml_pred
             _mode2_choice=route_yield(DATA_DIR,used_district,crop,calculation_year,rf_value=ml_pred)
-            if _mode2_choice.active_value is not None:
+            _mode2_observed = (_observed_historical_yield(DATA_DIR, used_district, crop, calculation_year)
+                               if season_mode == "completed" else None)
+            if _mode2_observed is not None:
+                ml_pred = _mode2_observed
+                st.caption({"ru":f"Фактическая районная урожайность за {calculation_year}: {ml_pred:.2f} ц/га (не измерение поля).",
+                            "kk":f"{calculation_year} жылғы аудандық өнімділік: {ml_pred:.2f} ц/га (алқап өлшемі емес).",
+                            "en":f"Observed district yield for {calculation_year}: {ml_pred:.2f} c/ha (not a field measurement)."}[lang])
+                report_payload['inputs'].append(["Historical district crop yield", f"{ml_pred:.2f} c/ha; {calculation_year}; {used_district}; {crop}", "analytical_panel.csv, district/year observation"])
+            elif _mode2_choice.active_value is not None:
                 ml_pred=_mode2_choice.active_value
+            if season_mode == "completed" and _mode2_observed is None:
+                st.warning({"ru":"Фактическая урожайность выбранного района/года отсутствует; показан расчётный ориентир.",
+                            "kk":"Таңдалған аудан мен жыл бойынша нақты өнімділік жоқ; есептік бағдар көрсетілді.",
+                            "en":"No observed yield for this district and year; showing a model/reference estimate."}[lang])
             if not _mode2_choice.ml_supported:
                 st.warning({'ru':'Оценка урожайности: ML не прошёл временную проверку; активный ориентир — историческая медиана района и культуры, не прогноз следующего года.',
                             'kk':'ML уақыттық тексеруден өтпеді. Белсенді көрсеткіш — аудан мен дақылдың тарихи медианасы, болашақ өнім болжамы емес.',
